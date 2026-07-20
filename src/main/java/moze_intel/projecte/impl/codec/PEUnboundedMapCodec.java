@@ -28,7 +28,7 @@ import moze_intel.projecte.api.codec.MapProcessor;
  *     <ul><a href="https://gist.github.com/thiakil/7cadeb2a8e50aabc5056bc6574af0d90">Thiakil's Map as List Codec</a></ul>
  *     <ul>{@link com.mojang.serialization.codecs.ListCodec} for how to handle decoder state and handing of lists</ul>
  *     <ul>{@link com.mojang.serialization.codecs.UnboundedMapCodec} and the base implementation in {@link com.mojang.serialization.codecs.BaseMapCodec}</ul>
- *     <ul>{@link net.neoforged.neoforge.common.LenientUnboundedMapCodec} for making parts lenient (though we only optionally make keys lenient here)</ul>
+ *     <ul>NeoForge's LenientUnboundedMapCodec for making parts lenient (though we only optionally make keys lenient here)</ul>
  * </li>
  */
 public record PEUnboundedMapCodec<KEY, VALUE, MAP extends Map<KEY, VALUE>>(

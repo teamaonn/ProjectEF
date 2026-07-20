@@ -17,9 +17,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,26 +31,17 @@ import moze_intel.projecte.api.ProjectERegistries;
 import moze_intel.projecte.api.codec.IPECodecHelper;
 import moze_intel.projecte.api.codec.MapProcessor;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
-import net.minecraft.Util;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
 public class PECodecHelper implements IPECodecHelper {
 
 	private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
-	private static final MethodHandle HANDLER_STACK_FIELD = Util.make(() -> {
-		try {
-			Field field = ItemStackHandler.class.getDeclaredField("stacks");
-			field.setAccessible(true);
-			return MethodHandles.lookup().unreflectGetter(field);
-		} catch (ReflectiveOperationException roe) {
-			throw new RuntimeException("Couldn't get getter MethodHandle for stacks", roe);
-		}
-	});
+//No longer needed; use ItemStackHandler#getStacks() directly
 
 	private static final Codec<ItemStack> LENIENT_STACK_CODEC = ItemStack.CODEC.promotePartial(error -> PECore.LOGGER.error("Tried to load invalid item: '{}'", error));
 	//Based off of ItemStack#OPTIONAL_CODEC
@@ -68,11 +56,10 @@ public class PECodecHelper implements IPECodecHelper {
 				itemList.addAll(list);
 				return new ItemStackHandler(itemList);
 			}, handler -> {
-		try {
-			return DataResult.<List<ItemStack>>success((NonNullList<ItemStack>) HANDLER_STACK_FIELD.invokeExact(handler));
-		} catch (Throwable t) {
-			return DataResult.error(t::getMessage);
-		}
+			//getStacks() returns the backing NonNullList; we cast to List<ItemStack> for the codec's covariant type
+			@SuppressWarnings("unchecked")
+			List<ItemStack> stacks = (List<ItemStack>) (List<?>) handler.getStacks();
+			return DataResult.success(stacks);
 	});
 
 	private final Codec<Long> NON_NEGATIVE_LONG = longRangeWithMessage(0, Long.MAX_VALUE, value -> "Value must be non-negative: " + value);

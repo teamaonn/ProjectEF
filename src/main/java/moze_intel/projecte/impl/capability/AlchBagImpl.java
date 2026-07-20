@@ -11,20 +11,16 @@ import moze_intel.projecte.impl.codec.PECodecHelper;
 import moze_intel.projecte.network.PEStreamCodecs;
 import moze_intel.projecte.network.packets.to_client.alch_bag.SyncAllBagDataPKT;
 import moze_intel.projecte.network.packets.to_client.alch_bag.SyncBagsDataPKT;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
-import net.neoforged.neoforge.attachment.IAttachmentHolder;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.network.PacketDistributor;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.network.PENetwork;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 public final class AlchBagImpl implements IAlchBagProvider {
 
 	private final Player player;
@@ -34,7 +30,7 @@ public final class AlchBagImpl implements IAlchBagProvider {
 	}
 
 	private AlchemicalBagAttachment attachment() {
-		return this.player.getData(PEAttachmentTypes.ALCHEMICAL_BAGS);
+		return this.player.getAttachedOrCreate(PEAttachmentTypes.ALCHEMICAL_BAGS);
 	}
 
 	@NotNull
@@ -51,13 +47,13 @@ public final class AlchBagImpl implements IAlchBagProvider {
 			for (DyeColor color : colors) {
 				handlers.put(color, attachment.getBag(color));
 			}
-			PacketDistributor.sendToPlayer(player, new SyncBagsDataPKT(handlers));
+			PENetwork.sendToPlayer(player, new SyncBagsDataPKT(handlers));
 		}
 	}
 
 	@Override
 	public void syncAllBags(@NotNull ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, new SyncAllBagDataPKT(attachment()));
+		PENetwork.sendToPlayer(player, new SyncAllBagDataPKT(attachment()));
 	}
 
 	public static class AlchemicalBagAttachment {
@@ -78,7 +74,7 @@ public final class AlchBagImpl implements IAlchBagProvider {
 
 		private final Map<DyeColor, ItemStackHandler> inventories;
 
-		public AlchemicalBagAttachment(@Nullable IAttachmentHolder unused) {
+		public AlchemicalBagAttachment() {
 			this(new EnumMap<>(DyeColor.class));
 		}
 
@@ -86,14 +82,7 @@ public final class AlchBagImpl implements IAlchBagProvider {
 			this.inventories = inventories;
 		}
 
-		@Nullable
-		public AlchemicalBagAttachment copy(IAttachmentHolder holder, HolderLookup.Provider registries) {
-			AlchemicalBagAttachment copy = new AlchemicalBagAttachment(holder);
-			for (Map.Entry<DyeColor, ItemStackHandler> entry : inventories.entrySet()) {
-				copy.inventories.put(entry.getKey(), PEAttachmentTypes.copyHandler(entry.getValue(), ItemStackHandler::new));
-			}
-			return copy;
-		}
+
 
 		@NotNull
 		public ItemStackHandler getBag(@NotNull DyeColor color) {

@@ -25,8 +25,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ContainerItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
@@ -75,7 +75,7 @@ public final class EMCHelper {
 		if (player.isCreative() || minFuel == 0) {
 			return minFuel;
 		}
-		IItemHandler curios = player.getCapability(IntegrationHelper.CURIO_ITEM_HANDLER);
+		IItemHandler curios = IntegrationHelper.getCuriosInventory(player);
 		if (curios != null) {
 			for (int i = 0, slots = curios.getSlots(); i < slots; i++) {
 				long actualExtracted = tryExtract(curios.getStackInSlot(i), minFuel);
@@ -87,7 +87,7 @@ public final class EMCHelper {
 		}
 
 		//Note: The implementation of this will iterate in the order: Main inventory, Armor, Offhand
-		IItemHandler inv = player.getCapability(ItemHandler.ENTITY);
+		IItemHandler inv = new ContainerItemHandler(player.getInventory());
 		if (inv != null) {
 			//Ensure that we have an item handler capability, because if for example the player is dead we will not
 			Int2IntMap map = new Int2IntOpenHashMap();
@@ -128,7 +128,7 @@ public final class EMCHelper {
 	}
 
 	private static long tryExtract(@NotNull ItemStack stack, long minFuel) {
-		IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 		if (emcHolder != null) {
 			long simulatedExtraction = emcHolder.extractEmc(stack, minFuel, EmcAction.SIMULATE);
 			if (simulatedExtraction >= minFuel) {
@@ -220,11 +220,11 @@ public final class EMCHelper {
 	 * @return The amount of non fractional EMC no longer being stored in UnprocessedEMC.
 	 */
 	public static long removeFractionalEMC(ItemStack stack, double amount) {
-		double unprocessedEMC = stack.getOrDefault(PEDataComponentTypes.UNPROCESSED_EMC, 0.0);
+		double unprocessedEMC = stack.getOrDefault(PEDataComponentTypes.UNPROCESSED_EMC.get(), 0.0);
 		unprocessedEMC += amount;
 		long toRemove = (long) unprocessedEMC;
 		unprocessedEMC -= toRemove;
-		stack.set(PEDataComponentTypes.UNPROCESSED_EMC, unprocessedEMC);
+		stack.set(PEDataComponentTypes.UNPROCESSED_EMC.get(), unprocessedEMC);
 		return toRemove;
 	}
 }

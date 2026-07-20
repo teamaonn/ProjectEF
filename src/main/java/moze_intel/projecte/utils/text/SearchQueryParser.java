@@ -201,7 +201,7 @@ public class SearchQueryParser {
 			@Override
 			public boolean matches(@Nullable Level level, @Nullable Player player, String key, ItemStack stack) {
 				Item item = stack.getItem();
-				String modid = item.getCreatorModId(stack);
+				String modid = item.builtInRegistryHolder().unwrapKey().map(k -> k.location().getNamespace()).orElse("minecraft");
 				if (modid == null) {
 					PECore.LOGGER.error("Unexpected null registry name for item of class type: {}", item.getClass().getSimpleName());
 					return false;

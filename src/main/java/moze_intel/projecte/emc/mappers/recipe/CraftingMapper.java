@@ -33,7 +33,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -73,12 +72,11 @@ public class CraftingMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, ReloadableServerResources serverResources,
+	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, RecipeManager recipeManager,
 			RegistryAccess registryAccess, ResourceManager resourceManager) {
 		NSSFake.setCurrentNamespace("craftingMapper");
 		Reference2ObjectMap<ResourceKey<RecipeType<?>>, RecipeCountInfo> recipeCount = new Reference2ObjectOpenHashMap<>();
 		Set<ResourceKey<RecipeType<?>>> canNotMap = new ReferenceOpenHashSet<>();
-		RecipeManager recipeManager = serverResources.getRecipeManager();
 		//Make a new fake group manager here instead of across the entire mapper so that we can reclaim the memory when we are done with this method
 		NSSFakeGroupManager fakeGroupManager = new NSSFakeGroupManager(mapper);
 		for (Map.Entry<ResourceKey<RecipeType<?>>, RecipeType<?>> entry : BuiltInRegistries.RECIPE_TYPE.entrySet()) {

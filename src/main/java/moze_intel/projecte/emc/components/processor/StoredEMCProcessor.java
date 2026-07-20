@@ -32,7 +32,7 @@ public class StoredEMCProcessor implements IDataComponentProcessor {
 	@Range(from = 0, to = Long.MAX_VALUE)
 	public long recalculateEMC(@NotNull ItemInfo info, @Range(from = 1, to = Long.MAX_VALUE) long currentEMC) throws ArithmeticException {
 		ItemStack stack = info.createStack();
-		IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 		if (emcHolder != null) {
 			return Math.addExact(currentEMC, emcHolder.getStoredEmc(stack));
 		}

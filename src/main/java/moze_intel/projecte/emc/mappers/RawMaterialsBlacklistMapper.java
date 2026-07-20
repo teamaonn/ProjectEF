@@ -7,14 +7,14 @@ import moze_intel.projecte.api.mapper.collector.IMappingCollector;
 import moze_intel.projecte.api.nss.NSSItem;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
 import moze_intel.projecte.config.PEConfigTranslations;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet.Named;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.common.Tags;
+import net.minecraft.world.item.crafting.RecipeManager;
 
 @EMCMapper
 public class RawMaterialsBlacklistMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
@@ -23,9 +23,9 @@ public class RawMaterialsBlacklistMapper implements IEMCMapper<NormalizedSimpleS
 	public static final RawMaterialsBlacklistMapper INSTANCE = new RawMaterialsBlacklistMapper();
 
 	@Override
-	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, ReloadableServerResources serverResources,
+	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, RecipeManager recipeManager,
 			RegistryAccess registryAccess, ResourceManager resourceManager) {
-		Optional<Named<Item>> tag = BuiltInRegistries.ITEM.getTag(Tags.Items.RAW_MATERIALS);
+		Optional<Named<Item>> tag = BuiltInRegistries.ITEM.getTag(ConventionalItemTags.RAW_MATERIALS);
 		if (tag.isPresent()) {
 			for (Holder<Item> holder : tag.get()) {
 				NSSItem rawOre = NSSItem.createItem(holder);

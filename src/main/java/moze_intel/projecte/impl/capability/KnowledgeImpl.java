@@ -29,18 +29,15 @@ import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncChan
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncEmcPKT;
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncInputsAndLocksPKT;
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncPKT;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.attachment.IAttachmentHolder;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.network.PacketDistributor;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.network.PENetwork;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,12 +61,12 @@ public class KnowledgeImpl implements IKnowledgeProvider {
 	protected KnowledgeAttachment attachment() {
 		//Force overriding if player is null
 		Objects.requireNonNull(this.player);
-		return this.player.getData(PEAttachmentTypes.KNOWLEDGE);
+		return this.player.getAttachedOrCreate(PEAttachmentTypes.KNOWLEDGE);
 	}
 
 	protected void fireChangedEvent() {
 		if (player != null && !player.level().isClientSide) {
-			NeoForge.EVENT_BUS.post(new PlayerKnowledgeChangeEvent(player));
+			PlayerKnowledgeChangeEvent.EVENT.invoker().onKnowledgeChange(new PlayerKnowledgeChangeEvent(player));
 		}
 	}
 
@@ -222,17 +219,17 @@ public class KnowledgeImpl implements IKnowledgeProvider {
 
 	@Override
 	public void sync(@NotNull ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, new KnowledgeSyncPKT(attachment()));
+		PENetwork.sendToPlayer(player, new KnowledgeSyncPKT(attachment()));
 	}
 
 	@Override
 	public void syncEmc(@NotNull ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, new KnowledgeSyncEmcPKT(getEmc()));
+		PENetwork.sendToPlayer(player, new KnowledgeSyncEmcPKT(getEmc()));
 	}
 
 	@Override
 	public void syncKnowledgeChange(@NotNull ServerPlayer player, ItemInfo change, boolean learned) {
-		PacketDistributor.sendToPlayer(player, new KnowledgeSyncChangePKT(change, learned));
+		PENetwork.sendToPlayer(player, new KnowledgeSyncChangePKT(change, learned));
 	}
 
 	@Override
@@ -249,7 +246,7 @@ public class KnowledgeImpl implements IKnowledgeProvider {
 			}
 			if (!stacksToSync.isEmpty()) {
 				//Validate it is not empty in case we were fed bad indices
-				PacketDistributor.sendToPlayer(player, new KnowledgeSyncInputsAndLocksPKT(stacksToSync, updateTargets));
+				PENetwork.sendToPlayer(player, new KnowledgeSyncInputsAndLocksPKT(stacksToSync, updateTargets));
 			}
 		}
 	}
@@ -333,10 +330,6 @@ public class KnowledgeImpl implements IKnowledgeProvider {
 			this.fullKnowledge = fullKnowledge;
 		}
 
-		@Nullable
-		public KnowledgeAttachment copy(IAttachmentHolder holder, HolderLookup.Provider registries) {
-			//Note: ItemInfo and BigInteger are both immutable, so we can just add them directly
-			return new KnowledgeAttachment(new HashSet<>(knowledge), PEAttachmentTypes.copyHandler(inputLocks, ItemStackHandler::new), emc, fullKnowledge);
-		}
+
 	}
 }

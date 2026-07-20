@@ -1,10 +1,12 @@
 package moze_intel.projecte.emc.components.processor;
 
 import java.util.function.ToLongFunction;
+import moze_intel.projecte.PECore;
 import moze_intel.projecte.api.ItemInfo;
 import moze_intel.projecte.api.components.DataComponentProcessor;
 import moze_intel.projecte.api.components.IDataComponentProcessor;
 import moze_intel.projecte.config.PEConfigTranslations;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
@@ -14,8 +16,6 @@ import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.component.MapPostProcessing;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -96,12 +96,12 @@ public class MapScaleProcessor implements IDataComponentProcessor {
 
 	@Nullable
 	private static Level tryGetLevel() {
-		MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+		MinecraftServer server = PECore.getServer();
 		if (server != null) {
 			//Note: This is not ideal, but because ServerLevel#getMapData, sends the map id via the overworld's data storage
 			// that means the level doesn't really matter on the server side as it will all be from the overworld anyway
 			return server.overworld();
-		} else if (FMLEnvironment.dist.isClient()) {
+		} else if (FabricLoader.getInstance().getEnvironmentType() == net.fabricmc.api.EnvType.CLIENT) {
 			return ClientLevelHelper.getLevel();
 		}
 		return null;

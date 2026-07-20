@@ -18,7 +18,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.item.ItemStack;
@@ -28,19 +27,16 @@ import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.neoforged.neoforge.common.brewing.BrewingRecipe;
-import net.neoforged.neoforge.common.brewing.IBrewingRecipe;
-import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraft.world.item.crafting.RecipeManager;
 import org.jetbrains.annotations.Nullable;
 
 @EMCMapper
 public class BrewingMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 
 	@Override
-	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, ReloadableServerResources serverResources,
+	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, RecipeManager recipeManager,
 			RegistryAccess registryAccess, ResourceManager resourceManager) {
-		MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+		MinecraftServer server = PECore.getServer();
 		if (server == null) {
 			PECore.LOGGER.error("Failed to get server and potion data when trying to map potions");
 			return;
@@ -50,9 +46,10 @@ public class BrewingMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 		Set<ItemInfo> allInputs = mapAllInputs(potionBrewing);
 
 		//Add conversion for empty bottle + water to water bottle
+		//Note: NSS fluid amounts are in millibuckets (1 bucket = 1000 mB), so a water bottle holds 1000 / 3 mB of water
 		mapper.addConversion(1, NSSItem.createItem(PotionContents.createItemStack(Items.POTION, Potions.WATER)), EMCHelper.intMapOf(
 				NSSItem.createItem(Items.GLASS_BOTTLE), 1,
-				NSSFluid.createTag(FluidTags.WATER), FluidType.BUCKET_VOLUME / 3
+				NSSFluid.createTag(FluidTags.WATER), 1_000 / 3
 		));
 
 		int recipeCount = 0;
@@ -77,40 +74,10 @@ public class BrewingMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 			}
 		}
 
-		Set<Class<?>> canNotMap = new HashSet<>();
-		for (IBrewingRecipe recipe : potionBrewing.getRecipes()) {
-			if (recipe instanceof BrewingRecipe brewingRecipe) {
-				ItemStack[] validInputs = getMatchingStacks(brewingRecipe.getInput());
-				ItemStack[] validReagents = getMatchingStacks(brewingRecipe.getIngredient());
-				if (validInputs == null || validReagents == null) {
-					//Skip brewing recipes that we are not able to process such as ones using tags
-					// as ingredients, as tags don't exist when the brewing recipe is being defined
-					continue;
-				}
-				ItemStack output = brewingRecipe.getOutput();
-				NormalizedSimpleStack nssOut = NSSItem.createItem(output);
-				for (ItemStack validInput : validInputs) {
-					NormalizedSimpleStack nssInput = NSSItem.createItem(validInput);
-					for (ItemStack validReagent : validReagents) {
-						//Add the conversion, 3 input + x reagent = 3 y output as strictly speaking the only one of the three parts
-						// in the recipe that are required to be one in stack size is the input
-						mapper.addConversion(3 * output.getCount(), nssOut, EMCHelper.intMapOf(
-								nssInput, 3,
-								NSSItem.createItem(validReagent), validReagent.getCount()
-						));
-						recipeCount++;
-					}
-				}
-			} else {
-				canNotMap.add(recipe.getClass());
-			}
-		}
-
+		//Note: Unlike NeoForge, Fabric has no extensible brewing recipe registry; mods add brewing through the vanilla
+		// PotionBrewing mixes, which are already covered by the reagent/input scan above, so there is nothing extra to map.
 		PECore.debugLog("{} Statistics:", getName());
 		PECore.debugLog("Found {} Brewing Recipes", recipeCount);
-		for (Class<?> c : canNotMap) {
-			PECore.debugLog("Could not map Brewing Recipes with Type: {}", c.getName());
-		}
 	}
 
 	@Override

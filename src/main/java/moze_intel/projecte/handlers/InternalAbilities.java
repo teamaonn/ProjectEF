@@ -17,11 +17,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.FluidState;
-import net.neoforged.neoforge.common.NeoForgeMod;
 
 public class InternalAbilities {
 
-	private static final AttributeModifier FLIGHT = new AttributeModifier(PECore.rl("flight"), 1, Operation.ADD_VALUE);
 	private static final AttributeModifier WATER_SPEED_BOOST = new AttributeModifier(PECore.rl("water_speed_boost"), 0.15, Operation.ADD_VALUE);
 	private static final AttributeModifier LAVA_SPEED_BOOST = new AttributeModifier(PECore.rl("lava_speed_boost"), 0.15, Operation.ADD_VALUE);
 
@@ -56,7 +54,7 @@ public class InternalAbilities {
 		if (!player.level().isClientSide) {
 			updateAttribute(player, Attributes.MOVEMENT_SPEED, WATER_SPEED_BOOST, applyWaterSpeed);
 			updateAttribute(player, Attributes.MOVEMENT_SPEED, LAVA_SPEED_BOOST, applyLavaSpeed);
-			updateAttribute(player, NeoForgeMod.CREATIVE_FLIGHT, FLIGHT, InternalAbilities::shouldPlayerFly);
+			updateFlight(player);
 		}
 	}
 
@@ -82,6 +80,25 @@ public class InternalAbilities {
 			   //Note: Curios, and the offhand are handled by the attribute on the arcana ring. We want it to provide flight in other slots on the hotbar as well
 			   // so we have to do it here. We do this rather than only doing a hotbar curios check with no attribute, so that the tooltip shows it provides flight
 			   || PlayerHelper.checkHotbar(player, (p, stack) -> stack.is(PEItems.ARCANA_RING));
+	}
+
+	/**
+	 * Replaces NeoForge CREATIVE_FLIGHT attribute management with direct mayfly control.
+	 * Only sends an update packet when the ability actually changes.
+	 */
+	private static void updateFlight(Player player) {
+		// Never interfere with vanilla creative/spectator flight
+		if (player.isCreative() || player.isSpectator()) {
+			return;
+		}
+		boolean shouldFly = shouldPlayerFly(player);
+		if (shouldFly != player.getAbilities().mayfly) {
+			player.getAbilities().mayfly = shouldFly;
+			if (!shouldFly) {
+				player.getAbilities().flying = false;
+			}
+			player.onUpdateAbilities();
+		}
 	}
 
 	private static WalkOnType canWalkOnWater(Player player) {

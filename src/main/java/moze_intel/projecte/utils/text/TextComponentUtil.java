@@ -3,6 +3,8 @@ package moze_intel.projecte.utils.text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -17,7 +19,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
  * @apiNote From Mekanism
@@ -50,10 +51,10 @@ public class TextComponentUtil {
 				case Block block -> current = block.getName().copy();
 				case Item item -> current = item.getDescription().copy();
 				case ItemStack stack -> current = stack.getHoverName().copy();
-				case FluidStack stack -> current = stack.getHoverName().copy();
-				case Fluid fluid -> current = fluid.getFluidType().getDescription().copy();
+				case FluidVariant variant -> current = FluidVariantAttributes.getName(variant).copy();
+				case Fluid fluid -> current = FluidVariantAttributes.getName(FluidVariant.of(fluid)).copy();
 				case EntityType<?> entityType -> current = entityType.getDescription().copy();
-				case Level level -> current = level.getDescription().copy();
+				case Level level -> current = Component.literal(level.dimension().location().toString()).copy();
 				//Fallback to a generic replacement
 				// this handles strings, numbers, and any type we don't necessarily know about
 				default -> current = getString(component.toString());
@@ -82,7 +83,7 @@ public class TextComponentUtil {
 	}
 
 	private static String cleanString(String component) {
-		return component.replace("\u00A0", " ");
+		return component.replace(" ", " ");
 	}
 
 	public static MutableComponent translate(String key) {
@@ -122,14 +123,14 @@ public class TextComponentUtil {
 				current = item.getDescription().copy();
 			} else if (component instanceof ItemStack stack) {
 				current = stack.getHoverName().copy();
-			} else if (component instanceof FluidStack stack) {
-				current = stack.getHoverName().copy();
+			} else if (component instanceof FluidVariant variant) {
+				current = FluidVariantAttributes.getName(variant).copy();
 			} else if (component instanceof Fluid fluid) {
-				current = fluid.getFluidType().getDescription().copy();
+				current = FluidVariantAttributes.getName(FluidVariant.of(fluid)).copy();
 			} else if (component instanceof EntityType<?> entityType) {
 				current = entityType.getDescription().copy();
 			} else if (component instanceof Level level) {
-				current = level.getDescription().copy();
+				current = Component.literal(level.dimension().location().toString()).copy();
 			}
 			//Formatting
 			else if (component instanceof TextColor color && cachedStyle.getColor() == null) {

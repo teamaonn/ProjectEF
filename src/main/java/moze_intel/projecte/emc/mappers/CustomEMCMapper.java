@@ -1,5 +1,6 @@
 package moze_intel.projecte.emc.mappers;
 
+import net.minecraft.world.item.crafting.RecipeManager;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongSortedMaps;
 import java.util.Iterator;
@@ -12,14 +13,13 @@ import moze_intel.projecte.api.nss.NormalizedSimpleStack;
 import moze_intel.projecte.config.CustomEMCParser;
 import moze_intel.projecte.config.PEConfigTranslations;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 @EMCMapper
 public class CustomEMCMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 
 	@Override
-	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, ReloadableServerResources serverResources,
+	public void addMappings(IMappingCollector<NormalizedSimpleStack, Long> mapper, RecipeManager recipeManager,
 			RegistryAccess registryAccess, ResourceManager resourceManager) {
 		for (Iterator<Object2LongMap.Entry<NSSItem>> iterator = Object2LongSortedMaps.fastIterator(CustomEMCParser.currentEntries.entries()); iterator.hasNext(); ) {
 			Object2LongMap.Entry<NSSItem> entry = iterator.next();

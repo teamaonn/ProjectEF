@@ -36,11 +36,9 @@ import moze_intel.projecte.network.packets.to_client.SyncEmcPKT;
 import moze_intel.projecte.utils.AnnotationHelper;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraft.world.item.crafting.RecipeManager;
 import org.apache.commons.math3.fraction.BigFraction;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -67,7 +65,7 @@ public final class EMCMappingHandler {
 		}
 	}
 
-	public static void map(ReloadableServerResources serverResources, RegistryAccess registryAccess, ResourceManager resourceManager) {
+	public static void map(RecipeManager recipeManager, RegistryAccess registryAccess, ResourceManager resourceManager) {
 		//Start by clearing the cached map so if values are removed say by setting EMC to zero then we respect the change
 		clearEmcMap();
 		SimpleGraphMapper<NormalizedSimpleStack, BigFraction, IValueArithmetic<BigFraction>> mapper = new SimpleGraphMapper<>(new HiddenBigFractionArithmetic());
@@ -92,7 +90,7 @@ public final class EMCMappingHandler {
 				if (MappingConfig.isEnabled(emcMapper)) {
 					DumpToFileCollector.currentGroupName = emcMapper.getName();
 					try {
-						emcMapper.addMappings(mappingCollector, serverResources, registryAccess, resourceManager);
+						emcMapper.addMappings(mappingCollector, recipeManager, registryAccess, resourceManager);
 						PECore.debugLog("Collected Mappings from " + emcMapper.getClass().getName());
 					} catch (Exception e) {
 						PECore.LOGGER.error(LogUtils.FATAL_MARKER, "Exception during Mapping Collection from Mapper {}. PLEASE REPORT THIS! EMC VALUES MIGHT BE INCONSISTENT!",
@@ -126,10 +124,10 @@ public final class EMCMappingHandler {
 		//Start by doing our implementations
 		FuelMapper.loadMap();
 		loadIndex++;
-		MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+		MinecraftServer server = PECore.getServer();
 		if (server != null) {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				IKnowledgeProvider knowledge = player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY);
+				IKnowledgeProvider knowledge = PECapabilities.KNOWLEDGE_CAPABILITY.find(player);
 				if (knowledge != null) {
 					if (knowledge instanceof KnowledgeImpl impl && impl.pruneStaleKnowledge()) {
 						knowledge.sync(player);
@@ -142,7 +140,7 @@ public final class EMCMappingHandler {
 				}
 			}
 		}
-		NeoForge.EVENT_BUS.post(new EMCRemapEvent());
+		EMCRemapEvent.EVENT.invoker().onEmcRemap();
 	}
 
 	public static int getLoadIndex() {

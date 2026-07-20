@@ -1,13 +1,13 @@
 package moze_intel.projecte.utils;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.IntSupplier;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.registries.PEItems;
 import moze_intel.projecte.integration.IntegrationHelper;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -21,23 +21,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemCooldowns;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
-import net.neoforged.neoforge.common.CommonHooks;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.util.BlockSnapshot;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.level.BlockEvent.EntityMultiPlaceEvent;
-import net.neoforged.neoforge.items.IItemHandler;
 
 /**
- * Helper class for player-related methods. Notice: Please try to keep methods tidy and alphabetically ordered. Thanks!
+ * Helper class for player-related methods.
+ * Notice: Please try to keep methods tidy and alphabetically ordered. Thanks!
  */
 public final class PlayerHelper {
 
@@ -52,47 +45,22 @@ public final class PlayerHelper {
 		return hasEditPermission(player, level, pos) && partiallyCheckedPlaceBlock(player, level, pos, state);
 	}
 
+	/**
+	 * Vanilla block placement without NeoForge BlockSnapshot/event posting.
+	 * Sign data is preserved across the setBlockAndUpdate call when replacing a sign block.
+	 */
 	private static boolean partiallyCheckedPlaceBlock(Player player, Level level, BlockPos pos, BlockState state) {
 		SignBlockEntity oldSign = null;
 		if (state.getBlock() instanceof SignBlock && level.getBlockEntity(pos) instanceof SignBlockEntity sign) {
 			oldSign = sign;
 		}
-		level.captureBlockSnapshots = true;
 		level.setBlockAndUpdate(pos, state);
-		level.captureBlockSnapshots = false;
 
-		@SuppressWarnings("unchecked")
-		List<BlockSnapshot> blockSnapshots = (List<BlockSnapshot>) level.capturedBlockSnapshots.clone();
-		level.capturedBlockSnapshots.clear();
-
-		boolean eventResult = false;
-		if (blockSnapshots.size() > 1) {
-			eventResult = NeoForge.EVENT_BUS.post(new EntityMultiPlaceEvent(blockSnapshots, Blocks.AIR.defaultBlockState(), player)).isCanceled();
-		} else if (blockSnapshots.size() == 1) {
-			eventResult = NeoForge.EVENT_BUS.post(new BlockEvent.EntityPlaceEvent(blockSnapshots.getFirst(), Blocks.AIR.defaultBlockState(), player)).isCanceled();
+		// Handle sign data copy if replacing a sign with another sign
+		if (oldSign != null && level.getBlockEntity(pos) instanceof SignBlockEntity newSign) {
+			WorldHelper.copySignData(level, pos, newSign);
 		}
-
-		if (eventResult) {
-			level.restoringBlockSnapshots = true;
-			for (BlockSnapshot snapshot : blockSnapshots.reversed()) {
-				snapshot.restore(snapshot.getFlags() | Block.UPDATE_CLIENTS);
-			}
-			level.restoringBlockSnapshots = false;
-		} else {
-			//Place all the blocks into the world and sync them to the client
-			for (BlockSnapshot snap : blockSnapshots) {
-				BlockState oldBlock = snap.getState();
-				BlockPos snapPos = snap.getPos();
-				BlockState newBlock = level.getBlockState(snapPos);
-				newBlock.onPlace(level, snapPos, oldBlock, false);
-				level.markAndNotifyBlock(snapPos, level.getChunkAt(snapPos), oldBlock, newBlock, snap.getFlags(), Block.UPDATE_LIMIT);
-				if (oldSign != null && snapPos.equals(pos) && newBlock.hasBlockEntity()) {
-					WorldHelper.copySignData(level, pos, oldSign);
-				}
-			}
-		}
-		level.capturedBlockSnapshots.clear();
-		return !eventResult;
+		return true;
 	}
 
 	public static boolean checkedReplaceBlock(ServerPlayer player, Level level, BlockPos pos, BlockState state) {
@@ -126,7 +94,7 @@ public final class PlayerHelper {
 		if (!offhand.isEmpty() && checker.test(player, offhand)) {
 			return true;
 		}
-		IItemHandler curios = player.getCapability(IntegrationHelper.CURIO_ITEM_HANDLER);
+		IItemHandler curios = IntegrationHelper.getCuriosInventory(player);
 		if (curios != null) {
 			for (int i = 0, slots = curios.getSlots(); i < slots; i++) {
 				ItemStack stack = curios.getStackInSlot(i);
@@ -154,8 +122,14 @@ public final class PlayerHelper {
 		return hasEditPermission(player, level, pos) && checkBreakPermission(player, level, pos);
 	}
 
+	/**
+	 * Vanilla replacement for NeoForge CommonHooks.fireBlockBreak.
+	 * Checks adventure-mode block action restriction via vanilla API.
+	 * Note: Does NOT fire a cancellable BlockEvent.BreakEvent — Fabric mods should use
+	 * {@code PlayerBlockBreakEvents.BEFORE} to veto breaks on their own.
+	 */
 	public static boolean checkBreakPermission(ServerPlayer player, Level level, BlockPos pos) {
-		return !CommonHooks.fireBlockBreak(level, player.gameMode.getGameModeForPlayer(), player, pos, level.getBlockState(pos)).isCanceled();
+		return !player.blockActionRestricted(level, pos, player.gameMode.getGameModeForPlayer());
 	}
 
 	public static boolean hasEditPermission(Player player, Level level, BlockPos pos) {
