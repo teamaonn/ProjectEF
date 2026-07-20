@@ -81,7 +81,7 @@ public class PECoreClient implements ClientModInitializer {
 
 		//Left clicking into empty air with the archangel smite fires a volley, handled server side through the existing packet
 		ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
-			if (clickCount > 0 && player.getMainHandItem().is(PEItems.ARCHANGEL_SMITE)
+			if (clickCount > 0 && player.getMainHandItem().is(PEItems.ARCHANGEL_SMITE.get())
 				&& (client.hitResult == null || client.hitResult.getType() == HitResult.Type.MISS)) {
 				PECore.packetHandler().activateArchangel();
 			}

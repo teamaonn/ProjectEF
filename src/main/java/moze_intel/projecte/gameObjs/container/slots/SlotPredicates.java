@@ -4,10 +4,11 @@ import java.util.function.Predicate;
 import moze_intel.projecte.api.capabilities.PECapabilities;
 import moze_intel.projecte.api.proxy.IEMCProxy;
 import moze_intel.projecte.emc.FuelMapper;
+import moze_intel.projecte.gameObjs.registries.PEBlocks;
+import moze_intel.projecte.gameObjs.registries.PEItems;
 import moze_intel.projecte.utils.ItemHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class SlotPredicates {
@@ -27,7 +28,10 @@ public final class SlotPredicates {
 	// slotrelayinput
 	public static final Predicate<ItemStack> RELAY_INV = input -> EMC_HOLDER.test(input) || HAS_EMC.test(input);
 
-	public static final Predicate<ItemStack> FURNACE_FUEL = input -> EMC_HOLDER.test(input) || AbstractFurnaceBlockEntity.isFuel(input);
+	public static final Predicate<ItemStack> FURNACE_FUEL = input -> EMC_HOLDER.test(input) ||
+			input.is(PEItems.ALCHEMICAL_COAL.get()) || input.is(PEBlocks.ALCHEMICAL_COAL.asItem()) ||
+			input.is(PEItems.MOBIUS_FUEL.get()) || input.is(PEBlocks.MOBIUS_FUEL.asItem()) ||
+			input.is(PEItems.AETERNALIS_FUEL.get()) || input.is(PEBlocks.AETERNALIS_FUEL.asItem());
 
 	public static final Predicate<ItemStack> MERCURIAL_TARGET = input -> {
 		if (input.isEmpty()) {

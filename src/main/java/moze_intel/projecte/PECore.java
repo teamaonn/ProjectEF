@@ -14,6 +14,7 @@ import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.emc.EMCMappingHandler;
 import moze_intel.projecte.emc.FuelMapper;
 import moze_intel.projecte.events.PlayerEvents;
+import moze_intel.projecte.gameObjs.items.PhilosophersStone;
 import moze_intel.projecte.gameObjs.items.rings.Arcana.ArcanaMode;
 import moze_intel.projecte.gameObjs.registries.PEArmorMaterials;
 import moze_intel.projecte.gameObjs.registries.PEAttachmentTypes;
@@ -50,9 +51,11 @@ import moze_intel.projecte.utils.WorldHelper;
 import moze_intel.projecte.world_transmutation.WorldTransmutationManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
@@ -76,7 +79,9 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
@@ -178,12 +183,23 @@ public class PECore implements ModInitializer {
 				emcUpdateResourceManager = new EmcUpdateData(resourceManager);
 			}
 		});
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(WorldTransmutationManager.INSTANCE);
 
 		ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register(this::dataPackSync);
 		ServerLifecycleEvents.SERVER_STARTING.register(this::serverStarting);
 		ServerLifecycleEvents.SERVER_STOPPED.register(this::serverQuit);
 		CommandRegistrationCallback.EVENT.register(this::registerCommands);
 		PlayerEvents.register();
+		UseBlockCallback.EVENT.register((player, level, hand, hitResult) -> {
+			if (player.isSpectator()) {
+				return InteractionResult.PASS;
+			}
+			ItemStack stack = player.getItemInHand(hand);
+			if (stack.getItem() instanceof PhilosophersStone stone) {
+				return stone.useOn(new UseOnContext(player, hand, hitResult));
+			}
+			return InteractionResult.PASS;
+		});
 
 		IntegrationHelper.init();
 
@@ -196,6 +212,7 @@ public class PECore implements ModInitializer {
 	}
 
 	private void commonSetup() {
+		registerFurnaceFuels();
 		new ThreadCheckUpdate().start();
 		EMCMappingHandler.loadMappers();
 
@@ -258,11 +275,25 @@ public class PECore implements ModInitializer {
 		});
 	}
 
+	private static void registerFurnaceFuels() {
+		//Keep the burn times from the former NeoForge furnace fuel data map.
+		int alchemicalCoal = 1_600 * 4;
+		int mobiusFuel = alchemicalCoal * 4;
+		int aeternalisFuel = mobiusFuel * 4;
+		FuelRegistry fuels = FuelRegistry.INSTANCE;
+		fuels.add(PEItems.ALCHEMICAL_COAL.get(), alchemicalCoal);
+		fuels.add(PEBlocks.ALCHEMICAL_COAL.asItem(), alchemicalCoal * 9);
+		fuels.add(PEItems.MOBIUS_FUEL.get(), mobiusFuel);
+		fuels.add(PEBlocks.MOBIUS_FUEL.asItem(), mobiusFuel * 9);
+		fuels.add(PEItems.AETERNALIS_FUEL.get(), aeternalisFuel);
+		fuels.add(PEBlocks.AETERNALIS_FUEL.asItem(), aeternalisFuel * 9);
+	}
+
 	private static boolean canDispenseIgnite(ItemStack stack) {
-		if (stack.is(PEItems.IGNITION_RING)) {
+		if (stack.is(PEItems.IGNITION_RING.get())) {
 			return true;
 		}
-		return stack.is(PEItems.ARCANA_RING) && stack.getOrDefault(PEDataComponentTypes.ARCANA_MODE.get(), ArcanaMode.ZERO) == ArcanaMode.IGNITION;
+		return stack.is(PEItems.ARCANA_RING.get()) && stack.getOrDefault(PEDataComponentTypes.ARCANA_MODE.get(), ArcanaMode.ZERO) == ArcanaMode.IGNITION;
 	}
 
 	private static void registerDispenseBehavior(DispenseItemBehavior behavior, ItemLike... items) {

@@ -186,7 +186,10 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 				}
 			} else {
 				int selected = player.getInventory().selected;
-				player.openMenu(new ContainerProvider(hand, selected));
+				OpenScreenHelper.openMenuWithData(player, new ContainerProvider(hand, selected), buf -> {
+					buf.writeEnum(hand);
+					buf.writeByte(selected);
+				});
 			}
 		}
 		return InteractionResultHolder.success(stack);

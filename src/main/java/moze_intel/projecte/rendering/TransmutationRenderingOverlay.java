@@ -88,7 +88,7 @@ public class TransmutationRenderingOverlay {
 		if (stack.isEmpty()) {
 			stack = player.getOffhandItem();
 		}
-		if (stack.isEmpty() || !stack.is(PEItems.PHILOSOPHERS_STONE)) {
+		if (stack.isEmpty() || !stack.is(PEItems.PHILOSOPHERS_STONE.get())) {
 			transmutationResult = null;
 			return true;
 		}
