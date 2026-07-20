@@ -1,7 +1,7 @@
 package moze_intel.projecte.network.commands.client;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,9 +16,13 @@ import moze_intel.projecte.gameObjs.PETags;
 import moze_intel.projecte.gameObjs.items.Tome;
 import moze_intel.projecte.integration.IntegrationHelper;
 import moze_intel.projecte.utils.text.PELang;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
@@ -35,16 +39,24 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.common.Tags;
 
 public class DumpMissingEmc {
 
 	private static final boolean SKIP_TOP = Boolean.parseBoolean(System.getProperties().getProperty("projecte.skip_top"));
 
-	public static ArgumentBuilder<CommandSourceStack, ?> register(CommandBuildContext context) {
-		return Commands.literal("dumpmissingemc")
-				.then(Commands.argument("skip_expected", BoolArgumentType.bool())
+	/**
+	 * Registers the client-side "/projecte dumpmissingemc" command.
+	 * Called by the client mod initializer (PECoreClient). Uses Fabric's client command API
+	 * (FabricClientCommandSource) instead of the server-side CommandSourceStack.
+	 */
+	public static void registerClientCommand() {
+		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+				dispatcher.register(ClientCommandManager.literal("projecte").then(buildCommand())));
+	}
+
+	private static LiteralArgumentBuilder<FabricClientCommandSource> buildCommand() {
+		return ClientCommandManager.literal("dumpmissingemc")
+				.then(ClientCommandManager.argument("skip_expected", BoolArgumentType.bool())
 						.executes(ctx -> execute(ctx, BoolArgumentType.getBool(ctx, "skip_expected")))
 				).executes(ctx -> execute(ctx, false));
 	}
@@ -62,19 +74,19 @@ public class DumpMissingEmc {
 			default -> false;
 		}) {
 			return true;
-		} else if (!FMLEnvironment.production && SKIP_TOP &&
-				   holder.unwrapKey().map(key -> key.location().getNamespace().equals(IntegrationHelper.TOP_MODID)).orElse(false)) {
+		} else if (FabricLoader.getInstance().isDevelopmentEnvironment() && SKIP_TOP &&
+				   holder.unwrapKey().map(key -> key.location().getNamespace().equals("theoneprobe")).orElse(false)) {
 			//Skip TOP items in dev
 			return true;
 		}
 		if (MappingConfig.isEnabled(OreBlacklistMapper.INSTANCE)) {
-			if (holder.is(Tags.Items.ORES) || holder.value() == Items.GILDED_BLACKSTONE) {
+			if (holder.is(ConventionalItemTags.ORES) || holder.value() == Items.GILDED_BLACKSTONE) {
 				return true;
 			}
 		}
 		if (MappingConfig.isEnabled(RawMaterialsBlacklistMapper.INSTANCE)) {
-			if (holder.is(Tags.Items.RAW_MATERIALS) || holder.is(Tags.Items.STORAGE_BLOCKS_RAW_COPPER) ||
-				holder.is(Tags.Items.STORAGE_BLOCKS_RAW_IRON) || holder.is(Tags.Items.STORAGE_BLOCKS_RAW_GOLD)) {
+			if (holder.is(ConventionalItemTags.RAW_MATERIALS) || holder.is(ConventionalItemTags.STORAGE_BLOCKS_RAW_COPPER) ||
+				holder.is(ConventionalItemTags.STORAGE_BLOCKS_RAW_IRON) || holder.is(ConventionalItemTags.STORAGE_BLOCKS_RAW_GOLD)) {
 				return true;
 			}
 		}
@@ -82,19 +94,19 @@ public class DumpMissingEmc {
 		return potionContents != null && potionContents.potion().isPresent() && potionContents.potion().get().is(PETags.Potions.IGNORE_MISSING_EMC);
 	}
 
-	private static int execute(CommandContext<CommandSourceStack> ctx, boolean skipExpectedMissing) {
-		CommandSourceStack source = ctx.getSource();
+	private static int execute(CommandContext<FabricClientCommandSource> ctx, boolean skipExpectedMissing) {
+		FabricClientCommandSource source = ctx.getSource();
 		RegistryAccess registryAccess = source.registryAccess();
-		Minecraft minecraft = Minecraft.getInstance();
-		//TODO - 1.21.4: Make use of https://github.com/neoforged/NeoForge/pull/1928
+		Minecraft minecraft = source.getClient();
 		FeatureFlagSet features = minecraft.getConnection() == null ? FeatureFlags.DEFAULT_FLAGS : minecraft.getConnection().enabledFeatures();
-		CreativeModeTab tab = registryAccess.holderOrThrow(CreativeModeTabs.SEARCH).value();
-		if (tab.getSearchTabDisplayItems().isEmpty()) {
+		CreativeModeTab tab = registryAccess.registryOrThrow(net.minecraft.core.registries.Registries.CREATIVE_MODE_TAB).get(CreativeModeTabs.SEARCH);
+		if (tab == null || tab.getSearchTabDisplayItems().isEmpty()) {
 			//If the search tab hasn't been initialized yet initialize it
 			boolean hasPermissions = minecraft.options.operatorItemsTab().get();
 			if (!hasPermissions) {
-				if (minecraft.player != null) {
-					hasPermissions = minecraft.player.canUseGameMasterBlocks();
+				LocalPlayer player = source.getPlayer();
+				if (player != null) {
+					hasPermissions = player.canUseGameMasterBlocks();
 				} else {
 					hasPermissions = source.hasPermission(Commands.LEVEL_GAMEMASTERS);
 				}
@@ -125,7 +137,7 @@ public class DumpMissingEmc {
 		}
 		//Check all items in the search tab to see if they have an EMC value (as they may have data component variants declared)
 		for (ItemStack stack : tab.getSearchTabDisplayItems()) {
-			if (!stack.isEmpty() && !stack.isComponentsPatchEmpty()) {
+			if (!stack.isEmpty() && !stack.getComponentsPatch().isEmpty()) {
 				//If the stack is not empty, and it has non defaulted components: see if any of the added variants have EMC
 				ItemInfo itemInfo = ItemInfo.fromStack(stack);
 				if (IEMCProxy.INSTANCE.hasValue(itemInfo)) {
@@ -139,12 +151,12 @@ public class DumpMissingEmc {
 		}
 		int missingCount = missing.size();
 		if (missingCount == 0) {
-			source.sendSuccess(PELang.DUMP_MISSING_EMC_NONE_MISSING::translate, true);
+			source.sendFeedback(PELang.DUMP_MISSING_EMC_NONE_MISSING.translate());
 		} else {
 			if (missingCount == 1) {
-				source.sendSuccess(PELang.DUMP_MISSING_EMC_ONE_MISSING::translate, true);
+				source.sendFeedback(PELang.DUMP_MISSING_EMC_ONE_MISSING.translate());
 			} else {
-				source.sendSuccess(() -> PELang.DUMP_MISSING_EMC_MULTIPLE_MISSING.translate(missingCount), true);
+				source.sendFeedback(PELang.DUMP_MISSING_EMC_MULTIPLE_MISSING.translate(missingCount));
 			}
 			missing.stream()
 					.map(ItemInfo::toString)

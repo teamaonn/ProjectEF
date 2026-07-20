@@ -15,7 +15,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record KnowledgeSyncInputsAndLocksPKT(Int2ObjectMap<ItemStack> stacksToSync, TargetUpdateType updateTargets) implements IPEPacket {
@@ -34,9 +34,9 @@ public record KnowledgeSyncInputsAndLocksPKT(Int2ObjectMap<ItemStack> stacksToSy
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		Player player = context.player();
-		IKnowledgeProvider knowledge = player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY);
+		IKnowledgeProvider knowledge = PECapabilities.KNOWLEDGE_CAPABILITY.find(player);
 		if (knowledge != null) {
 			knowledge.receiveInputsAndLocks(stacksToSync);
 			if (updateTargets != TargetUpdateType.NONE && player.containerMenu instanceof TransmutationContainer container) {

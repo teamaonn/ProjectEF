@@ -11,7 +11,7 @@ import moze_intel.projecte.network.packets.IPEPacket;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record KnowledgeSyncEmcPKT(BigInteger emc) implements IPEPacket {
@@ -28,9 +28,9 @@ public record KnowledgeSyncEmcPKT(BigInteger emc) implements IPEPacket {
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		Player player = context.player();
-		IKnowledgeProvider knowledge = player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY);
+		IKnowledgeProvider knowledge = PECapabilities.KNOWLEDGE_CAPABILITY.find(player);
 		if (knowledge != null) {
 			knowledge.setEmc(emc);
 			if (player.containerMenu instanceof TransmutationContainer container) {

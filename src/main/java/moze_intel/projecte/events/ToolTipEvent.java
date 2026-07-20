@@ -16,26 +16,21 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-@EventBusSubscriber(modid = PECore.MODID, value = Dist.CLIENT)
 public class ToolTipEvent {
 
-	@SubscribeEvent
-	public static void tTipEvent(ItemTooltipEvent event) {
-		ItemStack current = event.getItemStack();
+	/**
+	 * Called from the tooltip callback registered on the client mod initializer.
+	 */
+	public static void onTooltip(List<Component> tooltip, ItemStack current, Player player, boolean shiftDown) {
 		if (current.isEmpty()) {
 			return;
 		}
-		List<Component> tooltip = event.getToolTip();
 		if (ProjectEConfig.client.pedestalToolTips.get()) {
-			IPedestalItem pedestalItem = current.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY);
+			IPedestalItem pedestalItem = PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(current);
 			if (pedestalItem != null) {
 				tooltip.add(PELang.PEDESTAL_ON.translateColored(ChatFormatting.DARK_PURPLE));
-				List<Component> description = pedestalItem.getPedestalDescription(event.getContext().tickRate());
+				List<Component> description = pedestalItem.getPedestalDescription(player == null || player.level() == null ? 20 : player.level().tickRateManager().tickrate());
 				if (description.isEmpty()) {
 					tooltip.add(PELang.PEDESTAL_DISABLED.translateColored(ChatFormatting.RED));
 				} else {
@@ -48,16 +43,15 @@ public class ToolTipEvent {
 			current.getTags().forEach(tag -> tooltip.add(Component.literal("#" + tag.location())));
 		}
 
-		if (ProjectEConfig.client.emcToolTips.get() && (!ProjectEConfig.client.shiftEmcToolTips.get() || Screen.hasShiftDown())) {
+		if (ProjectEConfig.client.emcToolTips.get() && (!ProjectEConfig.client.shiftEmcToolTips.get() || shiftDown)) {
 			long value = IEMCProxy.INSTANCE.getValue(current);
 			if (value > 0) {
 				tooltip.add(EMCHelper.getEmcTextComponent(value, 1));
 				if (current.getCount() > 1) {
 					tooltip.add(EMCHelper.getEmcTextComponent(value, current.getCount()));
 				}
-				Player player = event.getEntity();
-				if (player != null && (!ProjectEConfig.client.shiftLearnedToolTips.get() || Screen.hasShiftDown())) {
-					IKnowledgeProvider knowledgeProvider = player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY);
+				if (player != null && (!ProjectEConfig.client.shiftLearnedToolTips.get() || shiftDown)) {
+					IKnowledgeProvider knowledgeProvider = PECapabilities.KNOWLEDGE_CAPABILITY.find(player);
 					if (knowledgeProvider != null && knowledgeProvider.hasKnowledge(current)) {
 						tooltip.add(PELang.EMC_HAS_KNOWLEDGE.translateColored(ChatFormatting.YELLOW));
 					} else {
@@ -67,9 +61,9 @@ public class ToolTipEvent {
 			}
 		}
 
-		long value = current.getOrDefault(PEDataComponentTypes.STORED_EMC, 0L);
+		long value = current.getOrDefault(PEDataComponentTypes.STORED_EMC.get(), 0L);
 		if (value == 0) {
-			IItemEmcHolder emcHolder = current.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(current);
 			if (emcHolder != null) {
 				value = emcHolder.getStoredEmc(current);
 			}

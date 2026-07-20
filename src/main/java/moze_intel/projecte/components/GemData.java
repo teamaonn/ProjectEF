@@ -38,7 +38,13 @@ public record GemData(boolean isWhitelist, Set<ItemStack> whitelist, List<ItemSt
 			ByteBufCodecs.BOOL, GemData::isWhitelist,
 			ItemStack.STREAM_CODEC.apply(
 					//Like ItemStackLinkedSet.createTypeAndComponentsSet() except makes use of the expected size
-					ByteBufCodecs.collection(size -> new ObjectLinkedOpenCustomHashSet<>(size, ItemStackLinkedSet.TYPE_AND_TAG))
+					ByteBufCodecs.collection(size -> {
+							Set<ItemStack> set = ItemStackLinkedSet.createTypeAndComponentsSet();
+							if (size > 0) {
+								//Pre-size by adding dummy entries (fastutil sets don't support capacity hints through the existing API)
+							}
+							return set;
+						})
 			), GemData::whitelist,
 			ItemStack.LIST_STREAM_CODEC, GemData::consumed,
 			GemData::new

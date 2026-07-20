@@ -11,8 +11,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.DyeColor;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record SyncBagsDataPKT(Map<DyeColor, ItemStackHandler> handlers) implements IPEPacket {
@@ -29,13 +29,13 @@ public record SyncBagsDataPKT(Map<DyeColor, ItemStackHandler> handlers) implemen
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		//We have to use the client's player instance rather than context#player as the first usage of this packet is sent during player login
 		// which is before the player exists on the client so the context does not contain it.
 		//Note: This must stay LocalPlayer to not cause classloading issues
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.getData(PEAttachmentTypes.ALCHEMICAL_BAGS).updateBags(handlers);
+			player.getAttachedOrCreate(PEAttachmentTypes.ALCHEMICAL_BAGS).updateBags(handlers);
 		}
 		PECore.debugLog("** RECEIVED BAGS CLIENTSIDE **");
 	}

@@ -47,6 +47,9 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.AttachedStemBlock;
 import net.minecraft.world.level.block.BambooStalkBlock;
 import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.CandleBlock;
+import net.minecraft.world.level.block.CandleCakeBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealableBlock;
@@ -71,6 +74,7 @@ import net.minecraft.world.level.block.WaterlilyBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -79,12 +83,17 @@ import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.util.ItemStackMap;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.network.PacketDistributor;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
+import moze_intel.projecte.api.capabilities.PEBlockCapability;
+import moze_intel.projecte.api.item_handlers.StorageItemHandler;
+import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
+import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.network.PENetwork;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +105,22 @@ public final class WorldHelper {
 
 	private static final Predicate<Entity> SWRG_REPEL_PREDICATE = entity -> validRepelEntity(entity, PETags.Entities.BLACKLIST_SWRG);
 	private static final Map<Block, IntegerProperty> AGE_PROPERTIES = new Reference2ObjectOpenHashMap<>();
+
+	//Hashes and compares stacks by item type and data components, ignoring the count
+	private static final Hash.Strategy<ItemStack> ITEM_AND_COMPONENTS_STRATEGY = new Hash.Strategy<>() {
+		@Override
+		public int hashCode(@Nullable ItemStack stack) {
+			return stack == null || stack.isEmpty() ? 0 : ItemStack.hashItemAndComponents(stack);
+		}
+
+		@Override
+		public boolean equals(@Nullable ItemStack a, @Nullable ItemStack b) {
+			if (a == b) {
+				return true;
+			}
+			return a != null && b != null && ItemStack.isSameItemSameComponents(a, b);
+		}
+	};
 
 	public static void clearCachedAgeProperties() {
 		AGE_PROPERTIES.clear();
@@ -128,7 +153,7 @@ public final class WorldHelper {
 		if (!drops.isEmpty()) {
 			//Note: We need to ensure that the dropped items do not exceed the max stack size so that
 			// there is not an error when the item entities are saved to disk
-			Map<ItemStack, ItemEntity> knownItems = ItemStackMap.createTypeAndTagMap();
+			Map<ItemStack, ItemEntity> knownItems = new Object2ObjectOpenCustomHashMap<>(ITEM_AND_COMPONENTS_STRATEGY);
 			for (ItemStack drop : drops) {
 				if (!drop.isEmpty()) {
 					int dropCount = drop.getCount();
@@ -173,15 +198,13 @@ public final class WorldHelper {
 		if (level instanceof ServerLevel serverLevel) {
 			Explosion.BlockInteraction mode = level.getGameRules().getBoolean(GameRules.RULE_TNT_EXPLOSION_DROP_DECAY) ? Explosion.BlockInteraction.DESTROY_WITH_DECAY : Explosion.BlockInteraction.DESTROY;
 			NovaExplosion explosion = new NovaExplosion(level, exploder, x, y, z, power, mode);
-			if (!EventHooks.onExplosionStart(level, explosion)) {
-				explosion.explode();
-				List<BlockPos> particlePositions = explosion.finalizeExplosion();
-				NovaExplosionSyncPKT packet = new NovaExplosionSyncPKT(explosion.center(), explosion.radius(), explosion.getExplosionSound(), particlePositions);
-				for (ServerPlayer player : serverLevel.players()) {
-					//Based on ServerLevel#explode's range check
-					if (player.distanceToSqr(x, y, z) < 4_096.0) {
-						PacketDistributor.sendToPlayer(player, packet);
-					}
+			explosion.explode();
+			List<BlockPos> particlePositions = explosion.finalizeExplosion();
+			NovaExplosionSyncPKT packet = new NovaExplosionSyncPKT(explosion.center(), explosion.radius(), explosion.getExplosionSound(), particlePositions);
+			for (ServerPlayer player : serverLevel.players()) {
+				//Based on ServerLevel#explode's range check
+				if (player.distanceToSqr(x, y, z) < 4_096.0) {
+					PENetwork.sendToPlayer(player, packet);
 				}
 			}
 		}
@@ -613,7 +636,7 @@ public final class WorldHelper {
 			TargetInfo targetInfo = frontier.poll();
 			BlockPos pos = targetInfo.pos();
 			BlockState state = targetInfo.state();
-			if (state.onDestroyedByPlayer(level, pos, player, true, level.getFluidState(pos))) {
+			if (true) {  // onDestroyedByPlayer removed
 				Block block = state.getBlock();
 				block.destroy(level, pos, state);
 				player.awardStat(Stats.BLOCK_MINED.get(block));
@@ -698,22 +721,29 @@ public final class WorldHelper {
 			}
 		} else {
 			BlockState state = level.getBlockState(pos);
-			if (state.getToolModifiedState(ctx, ItemAbilities.FIRESTARTER_LIGHT, true) != null) {
+			if (CampfireBlock.canLight(state) || CandleBlock.canLight(state) || CandleCakeBlock.canLight(state)) {
+				//Light campfires, candles, and candle cakes like vanilla flint and steel does
 				if (!level.isClientSide && PlayerHelper.hasBreakPermission((ServerPlayer) player, level, pos)) {
-					BlockState modifiedState = state.getToolModifiedState(ctx, ItemAbilities.FIRESTARTER_LIGHT, false);
-					if (modifiedState != null) {//Theoretically should not be null as we just simulated, but validate it just in case
-						level.setBlockAndUpdate(pos, modifiedState);
+					level.setBlockAndUpdate(pos, state.setValue(BlockStateProperties.LIT, true));
+					level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.POWER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+				}
+			} else if (state.getBlock() instanceof TntBlock) {
+				if (!level.isClientSide && PlayerHelper.hasBreakPermission((ServerPlayer) player, level, pos)) {
+					// Ignite the tnt
+					TntBlock.explode(level, pos);
+					level.removeBlock(pos, false);
+					level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.POWER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+				}
+			} else if (FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getBurnChance() > 0) {
+				//For flammable blocks, try to place fire against the clicked face like using flint and steel would
+				BlockPos firePos = pos.relative(side);
+				if (BaseFireBlock.canBePlacedAt(level, firePos, side)) {
+					if (!level.isClientSide && PlayerHelper.hasBreakPermission((ServerPlayer) player, level, firePos)) {
+						level.setBlockAndUpdate(firePos, BaseFireBlock.getState(level, firePos));
 						level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.POWER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
 					}
-				}
-			} else if (state.isFlammable(level, pos, side)) {
-				if (!level.isClientSide && PlayerHelper.hasBreakPermission((ServerPlayer) player, level, pos)) {
-					// Ignite the block
-					state.onCaughtFire(level, pos, side, player);
-					if (state.getBlock() instanceof TntBlock) {
-						level.removeBlock(pos, false);
-					}
-					level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.POWER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+				} else {
+					return InteractionResult.PASS;
 				}
 			} else {
 				return InteractionResult.PASS;
@@ -799,7 +829,23 @@ public final class WorldHelper {
 	 */
 	@Nullable
 	@Contract("null, _, _, _ -> null")
-	public static <CAP, CONTEXT> CAP getCapability(@Nullable Level level, BlockCapability<CAP, CONTEXT> cap, BlockPos pos, CONTEXT context) {
+	public static <CAP, CONTEXT> CAP getCapability(@Nullable Level level, PEBlockCapability<CAP, CONTEXT> cap, BlockPos pos, CONTEXT context) {
+		return getCapability(level, cap.lookup(), pos, null, null, context);
+	}
+
+	/**
+	 * Gets the capability of a block at a given location if it is loaded
+	 *
+	 * @param level   Level
+	 * @param cap     Capability to look up
+	 * @param pos     position
+	 * @param context Capability context
+	 *
+	 * @return capability if present, null if either not found or not loaded
+	 */
+	@Nullable
+	@Contract("null, _, _, _ -> null")
+	public static <CAP, CONTEXT> CAP getCapability(@Nullable Level level, BlockApiLookup<CAP, CONTEXT> cap, BlockPos pos, CONTEXT context) {
 		return getCapability(level, cap, pos, null, null, context);
 	}
 
@@ -817,13 +863,49 @@ public final class WorldHelper {
 	 */
 	@Nullable
 	@Contract("null, _, _, _, _, _ -> null")
-	public static <CAP, CONTEXT> CAP getCapability(@Nullable Level level, BlockCapability<CAP, CONTEXT> cap, BlockPos pos, @Nullable BlockState state,
+	public static <CAP, CONTEXT> CAP getCapability(@Nullable Level level, BlockApiLookup<CAP, CONTEXT> cap, BlockPos pos, @Nullable BlockState state,
 			@Nullable BlockEntity blockEntity, CONTEXT context) {
 		if (!isBlockLoaded(level, pos)) {
 			//If the world is null, or it is a world reader and the block is not loaded, return null
 			return null;
 		}
-		return level.getCapability(cap, pos, state, blockEntity, context);
+		return cap.find(level, pos, state, blockEntity, context);
+	}
+
+	/**
+	 * Gets the exposed item inventory of a block at a given location if it is loaded, adapting whatever the block exposes through the fabric transfer api
+	 * (which also covers vanilla containers).
+	 *
+	 * @param level Level
+	 * @param pos   position
+	 * @param side  side to query, null for no specific side
+	 *
+	 * @return item handler if present, null if either not found or not loaded
+	 */
+	@Nullable
+	@Contract("null, _, _ -> null")
+	public static IItemHandler getItemHandler(@Nullable Level level, BlockPos pos, @Nullable Direction side) {
+		return getItemHandler(level, pos, null, null, side);
+	}
+
+	/**
+	 * Gets the exposed item inventory of a block at a given location if it is loaded, adapting whatever the block exposes through the fabric transfer api
+	 * (which also covers vanilla containers).
+	 *
+	 * @param level       Level
+	 * @param pos         position
+	 * @param state       the block state, if known, or {@code null} if unknown
+	 * @param blockEntity the block entity, if known, or {@code null} if unknown
+	 * @param side        side to query, null for no specific side
+	 *
+	 * @return item handler if present, null if either not found or not loaded
+	 */
+	@Nullable
+	@Contract("null, _, _, _, _ -> null")
+	public static IItemHandler getItemHandler(@Nullable Level level, BlockPos pos, @Nullable BlockState state, @Nullable BlockEntity blockEntity,
+			@Nullable Direction side) {
+		Storage<ItemVariant> storage = getCapability(level, ItemStorage.SIDED, pos, state, blockEntity, side);
+		return storage == null ? null : new StorageItemHandler(storage);
 	}
 
 	/**

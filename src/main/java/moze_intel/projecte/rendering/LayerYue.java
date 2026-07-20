@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.neoforged.fml.loading.FMLEnvironment;
+import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.NotNull;
 
 public class LayerYue extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
@@ -33,7 +33,7 @@ public class LayerYue extends RenderLayer<AbstractClientPlayer, PlayerModel<Abst
 		if (player.isInvisible()) {
 			return;
 		}
-		if (!FMLEnvironment.production || SIN_UUID.equals(player.getUUID()) || CLAR_UUID.equals(player.getUUID())) {
+		if (FabricLoader.getInstance().isDevelopmentEnvironment() || SIN_UUID.equals(player.getUUID()) || CLAR_UUID.equals(player.getUUID())) {
 			matrix.pushPose();
 			getParentModel().body.translateAndRotate(matrix);
 			double yShift = -0.498;

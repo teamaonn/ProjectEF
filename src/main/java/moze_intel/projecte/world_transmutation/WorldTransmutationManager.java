@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMaps;
@@ -14,7 +15,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.SequencedSet;
 import java.util.function.Function;
 import moze_intel.projecte.PECore;
@@ -24,14 +24,12 @@ import moze_intel.projecte.api.world_transmutation.SimpleWorldTransmutation;
 import moze_intel.projecte.api.world_transmutation.WorldTransmutation;
 import moze_intel.projecte.api.world_transmutation.WorldTransmutationFile;
 import moze_intel.projecte.network.packets.to_client.SyncWorldTransmutations;
-import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.conditions.WithConditions;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,28 +62,25 @@ public class WorldTransmutationManager extends SimpleJsonResourceReloadListener 
 
 	@Override
 	protected void apply(@NotNull Map<ResourceLocation, JsonElement> object, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller profiler) {
-		//Ensure we are interacting with the condition context
-		RegistryOps<JsonElement> registryOps = makeConditionalOps();
+		// Fabric resource-conditions-api-v1 handles load conditions at the loader layer (mixin on
+		// SimpleJsonResourceReloadListener) — entries whose "fabric:load_conditions" are not met
+		// are excluded before they reach this method. So we decode directly with CODEC.
 		Reference2ObjectMap<Block, SequencedSet<IWorldTransmutation>> builder = new Reference2ObjectLinkedOpenHashMap<>();
 
 		// Find all data/<domain>/pe_world_transmutations/foo/bar.json
 		for (Entry<ResourceLocation, JsonElement> entry : object.entrySet()) {
 			ResourceLocation file = entry.getKey();//<domain>:foo/bar
-			DataResult<Optional<WithConditions<WorldTransmutationFile>>> result = WorldTransmutationFile.CONDITIONAL_CODEC.parse(registryOps, entry.getValue());
+			DataResult<WorldTransmutationFile> result = WorldTransmutationFile.CODEC.parse(JsonOps.INSTANCE, entry.getValue());
 			if (result.isSuccess()) {
-				Optional<WithConditions<WorldTransmutationFile>> decoded = result.getOrThrow();
-				if (decoded.isPresent()) {
-					for (IWorldTransmutation transmutation : decoded.get().carrier().transmutations()) {
-						SequencedSet<IWorldTransmutation> transmutations = builder.computeIfAbsent(transmutation.origin().value(), SET_BUILDER);
-						if (transmutations.add(transmutation)) {
-							PECore.debugLog("World Transmutation File: '{}' registered {}", file, transmutation);
-						} else {
-							PECore.debugLog("World Transmutation File: '{}' registered {}. Skipped as it was identical to an already registered transmutation",
-									file, transmutation);
-						}
+				WorldTransmutationFile decoded = result.getOrThrow();
+				for (IWorldTransmutation transmutation : decoded.transmutations()) {
+					SequencedSet<IWorldTransmutation> transmutations = builder.computeIfAbsent(transmutation.origin().value(), SET_BUILDER);
+					if (transmutations.add(transmutation)) {
+						PECore.debugLog("World Transmutation File: '{}' registered {}", file, transmutation);
+					} else {
+						PECore.debugLog("World Transmutation File: '{}' registered {}. Skipped as it was identical to an already registered transmutation",
+								file, transmutation);
 					}
-				} else {
-					PECore.debugLog("Skipping loading world transmutation file {} as its conditions were not met", file);
 				}
 			} else {
 				result.ifError(error -> PECore.LOGGER.error("Parsing error loading world transmutation file {}: {}", file, error.message()));

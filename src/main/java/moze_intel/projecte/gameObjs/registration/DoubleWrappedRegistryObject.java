@@ -1,15 +1,14 @@
 package moze_intel.projecte.gameObjs.registration;
 
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleWrappedRegistryObject<PRIMARY_REGISTRY, PRIMARY extends PRIMARY_REGISTRY, SECONDARY_REGISTRY, SECONDARY extends SECONDARY_REGISTRY> implements INamedEntry {
 
-	protected final DeferredHolder<PRIMARY_REGISTRY, PRIMARY> primaryRO;
-	protected final DeferredHolder<SECONDARY_REGISTRY, SECONDARY> secondaryRO;
+	protected final PEDeferredHolder<PRIMARY_REGISTRY, PRIMARY> primaryRO;
+	protected final PEDeferredHolder<SECONDARY_REGISTRY, SECONDARY> secondaryRO;
 
-	public DoubleWrappedRegistryObject(DeferredHolder<PRIMARY_REGISTRY, PRIMARY> primaryRO, DeferredHolder<SECONDARY_REGISTRY, SECONDARY> secondaryRO) {
+	public DoubleWrappedRegistryObject(PEDeferredHolder<PRIMARY_REGISTRY, PRIMARY> primaryRO, PEDeferredHolder<SECONDARY_REGISTRY, SECONDARY> secondaryRO) {
 		this.primaryRO = primaryRO;
 		this.secondaryRO = secondaryRO;
 	}

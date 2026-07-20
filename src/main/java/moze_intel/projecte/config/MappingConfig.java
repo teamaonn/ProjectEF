@@ -31,7 +31,7 @@ public class MappingConfig extends BasePEConfig {
 	 */
 	public static void setup(@NotNull List<IEMCMapper<NormalizedSimpleStack, Long>> mappers, @NotNull List<IDataComponentProcessor> processors) {
 		if (INSTANCE == null) {
-			ProjectEConfig.registerConfig(PECore.MOD_CONTAINER, INSTANCE = new MappingConfig(mappers, processors));
+			ProjectEConfig.registerConfig(INSTANCE = new MappingConfig(mappers, processors));
 		}
 	}
 

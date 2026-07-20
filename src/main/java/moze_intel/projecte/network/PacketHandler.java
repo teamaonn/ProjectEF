@@ -1,5 +1,8 @@
 package moze_intel.projecte.network;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.api.capabilities.IKnowledgeProvider;
 import moze_intel.projecte.api.capabilities.PECapabilities;
@@ -10,12 +13,12 @@ import moze_intel.projecte.network.packets.IPEPacket;
 import moze_intel.projecte.network.packets.to_client.NovaExplosionSyncPKT;
 import moze_intel.projecte.network.packets.to_client.SyncEmcPKT;
 import moze_intel.projecte.network.packets.to_client.SyncFuelMapperPKT;
-import moze_intel.projecte.network.packets.to_client.container.SyncOffhandPkt;
 import moze_intel.projecte.network.packets.to_client.SyncWorldTransmutations;
-import moze_intel.projecte.network.packets.to_client.container.UpdateCondenserLockPKT;
-import moze_intel.projecte.network.packets.to_client.container.UpdateWindowLongPKT;
 import moze_intel.projecte.network.packets.to_client.alch_bag.SyncAllBagDataPKT;
 import moze_intel.projecte.network.packets.to_client.alch_bag.SyncBagsDataPKT;
+import moze_intel.projecte.network.packets.to_client.container.SyncOffhandPkt;
+import moze_intel.projecte.network.packets.to_client.container.UpdateCondenserLockPKT;
+import moze_intel.projecte.network.packets.to_client.container.UpdateWindowLongPKT;
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncChangePKT;
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncEmcPKT;
 import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncInputsAndLocksPKT;
@@ -23,6 +26,8 @@ import moze_intel.projecte.network.packets.to_client.knowledge.KnowledgeSyncPKT;
 import moze_intel.projecte.network.packets.to_server.KeyPressPKT;
 import moze_intel.projecte.network.packets.to_server.SearchUpdatePKT;
 import moze_intel.projecte.network.packets.to_server.UpdateGemModePKT;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -30,17 +35,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.handling.IPayloadHandler;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
 
 /**
  * Heavily based off of Mekanism's packet handler
  */
 public final class PacketHandler {
+
+	private static final List<ClientboundRegistration<?>> CLIENTBOUND_REGISTRATIONS = new ArrayList<>();
 
 	//Client to server instanced packets
 	private SimplePacketPayLoad activateArchangel;
@@ -51,12 +52,16 @@ public final class PacketHandler {
 
 	private SimplePacketPayLoad resetCooldown;
 
-	public PacketHandler(IEventBus modEventBus, ArtifactVersion version) {
-		modEventBus.addListener(RegisterPayloadHandlersEvent.class, event -> {
-			PayloadRegistrar registrar = event.registrar(version.toString());
-			registerClientToServer(new PacketRegistrar(registrar, true));
-			registerServerToClient(new PacketRegistrar(registrar, false));
-		});
+	public PacketHandler() {
+		registerClientToServer(new PacketRegistrar(true));
+		registerServerToClient(new PacketRegistrar(false));
+	}
+
+	/**
+	 * Exposes all clientbound packet types and their handlers so that the client mod initializer can register the actual receivers.
+	 */
+	public static List<ClientboundRegistration<?>> getClientboundRegistrations() {
+		return CLIENTBOUND_REGISTRATIONS;
 	}
 
 	private void registerClientToServer(PacketRegistrar registrar) {
@@ -76,7 +81,7 @@ public final class PacketHandler {
 		resetCooldown = registrar.playInstanced(PECore.rl("reset_cooldown"), (ignored, context) -> context.player().resetAttackStrengthTicker());
 		clearKnowledge = registrar.playInstanced(PECore.rl("clear_knowledge"), (ignored, context) -> {
 			Player player = context.player();
-			IKnowledgeProvider knowledge = player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY);
+			IKnowledgeProvider knowledge = PECapabilities.KNOWLEDGE_CAPABILITY.find(player);
 			if (knowledge != null) {
 				knowledge.clearKnowledge();
 				if (player.containerMenu instanceof TransmutationContainer container) {
@@ -105,19 +110,28 @@ public final class PacketHandler {
 	}
 
 	public void clearKnowledge(ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, clearKnowledge);
+		PENetwork.sendToPlayer(player, clearKnowledge);
 	}
 
 	public void updateTransmutationTargets(ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, updateTransmutationTargets);
+		PENetwork.sendToPlayer(player, updateTransmutationTargets);
 	}
 
 	public void resetCooldown(ServerPlayer player) {
-		PacketDistributor.sendToPlayer(player, resetCooldown);
+		PENetwork.sendToPlayer(player, resetCooldown);
 	}
 
 	public void activateArchangel() {
-		PacketDistributor.sendToServer(activateArchangel);
+		PENetwork.sendToServer(activateArchangel);
+	}
+
+	@FunctionalInterface
+	public interface PEPayloadHandler<MSG extends CustomPacketPayload> {
+
+		void handle(MSG payload, PEPacketContext context);
+	}
+
+	public record ClientboundRegistration<MSG extends CustomPacketPayload>(CustomPacketPayload.Type<MSG> type, PEPayloadHandler<MSG> handler) {
 	}
 
 	protected record SimplePacketPayLoad(CustomPacketPayload.Type<CustomPacketPayload> type) implements CustomPacketPayload {
@@ -127,22 +141,26 @@ public final class PacketHandler {
 		}
 	}
 
-	protected record PacketRegistrar(PayloadRegistrar registrar, boolean toServer) {
+	protected record PacketRegistrar(boolean toServer) {
 
 		public <MSG extends IPEPacket> void play(CustomPacketPayload.Type<MSG> type, StreamCodec<? super RegistryFriendlyByteBuf, MSG> reader) {
 			if (toServer) {
-				registrar.playToServer(type, reader, IPEPacket::handle);
+				PayloadTypeRegistry.playC2S().register(type, reader);
+				ServerPlayNetworking.registerGlobalReceiver(type, (payload, context) -> payload.handle(context::player));
 			} else {
-				registrar.playToClient(type, reader, IPEPacket::handle);
+				PayloadTypeRegistry.playS2C().register(type, reader);
+				CLIENTBOUND_REGISTRATIONS.add(new ClientboundRegistration<>(type, IPEPacket::handle));
 			}
 		}
 
-		public SimplePacketPayLoad playInstanced(ResourceLocation id, IPayloadHandler<CustomPacketPayload> handler) {
+		public SimplePacketPayLoad playInstanced(ResourceLocation id, PEPayloadHandler<CustomPacketPayload> handler) {
 			SimplePacketPayLoad payload = new SimplePacketPayLoad(id);
 			if (toServer) {
-				registrar.playToServer(payload.type(), StreamCodec.unit(payload), handler);
+				PayloadTypeRegistry.playC2S().register(payload.type(), StreamCodec.unit(payload));
+				ServerPlayNetworking.registerGlobalReceiver(payload.type(), (received, context) -> handler.handle(received, context::player));
 			} else {
-				registrar.playToClient(payload.type(), StreamCodec.unit(payload), handler);
+				PayloadTypeRegistry.playS2C().register(payload.type(), StreamCodec.unit(payload));
+				CLIENTBOUND_REGISTRATIONS.add(new ClientboundRegistration<>(payload.type(), handler));
 			}
 			return payload;
 		}

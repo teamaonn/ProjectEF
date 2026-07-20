@@ -2,29 +2,37 @@ package moze_intel.projecte.network.commands;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.serialization.DataResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.PEPermissions;
 import moze_intel.projecte.api.capabilities.PECapabilities;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
 import moze_intel.projecte.gameObjs.container.AlchBagContainer;
 import moze_intel.projecte.gameObjs.registries.PEAttachmentTypes;
 import moze_intel.projecte.gameObjs.registries.PEItems;
 import moze_intel.projecte.impl.capability.AlchBagImpl.AlchemicalBagAttachment;
 import moze_intel.projecte.utils.text.PELang;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.nbt.CompoundTag;
@@ -43,23 +51,32 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.storage.LevelResource;
-import net.neoforged.neoforge.attachment.AttachmentHolder;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.server.command.EnumArgument;
 import org.jetbrains.annotations.NotNull;
 
 public class ShowBagCMD {
 
 	private static final SimpleCommandExceptionType NOT_FOUND = new SimpleCommandExceptionType(PELang.SHOWBAG_NOT_FOUND.translate());
+	private static final SuggestionProvider<CommandSourceStack> DYE_COLOR_SUGGESTIONS = (ctx, builder) ->
+			SharedSuggestionProvider.suggest(Arrays.stream(DyeColor.values()).map(c -> c.getName().toLowerCase(Locale.ROOT)), builder);
 
 	public static LiteralArgumentBuilder<CommandSourceStack> register(CommandBuildContext context) {
 		return Commands.literal("showbag")
 				.requires(PEPermissions.COMMAND_SHOW_BAG)
-				.then(Commands.argument("color", EnumArgument.enumArgument(DyeColor.class))
+				.then(Commands.argument("color", StringArgumentType.word())
+						.suggests(DYE_COLOR_SUGGESTIONS)
 						.then(Commands.argument("target", EntityArgument.player())
-								.executes(ctx -> showBag(ctx, ctx.getArgument("color", DyeColor.class), EntityArgument.getPlayer(ctx, "target"))))
+								.executes(ctx -> showBag(ctx, getDyeColor(ctx, "color"), EntityArgument.getPlayer(ctx, "target"))))
 						.then(Commands.argument("uuid", UuidArgument.uuid())
-								.executes(ctx -> showBag(ctx, ctx.getArgument("color", DyeColor.class), UuidArgument.getUuid(ctx, "uuid")))));
+								.executes(ctx -> showBag(ctx, getDyeColor(ctx, "color"), UuidArgument.getUuid(ctx, "uuid")))));
+	}
+
+	private static DyeColor getDyeColor(CommandContext<CommandSourceStack> ctx, String name) throws CommandSyntaxException {
+		String colorName = StringArgumentType.getString(ctx, name);
+		DyeColor color = DyeColor.byName(colorName, null);
+		if (color == null) {
+			throw NOT_FOUND.create();
+		}
+		return color;
 	}
 
 	private static int showBag(CommandContext<CommandSourceStack> ctx, DyeColor color, ServerPlayer player) throws CommandSyntaxException {
@@ -73,7 +90,7 @@ public class ShowBagCMD {
 	}
 
 	private static int showBag(ServerPlayer senderPlayer, MenuProvider container) {
-		senderPlayer.openMenu(container, b -> {
+		OpenScreenHelper.openMenuWithData(senderPlayer, container, b -> {
 			b.writeBoolean(false);
 			b.writeBoolean(false);
 		});
@@ -81,7 +98,7 @@ public class ShowBagCMD {
 	}
 
 	private static MenuProvider createContainer(ServerPlayer sender, ServerPlayer target, DyeColor color) {
-		IItemHandlerModifiable inv = (IItemHandlerModifiable) Objects.requireNonNull(target.getCapability(PECapabilities.ALCH_BAG_CAPABILITY)).getBag(color);
+		IItemHandlerModifiable inv = (IItemHandlerModifiable) Objects.requireNonNull(PECapabilities.ALCH_BAG_CAPABILITY.find(target)).getBag(color);
 		Component name = PELang.SHOWBAG_NAMED.translate(PEItems.getBag(color), target.getDisplayName());
 		return getContainer(sender, name, inv, false, () -> target.isAlive() && !target.hasDisconnected());
 	}
@@ -125,9 +142,9 @@ public class ShowBagCMD {
 		if (Files.exists(player) && Files.isRegularFile(player)) {
 			try (InputStream in = Files.newInputStream(player)) {
 				CompoundTag playerDat = NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
-				if (playerDat.contains(AttachmentHolder.ATTACHMENTS_NBT_KEY, Tag.TAG_COMPOUND)) {
-					CompoundTag attachmentData = playerDat.getCompound(AttachmentHolder.ATTACHMENTS_NBT_KEY);
-					CompoundTag bagData = attachmentData.getCompound(PEAttachmentTypes.ALCHEMICAL_BAGS.getId().toString());
+				if (playerDat.contains(AttachmentTarget.NBT_ATTACHMENT_KEY, Tag.TAG_COMPOUND)) {
+					CompoundTag attachmentData = playerDat.getCompound(AttachmentTarget.NBT_ATTACHMENT_KEY);
+					CompoundTag bagData = attachmentData.getCompound(PEAttachmentTypes.ALCHEMICAL_BAGS.identifier().toString());
 					RegistryOps<Tag> serializationContext = server.registryAccess().createSerializationContext(NbtOps.INSTANCE);
 					DataResult<AlchemicalBagAttachment> result = AlchemicalBagAttachment.CODEC.parse(serializationContext, bagData);
 					if (result.isSuccess()) {

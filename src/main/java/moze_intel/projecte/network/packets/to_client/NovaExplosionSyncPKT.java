@@ -16,7 +16,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record NovaExplosionSyncPKT(Vec3 explosionCenter, float explosionRadius, Holder<SoundEvent> explosionSound, List<BlockPos> positions) implements IPEPacket {
@@ -38,7 +38,7 @@ public record NovaExplosionSyncPKT(Vec3 explosionCenter, float explosionRadius, 
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		Level level = context.player().level();
 		level.playLocalSound(explosionCenter.x, explosionCenter.y, explosionCenter.z, explosionSound.value(), SoundSource.BLOCKS, 4.0F,
 				(1.0F + (level.random.nextFloat() - level.random.nextFloat()) * 0.2F) * 0.7F, false);

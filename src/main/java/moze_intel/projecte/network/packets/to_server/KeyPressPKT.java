@@ -3,6 +3,7 @@ package moze_intel.projecte.network.packets.to_server;
 import io.netty.buffer.ByteBuf;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.api.capabilities.PECapabilities;
+import moze_intel.projecte.api.capabilities.PEItemCapability;
 import moze_intel.projecte.api.capabilities.item.IExtraFunction;
 import moze_intel.projecte.api.capabilities.item.IItemCharge;
 import moze_intel.projecte.api.capabilities.item.IModeChanger;
@@ -25,8 +26,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.ItemCapability;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record KeyPressPKT(PEKeybind key) implements IPEPacket {
@@ -41,7 +41,7 @@ public record KeyPressPKT(PEKeybind key) implements IPEPacket {
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		Player player = context.player();
 		if (player.isSpectator()) {
 			return;
@@ -66,8 +66,8 @@ public record KeyPressPKT(PEKeybind key) implements IPEPacket {
 					if (tryPerformCapability(player, stack, hand, PECapabilities.CHARGE_ITEM_CAPABILITY, IItemCharge::changeCharge)) {
 						return;
 					} else if (hand == InteractionHand.MAIN_HAND && isSafe(stack) && GemArmorBase.hasAnyPiece(player)) {
-						player.setData(PEAttachmentTypes.GEM_ARMOR_STATE, !player.getData(PEAttachmentTypes.GEM_ARMOR_STATE));
-						ILangEntry langEntry = player.getData(PEAttachmentTypes.GEM_ARMOR_STATE) ? PELang.GEM_ACTIVATE : PELang.GEM_DEACTIVATE;
+						player.setAttached(PEAttachmentTypes.GEM_ARMOR_STATE, !player.getAttachedOrCreate(PEAttachmentTypes.GEM_ARMOR_STATE));
+						ILangEntry langEntry = player.getAttachedOrCreate(PEAttachmentTypes.GEM_ARMOR_STATE) ? PELang.GEM_ACTIVATE : PELang.GEM_DEACTIVATE;
 						player.sendSystemMessage(langEntry.translate());
 						return;
 					}
@@ -75,7 +75,7 @@ public record KeyPressPKT(PEKeybind key) implements IPEPacket {
 				case EXTRA_FUNCTION -> {
 					if (tryPerformCapability(player, stack, hand, PECapabilities.EXTRA_FUNCTION_ITEM_CAPABILITY, IExtraFunction::doExtraFunction)) {
 						return;
-					} else if (hand == InteractionHand.MAIN_HAND && isSafe(stack) && player.getData(PEAttachmentTypes.GEM_ARMOR_STATE)) {
+					} else if (hand == InteractionHand.MAIN_HAND && isSafe(stack) && player.getAttachedOrCreate(PEAttachmentTypes.GEM_ARMOR_STATE)) {
 						ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
 						if (!chestplate.isEmpty() && chestplate.is(PEItems.GEM_CHESTPLATE) &&
 							PlayerHelper.checkCooldown(player, PEItems.GEM_CHESTPLATE.get(), ProjectEConfig.server.cooldown.player.gemChest)) {
@@ -89,7 +89,7 @@ public record KeyPressPKT(PEKeybind key) implements IPEPacket {
 						&& tryPerformCapability(player, stack, hand, PECapabilities.PROJECTILE_SHOOTER_ITEM_CAPABILITY, IProjectileShooter::shootProjectile)) {
 						PlayerHelper.swingItem(player, hand);
 					}
-					if (hand == InteractionHand.MAIN_HAND && isSafe(stack) && player.getData(PEAttachmentTypes.GEM_ARMOR_STATE)) {
+					if (hand == InteractionHand.MAIN_HAND && isSafe(stack) && player.getAttachedOrCreate(PEAttachmentTypes.GEM_ARMOR_STATE)) {
 						ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
 						if (!helmet.isEmpty() && helmet.is(PEItems.GEM_HELMET)) {
 							GemHelmet.doZap(player);
@@ -106,9 +106,9 @@ public record KeyPressPKT(PEKeybind key) implements IPEPacket {
 		}
 	}
 
-	private static <CAPABILITY> boolean tryPerformCapability(Player player, ItemStack stack, InteractionHand hand, ItemCapability<CAPABILITY, Void> capability,
+	private static <CAPABILITY> boolean tryPerformCapability(Player player, ItemStack stack, InteractionHand hand, PEItemCapability<CAPABILITY> capability,
 			CapabilityProcessor<CAPABILITY> processor) {
-		CAPABILITY impl = stack.getCapability(capability);
+		CAPABILITY impl = capability.find(stack);
 		return impl != null && processor.process(impl, player, stack, hand);
 	}
 

@@ -4,23 +4,21 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import moze_intel.projecte.api.capabilities.PEBlockCapability;
+import moze_intel.projecte.gameObjs.registration.PEDeferredHolder;
 import moze_intel.projecte.gameObjs.registration.PEDeferredRegister;
 import moze_intel.projecte.gameObjs.registration.impl.BlockEntityTypeRegistryObject.CapabilityData;
+import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.BlockEntityType.BlockEntitySupplier;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEntityType<?>> {
@@ -39,17 +37,17 @@ public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEnt
 	}
 
 	@Override
-	public void register(@NotNull IEventBus bus) {
-		super.register(bus);
-		bus.addListener(this::registerCapabilities);
+	public void register() {
+		super.register();
+		registerCapabilities();
 	}
 
-	private void registerCapabilities(RegisterCapabilitiesEvent event) {
-		for (DeferredHolder<BlockEntityType<?>, ? extends BlockEntityType<?>> entry : getEntries()) {
+	private void registerCapabilities() {
+		for (PEDeferredHolder<BlockEntityType<?>, ? extends BlockEntityType<?>> entry : getEntries()) {
 			//Note: All entries should be of this type
 			if (entry instanceof BlockEntityTypeRegistryObject<?> beRO) {
-				beRO.registerCapabilityProviders(event);
-			} else if (!FMLEnvironment.production) {
+				beRO.registerCapabilityProviders();
+			} else if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
 				throw new IllegalStateException("Expected entry to be a BlockEntityTypeRegistryObject");
 			}
 		}
@@ -57,7 +55,7 @@ public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEnt
 
 	public class BlockEntityTypeBuilder<BE extends BlockEntity> {
 
-		private static final ICapabilityProvider<?, ?, ?> SIMPLE_PROVIDER = (obj, context) -> obj;
+		private static final BiFunction<?, ?, ?> SIMPLE_PROVIDER = (obj, context) -> obj;
 
 		private final BlockRegistryObject<?, ?> block;
 		private final BlockEntitySupplier<? extends BE> factory;
@@ -72,21 +70,33 @@ public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEnt
 			this.factory = factory;
 		}
 
-		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(BlockCapability<CAP, CONTEXT> capability) {
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(PEBlockCapability<CAP, CONTEXT> capability) {
+			return withSimple(capability.lookup());
+		}
+
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(BlockApiLookup<CAP, CONTEXT> capability) {
 			return withSimple(capability, () -> true);
 		}
 
-		@SuppressWarnings("unchecked")
-		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(BlockCapability<CAP, CONTEXT> capability, BooleanSupplier shouldApply) {
-			return with(capability, (ICapabilityProvider<? super BE, CONTEXT, CAP>) SIMPLE_PROVIDER, shouldApply);
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(PEBlockCapability<CAP, CONTEXT> capability, BooleanSupplier shouldApply) {
+			return withSimple(capability.lookup(), shouldApply);
 		}
 
-		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockCapability<CAP, CONTEXT> capability,
-				Function<BlockCapability<CAP, CONTEXT>, ICapabilityProvider<? super BE, CONTEXT, CAP>> provider) {
+		@SuppressWarnings("unchecked")
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> withSimple(BlockApiLookup<CAP, CONTEXT> capability, BooleanSupplier shouldApply) {
+			return with(capability, (BiFunction<? super BE, CONTEXT, CAP>) SIMPLE_PROVIDER, shouldApply);
+		}
+
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockApiLookup<CAP, CONTEXT> capability,
+				Function<BlockApiLookup<CAP, CONTEXT>, BiFunction<? super BE, CONTEXT, CAP>> provider) {
 			return with(capability, provider.apply(capability));
 		}
 
-		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockCapability<CAP, CONTEXT> capability, ICapabilityProvider<? super BE, CONTEXT, CAP> provider) {
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(PEBlockCapability<CAP, CONTEXT> capability, BiFunction<? super BE, CONTEXT, CAP> provider) {
+			return with(capability.lookup(), provider);
+		}
+
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockApiLookup<CAP, CONTEXT> capability, BiFunction<? super BE, CONTEXT, CAP> provider) {
 			return with(capability, provider, () -> true);
 		}
 
@@ -94,20 +104,20 @@ public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEnt
 		 * @param shouldApply Determines whether the provider actually be attached to this block entity type. Useful for cases when we want to conditionally apply it
 		 *                    based on loaded mods or a block's attributes.
 		 */
-		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockCapability<CAP, CONTEXT> capability, ICapabilityProvider<? super BE, CONTEXT, CAP> provider,
+		public <CAP, CONTEXT> BlockEntityTypeBuilder<BE> with(BlockApiLookup<CAP, CONTEXT> capability, BiFunction<? super BE, CONTEXT, CAP> provider,
 				BooleanSupplier shouldApply) {
 			capabilityProviders.add(new CapabilityData<>(capability, provider, shouldApply));
 			return this;
 		}
 
-		public BlockEntityTypeBuilder<BE> without(BlockCapability<?, ?>... capabilities) {
-			for (BlockCapability<?, ?> capability : capabilities) {
+		public BlockEntityTypeBuilder<BE> without(BlockApiLookup<?, ?>... capabilities) {
+			for (BlockApiLookup<?, ?> capability : capabilities) {
 				capabilityProviders.removeIf(data -> data.capability() == capability);
 			}
 			return this;
 		}
 
-		public BlockEntityTypeBuilder<BE> without(Collection<? extends BlockCapability<?, ?>> capabilities) {
+		public BlockEntityTypeBuilder<BE> without(Collection<? extends BlockApiLookup<?, ?>> capabilities) {
 			capabilityProviders.removeIf(data -> capabilities.contains(data.capability()));
 			return this;
 		}
@@ -131,7 +141,7 @@ public class BlockEntityTypeDeferredRegister extends PEDeferredRegister<BlockEnt
 
 		@SuppressWarnings("ConstantConditions")
 		public BlockEntityTypeRegistryObject<BE> build() {
-			//Note: There is no data fixer type as forge does not currently have a way exposing data fixers to mods yet
+			//Note: There is no data fixer type as there is not a way of exposing data fixers to mods yet
 			BlockEntityTypeRegistryObject<BE> holder = registerPE(block.getName(), () -> BlockEntityType.Builder.<BE>of(factory, block.getBlocks()).build(null));
 			holder.tickers(clientTicker, serverTicker);
 			holder.capabilities(capabilityProviders.isEmpty() ? null : capabilityProviders);

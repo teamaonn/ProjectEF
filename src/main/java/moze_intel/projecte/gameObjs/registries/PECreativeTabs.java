@@ -1,21 +1,29 @@
 package moze_intel.projecte.gameObjs.registries;
 
+import java.util.List;
 import java.util.function.Consumer;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.gameObjs.items.rings.Arcana.ArcanaMode;
 import moze_intel.projecte.gameObjs.registration.PEDeferredHolder;
 import moze_intel.projecte.gameObjs.registration.impl.CreativeTabDeferredRegister;
+import moze_intel.projecte.gameObjs.registration.impl.CreativeTabDeferredRegister.PETabContents;
 import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 
 public class PECreativeTabs {
 
-	public static final CreativeTabDeferredRegister CREATIVE_TABS = new CreativeTabDeferredRegister(PECore.MODID, PECreativeTabs::addToExistingTabs);
+	public static final CreativeTabDeferredRegister CREATIVE_TABS = new CreativeTabDeferredRegister(PECore.MODID, PECreativeTabs::addToExistingTabs, List.of(
+			CreativeModeTabs.BUILDING_BLOCKS,
+			CreativeModeTabs.FUNCTIONAL_BLOCKS,
+			CreativeModeTabs.REDSTONE_BLOCKS,
+			CreativeModeTabs.TOOLS_AND_UTILITIES,
+			CreativeModeTabs.COMBAT,
+			CreativeModeTabs.INGREDIENTS
+	));
 
 	public static final PEDeferredHolder<CreativeModeTab, CreativeModeTab> PROJECTE = CREATIVE_TABS.registerMain(PELang.PROJECTE, PEItems.PHILOSOPHERS_STONE, builder ->
 			builder.displayItems((displayParameters, output) -> {
@@ -87,7 +95,7 @@ public class PECreativeTabs {
 
 				for (ArcanaMode value : ArcanaMode.values()) {
 					ItemStack stack = PEItems.ARCANA_RING.asStack();
-					stack.set(PEDataComponentTypes.ARCANA_MODE, value);
+					stack.set(PEDataComponentTypes.ARCANA_MODE.get(), value);
 					output.accept(stack);
 				}
 
@@ -154,7 +162,7 @@ public class PECreativeTabs {
 		output.accept(PEItems.GEM_BOOTS);
 	}
 
-	private static void addToExistingTabs(BuildCreativeModeTabContentsEvent event) {
+	private static void addToExistingTabs(PETabContents event) {
 		ResourceKey<CreativeModeTab> tabKey = event.getTabKey();
 		if (tabKey == CreativeModeTabs.BUILDING_BLOCKS) {
 			addToExistingTab(event,
@@ -248,7 +256,7 @@ public class PECreativeTabs {
 
 			for (ArcanaMode value : ArcanaMode.values()) {
 				ItemStack stack = PEItems.ARCANA_RING.asStack();
-				stack.set(PEDataComponentTypes.ARCANA_MODE, value);
+				stack.set(PEDataComponentTypes.ARCANA_MODE.get(), value);
 				event.accept(stack);
 			}
 
@@ -323,7 +331,7 @@ public class PECreativeTabs {
 		}
 	}
 
-	private static void addToExistingTab(BuildCreativeModeTabContentsEvent event, ItemLike... items) {
+	private static void addToExistingTab(PETabContents event, ItemLike... items) {
 		for (ItemLike item : items) {
 			event.accept(item);
 		}

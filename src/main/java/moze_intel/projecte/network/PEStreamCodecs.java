@@ -9,7 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 
 public final class PEStreamCodecs {

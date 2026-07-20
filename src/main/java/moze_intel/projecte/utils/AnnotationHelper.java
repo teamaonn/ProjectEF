@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.api.components.DataComponentProcessor;
@@ -20,33 +19,37 @@ import moze_intel.projecte.api.mapper.IEMCMapper;
 import moze_intel.projecte.api.mapper.recipe.IRecipeTypeMapper;
 import moze_intel.projecte.api.mapper.recipe.RecipeTypeMapper;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforgespi.language.ModFileScanData;
-import net.neoforged.neoforgespi.language.ModFileScanData.AnnotationData;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.CustomValue;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Type;
 
+/**
+ * Discovers EMC mappers, recipe type mappers, and data component processors.
+ * <p>
+ * On Fabric there is no annotation scanning across mods, so classes are declared in each mod's {@code fabric.mod.json} under the custom keys
+ * {@code projecte:emc_mappers}, {@code projecte:recipe_type_mappers}, and {@code projecte:data_component_processors} (each an array of class names). The classes
+ * must still be annotated with the corresponding annotation, which supplies the priority and required mods, and may still use the {@code Instance} annotation on
+ * a static field to provide a singleton instance.
+ */
 public class AnnotationHelper {
 
-	private static final Type MAPPER_TYPE = Type.getType(EMCMapper.class);
-	private static final Type RECIPE_TYPE_MAPPER_TYPE = Type.getType(RecipeTypeMapper.class);
-	private static final Type DATA_COMPONENT_PROCESSOR_TYPE = Type.getType(DataComponentProcessor.class);
+	private static final String EMC_MAPPERS_KEY = "projecte:emc_mappers";
+	private static final String RECIPE_TYPE_MAPPERS_KEY = "projecte:recipe_type_mappers";
+	private static final String DATA_COMPONENT_PROCESSORS_KEY = "projecte:data_component_processors";
 
 	public static List<IDataComponentProcessor> getDataComponentProcessors() {
-		ModList modList = ModList.get();
 		List<IDataComponentProcessor> dataComponentProcessors = new ArrayList<>();
 		Object2IntMap<IDataComponentProcessor> priorities = new Object2IntOpenHashMap<>();
-		for (ModFileScanData scanData : modList.getAllScanData()) {
-			for (AnnotationData data : scanData.getAnnotations()) {
-				if (DATA_COMPONENT_PROCESSOR_TYPE.equals(data.annotationType()) && checkRequiredMods(data)) {
-					//If all the mods were loaded then attempt to get the processor
-					IDataComponentProcessor processor = getDataComponentProcessor(data.memberName());
-					if (processor != null) {
-						int priority = getPriority(data);
-						dataComponentProcessors.add(processor);
-						priorities.put(processor, priority);
-						PECore.debugLog("Found and loaded Data Component Processor: {}, with priority {}", processor.getName(), priority);
-					}
+		for (String className : findDeclaredClasses(DATA_COMPONENT_PROCESSORS_KEY)) {
+			DataComponentProcessor annotation = getAnnotation(className, DataComponentProcessor.class);
+			if (annotation != null && checkRequiredMods(className, annotation.requiredMods())) {
+				IDataComponentProcessor processor = getDataComponentProcessor(className);
+				if (processor != null) {
+					int priority = annotation.priority();
+					dataComponentProcessors.add(processor);
+					priorities.put(processor, priority);
+					PECore.debugLog("Found and loaded Data Component Processor: {}, with priority {}", processor.getName(), priority);
 				}
 			}
 		}
@@ -55,20 +58,17 @@ public class AnnotationHelper {
 	}
 
 	public static List<IRecipeTypeMapper> getRecipeTypeMappers() {
-		ModList modList = ModList.get();
 		List<IRecipeTypeMapper> recipeTypeMappers = new ArrayList<>();
 		Object2IntMap<IRecipeTypeMapper> priorities = new Object2IntOpenHashMap<>();
-		for (ModFileScanData scanData : modList.getAllScanData()) {
-			for (AnnotationData data : scanData.getAnnotations()) {
-				if (RECIPE_TYPE_MAPPER_TYPE.equals(data.annotationType()) && checkRequiredMods(data)) {
-					//If all the mods were loaded then attempt to get the processor
-					IRecipeTypeMapper mapper = getRecipeTypeMapper(data.memberName());
-					if (mapper != null) {
-						int priority = getPriority(data);
-						recipeTypeMappers.add(mapper);
-						priorities.put(mapper, priority);
-						PECore.debugLog("Found and loaded RecipeType Mapper: {}, with priority {}", mapper.getName(), priority);
-					}
+		for (String className : findDeclaredClasses(RECIPE_TYPE_MAPPERS_KEY)) {
+			RecipeTypeMapper annotation = getAnnotation(className, RecipeTypeMapper.class);
+			if (annotation != null && checkRequiredMods(className, annotation.requiredMods())) {
+				IRecipeTypeMapper mapper = getRecipeTypeMapper(className);
+				if (mapper != null) {
+					int priority = annotation.priority();
+					recipeTypeMappers.add(mapper);
+					priorities.put(mapper, priority);
+					PECore.debugLog("Found and loaded RecipeType Mapper: {}, with priority {}", mapper.getName(), priority);
 				}
 			}
 		}
@@ -77,31 +77,66 @@ public class AnnotationHelper {
 	}
 
 	//Note: We don't bother caching this value because EMCMappingHandler#loadMappers caches our processed result
+	@SuppressWarnings("unchecked")
 	public static List<IEMCMapper<NormalizedSimpleStack, Long>> getEMCMappers() {
-		ModList modList = ModList.get();
 		List<IEMCMapper<NormalizedSimpleStack, Long>> emcMappers = new ArrayList<>();
 		Object2IntMap<IEMCMapper<NormalizedSimpleStack, Long>> priorities = new Object2IntOpenHashMap<>();
-		for (ModFileScanData scanData : modList.getAllScanData()) {
-			for (AnnotationData data : scanData.getAnnotations()) {
-				if (MAPPER_TYPE.equals(data.annotationType()) && checkRequiredMods(data)) {
-					//If all the mods were loaded then attempt to get the mapper
-					IEMCMapper<?, ?> mapper = getEMCMapper(data.memberName());
-					if (mapper != null) {
-						try {
-							IEMCMapper<NormalizedSimpleStack, Long> emcMapper = (IEMCMapper<NormalizedSimpleStack, Long>) mapper;
-							int priority = getPriority(data);
-							emcMappers.add(emcMapper);
-							priorities.put(emcMapper, priority);
-							PECore.debugLog("Found and loaded EMC mapper: {}, with priority {}", mapper.getName(), priority);
-						} catch (ClassCastException e) {
-							PECore.LOGGER.error("{}: Is not a mapper for {}, to {}", mapper.getClass(), NormalizedSimpleStack.class, Long.class, e);
-						}
+		for (String className : findDeclaredClasses(EMC_MAPPERS_KEY)) {
+			EMCMapper annotation = getAnnotation(className, EMCMapper.class);
+			if (annotation != null && checkRequiredMods(className, annotation.requiredMods())) {
+				IEMCMapper<?, ?> mapper = getEMCMapper(className);
+				if (mapper != null) {
+					try {
+						IEMCMapper<NormalizedSimpleStack, Long> emcMapper = (IEMCMapper<NormalizedSimpleStack, Long>) mapper;
+						int priority = annotation.priority();
+						emcMappers.add(emcMapper);
+						priorities.put(emcMapper, priority);
+						PECore.debugLog("Found and loaded EMC mapper: {}, with priority {}", mapper.getName(), priority);
+					} catch (ClassCastException e) {
+						PECore.LOGGER.error("{}: Is not a mapper for {}, to {}", mapper.getClass(), NormalizedSimpleStack.class, Long.class, e);
 					}
 				}
 			}
 		}
 		emcMappers.sort(Comparator.comparingInt(priorities::getInt).reversed());
 		return emcMappers;
+	}
+
+	private static List<String> findDeclaredClasses(String customKey) {
+		List<String> classNames = new ArrayList<>();
+		for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+			CustomValue value = mod.getMetadata().getCustomValue(customKey);
+			if (value != null) {
+				if (value.getType() == CustomValue.CvType.ARRAY) {
+					for (CustomValue entry : value.getAsArray()) {
+						if (entry.getType() == CustomValue.CvType.STRING) {
+							classNames.add(entry.getAsString());
+						} else {
+							PECore.LOGGER.error("Mod {} declared a non string entry in its {} array", mod.getMetadata().getId(), customKey);
+						}
+					}
+				} else {
+					PECore.LOGGER.error("Mod {} declared {} but it is not an array of class names", mod.getMetadata().getId(), customKey);
+				}
+			}
+		}
+		return classNames;
+	}
+
+	@Nullable
+	private static <ANNOTATION extends Annotation> ANNOTATION getAnnotation(String className, Class<ANNOTATION> annotationClass) {
+		try {
+			//Load without initializing so that we can check the annotation before any static initializers may reference classes of missing mods
+			Class<?> clazz = Class.forName(className, false, AnnotationHelper.class.getClassLoader());
+			ANNOTATION annotation = clazz.getAnnotation(annotationClass);
+			if (annotation == null) {
+				PECore.LOGGER.error("Class {} is declared as a {} but is missing the annotation", className, annotationClass.getSimpleName());
+			}
+			return annotation;
+		} catch (ClassNotFoundException | LinkageError e) {
+			PECore.LOGGER.error("Failed to load declared class: {}", className, e);
+			return null;
+		}
 	}
 
 	@Nullable
@@ -120,6 +155,7 @@ public class AnnotationHelper {
 	}
 
 	@Nullable
+	@SuppressWarnings("unchecked")
 	private static <T> T createOrGetInstance(String className, Class<T> baseClass, Class<? extends Annotation> instanceAnnotation, Function<T, String> nameFunction) {
 		//Try to create an instance of the class
 		try {
@@ -158,24 +194,14 @@ public class AnnotationHelper {
 		return null;
 	}
 
-	private static boolean checkRequiredMods(AnnotationData data) {
-		Map<String, Object> annotationData = data.annotationData();
-		if (annotationData.containsKey("requiredMods")) {
-			//Check if all the mods the EMCMapper wants to be loaded are loaded
-			List<String> requiredMods = (List<String>) annotationData.get("requiredMods");
-			if (requiredMods.stream().anyMatch(modid -> !ModList.get().isLoaded(modid))) {
-				PECore.debugLog("Skipped checking class {}, as its required mods ({}) are not loaded.", data.memberName(), Arrays.toString(requiredMods.toArray()));
+	private static boolean checkRequiredMods(String className, String[] requiredMods) {
+		FabricLoader loader = FabricLoader.getInstance();
+		for (String requiredMod : requiredMods) {
+			if (!requiredMod.isEmpty() && !loader.isModLoaded(requiredMod)) {
+				PECore.debugLog("Skipped checking class {}, as its required mods ({}) are not loaded.", className, Arrays.toString(requiredMods));
 				return false;
 			}
 		}
 		return true;
-	}
-
-	private static int getPriority(AnnotationData data) {
-		Map<String, Object> annotationData = data.annotationData();
-		if (annotationData.containsKey("priority")) {
-			return (int) annotationData.get("priority");
-		}
-		return 0;
 	}
 }

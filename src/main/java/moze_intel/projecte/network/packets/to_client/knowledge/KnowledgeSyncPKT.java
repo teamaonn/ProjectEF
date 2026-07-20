@@ -10,7 +10,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record KnowledgeSyncPKT(KnowledgeAttachment data) implements IPEPacket {
@@ -27,13 +27,13 @@ public record KnowledgeSyncPKT(KnowledgeAttachment data) implements IPEPacket {
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		//We have to use the client's player instance rather than context#player as the first usage of this packet is sent during player login
 		// which is before the player exists on the client so the context does not contain it.
 		//Note: This must stay LocalPlayer to not cause classloading issues
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.setData(PEAttachmentTypes.KNOWLEDGE, data);
+			player.setAttached(PEAttachmentTypes.KNOWLEDGE, data);
 			if (player.containerMenu instanceof TransmutationContainer container) {
 				container.transmutationInventory.updateClientTargets(false);
 			}

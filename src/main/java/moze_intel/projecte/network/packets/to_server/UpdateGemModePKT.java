@@ -12,7 +12,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record UpdateGemModePKT(InteractionHand hand, boolean mode) implements IPEPacket {
@@ -31,11 +31,11 @@ public record UpdateGemModePKT(InteractionHand hand, boolean mode) implements IP
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		ItemStack stack = context.player().getItemInHand(hand);
 		if (!stack.isEmpty()) {
 			if (stack.is(PEItems.GEM_OF_ETERNAL_DENSITY) || stack.is(PEItems.VOID_RING)) {
-				stack.update(PEDataComponentTypes.GEM_DATA, GemData.EMPTY, mode, GemData::withWhitelist);
+				stack.update(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY, mode, GemData::withWhitelist);
 			}
 		}
 	}

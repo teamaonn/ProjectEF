@@ -17,7 +17,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record SyncWorldTransmutations(Reference2ObjectMap<Block, SequencedSet<IWorldTransmutation>> transmutations) implements IPEPacket {
@@ -60,7 +60,7 @@ public record SyncWorldTransmutations(Reference2ObjectMap<Block, SequencedSet<IW
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		PECore.debugLog("Receiving World Transmutation data from server.");
 		WorldTransmutationManager.INSTANCE.setEntries(transmutations);
 	}

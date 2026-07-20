@@ -1,15 +1,11 @@
 package moze_intel.projecte.utils;
 
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.api.capabilities.PECapabilities;
 import moze_intel.projecte.api.capabilities.item.IItemCharge;
@@ -17,10 +13,12 @@ import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.IMatterType;
 import moze_intel.projecte.gameObjs.PETags;
 import moze_intel.projecte.gameObjs.blocks.IMatterBlock;
+import moze_intel.projecte.gameObjs.items.IHasConditionalAttributes.AttributeCollector;
 import moze_intel.projecte.gameObjs.items.ItemPE;
 import moze_intel.projecte.gameObjs.items.tools.PEPickaxe.PickaxeMode;
 import moze_intel.projecte.gameObjs.registries.PEDamageTypes;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -43,54 +41,55 @@ import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.Shearable;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.HoneycombItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.WeatheringCopper;
 import net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult.Type;
-import net.neoforged.neoforge.common.IShearable;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.ItemAbility;
-import net.neoforged.neoforge.common.Tags;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 import org.jetbrains.annotations.Nullable;
 
 public class ToolHelper {
 
 	private static final ResourceLocation CHARGE_MODIFIER_ID = PECore.rl("charge_modifier");
 
-	public static final ItemAbility HAMMER_DIG = ItemAbility.get("hammer_dig");
-	public static final ItemAbility KATAR_DIG = ItemAbility.get("katar_dig");
-	public static final ItemAbility MORNING_STAR_DIG = ItemAbility.get("morning_star_dig");
-
-	public static final Set<ItemAbility> DEFAULT_PE_HAMMER_ACTIONS = of(HAMMER_DIG);
-	public static final Set<ItemAbility> DEFAULT_PE_KATAR_ACTIONS = of(KATAR_DIG);
-	public static final Set<ItemAbility> DEFAULT_PE_MORNING_STAR_ACTIONS = of(MORNING_STAR_DIG);
-
 	//Note: These all also do the check that super did before of making sure the entity is not spectating
-	private static final Predicate<Entity> SHEARABLE = entity -> !entity.isSpectator() && entity instanceof IShearable;
+	private static final Predicate<Entity> SHEARABLE = entity -> !entity.isSpectator() && entity instanceof Shearable;
 	private static final Predicate<Entity> SLAY_MOB = entity -> !entity.isSpectator() && entity instanceof Enemy;
 	private static final Predicate<Entity> SLAY_ALL = entity -> !entity.isSpectator() && (entity instanceof Enemy || entity instanceof LivingEntity);
 
-	private static Set<ItemAbility> of(ItemAbility... actions) {
-		return Stream.of(actions).collect(Collectors.toCollection(Sets::newIdentityHashSet));
+	/**
+	 * The tool interactions our AOE tools support. The modified states are resolved from the vanilla maps (which the fabric content registries also write to, so
+	 * modded blocks registered there are covered), except for tilling which replicates the vanilla data as the vanilla map hides the resulting state inside a
+	 * consumer.
+	 */
+	public enum PEToolAction {
+		TILL,
+		FLATTEN,
+		STRIP,
+		SCRAPE,
+		WAX_OFF
 	}
 
 	/**
@@ -190,7 +189,7 @@ public class ToolHelper {
 	 * Tills in an AOE using a hoe. Charge affects the AOE. Optional per-block EMC cost.
 	 */
 	public static InteractionResult tillAOE(UseOnContext context, BlockState clickedState, long emcCost) {
-		return useAOE(context, clickedState, emcCost, ItemAbilities.HOE_TILL, SoundEvents.HOE_TILL, -1, new HoeToolAOEData());
+		return useAOE(context, clickedState, emcCost, PEToolAction.TILL, SoundEvents.HOE_TILL, -1, new HoeToolAOEData());
 	}
 
 	/**
@@ -202,29 +201,71 @@ public class ToolHelper {
 			//Don't allow flattening a block from underneath
 			return InteractionResult.PASS;
 		}
-		return useAOE(context, clickedState, emcCost, ItemAbilities.SHOVEL_FLATTEN, SoundEvents.SHOVEL_FLATTEN, -1, new ShovelToolAOEData());
+		return useAOE(context, clickedState, emcCost, PEToolAction.FLATTEN, SoundEvents.SHOVEL_FLATTEN, -1, new ShovelToolAOEData());
 	}
 
 	/**
 	 * Strips logs in an AOE using an axe (ex: log to stripped log). Charge affects the AOE. Optional per-block EMC cost.
 	 */
 	public static InteractionResult stripLogsAOE(UseOnContext context, BlockState clickedState, long emcCost) {
-		return useAxeAOE(context, clickedState, emcCost, ItemAbilities.AXE_STRIP, SoundEvents.AXE_STRIP, -1);
+		return useAxeAOE(context, clickedState, emcCost, PEToolAction.STRIP, SoundEvents.AXE_STRIP, -1);
 	}
 
 	public static InteractionResult scrapeAOE(UseOnContext context, BlockState clickedState, long emcCost) {
-		return useAxeAOE(context, clickedState, emcCost, ItemAbilities.AXE_SCRAPE, SoundEvents.AXE_SCRAPE, LevelEvent.PARTICLES_SCRAPE);
+		return useAxeAOE(context, clickedState, emcCost, PEToolAction.SCRAPE, SoundEvents.AXE_SCRAPE, LevelEvent.PARTICLES_SCRAPE);
 	}
 
 	public static InteractionResult waxOffAOE(UseOnContext context, BlockState clickedState, long emcCost) {
-		return useAxeAOE(context, clickedState, emcCost, ItemAbilities.AXE_WAX_OFF, SoundEvents.AXE_WAX_OFF, LevelEvent.PARTICLES_WAX_OFF);
+		return useAxeAOE(context, clickedState, emcCost, PEToolAction.WAX_OFF, SoundEvents.AXE_WAX_OFF, LevelEvent.PARTICLES_WAX_OFF);
 	}
 
-	private static InteractionResult useAxeAOE(UseOnContext context, BlockState clickedState, long emcCost, ItemAbility action, SoundEvent sound, int particle) {
+	private static InteractionResult useAxeAOE(UseOnContext context, BlockState clickedState, long emcCost, PEToolAction action, SoundEvent sound, int particle) {
 		return useAOE(context, clickedState, emcCost, action, sound, particle, new AxeToolAOEData());
 	}
 
-	private static InteractionResult useAOE(UseOnContext context, BlockState clickedState, long emcCost, ItemAbility action, SoundEvent sound, int particle,
+	/**
+	 * Computes the state the given block would be converted to by the given tool action, or null if it cannot be converted.
+	 */
+	@Nullable
+	public static BlockState getToolModifiedState(Level level, BlockPos pos, BlockState state, Direction face, PEToolAction action) {
+		Block block = state.getBlock();
+		return switch (action) {
+			case TILL -> getTilledState(level, pos, state, face);
+			case FLATTEN -> ShovelItem.FLATTENABLES.get(block);
+			//[VanillaCopy] AxeItem#getStripped
+			case STRIP -> Optional.ofNullable(AxeItem.STRIPPABLES.get(block))
+					.map(stripped -> stripped.defaultBlockState().setValue(RotatedPillarBlock.AXIS, state.getValue(RotatedPillarBlock.AXIS)))
+					.orElse(null);
+			case SCRAPE -> WeatheringCopper.getPrevious(state).orElse(null);
+			case WAX_OFF -> Optional.ofNullable(HoneycombItem.WAX_OFF_BY_BLOCK.get().get(block))
+					.map(unwaxed -> unwaxed.withPropertiesOf(state))
+					.orElse(null);
+		};
+	}
+
+	/**
+	 * [VanillaCopy] Replicates the conversions of HoeItem#TILLABLES, as the vanilla map hides the resulting state inside a consumer.
+	 */
+	@Nullable
+	private static BlockState getTilledState(Level level, BlockPos pos, BlockState state, Direction face) {
+		if (face == Direction.DOWN) {
+			return null;
+		}
+		Block block = state.getBlock();
+		if (block == Blocks.ROOTED_DIRT) {
+			//Note: Vanilla also drops a hanging roots item, which we skip to keep the conversion deterministic for the AOE comparison
+			return Blocks.DIRT.defaultBlockState();
+		}
+		if (block == Blocks.GRASS_BLOCK || block == Blocks.DIRT_PATH || block == Blocks.DIRT || block == Blocks.COARSE_DIRT) {
+			if (!level.getBlockState(pos.above()).isAir()) {
+				return null;
+			}
+			return block == Blocks.COARSE_DIRT ? Blocks.DIRT.defaultBlockState() : Blocks.FARMLAND.defaultBlockState();
+		}
+		return null;
+	}
+
+	private static InteractionResult useAOE(UseOnContext context, BlockState clickedState, long emcCost, PEToolAction action, SoundEvent sound, int particle,
 			IToolAOEData toolAOEData) {
 		Player player = context.getPlayer();
 		if (player == null) {
@@ -232,11 +273,12 @@ public class ToolHelper {
 		}
 		Level level = context.getLevel();
 		BlockPos pos = context.getClickedPos();
+		Direction side = context.getClickedFace();
 		if (!toolAOEData.isValid(level, pos, clickedState)) {
 			//Skip modifying the blocks if there is something we think is invalid about the position in the world in general
 			return InteractionResult.PASS;
 		}
-		BlockState modifiedState = clickedState.getToolModifiedState(context, action, false);
+		BlockState modifiedState = getToolModifiedState(level, pos, clickedState, side, action);
 		if (modifiedState == null) {
 			//Skip modifying the blocks if the one we clicked cannot be modified
 			return InteractionResult.PASS;
@@ -254,7 +296,6 @@ public class ToolHelper {
 		ItemStack stack = context.getItemInHand();
 		int charge = getCharge(stack);
 		if (charge > 0) {
-			Direction side = context.getClickedFace();
 			toolAOEData.persistData(level, pos, clickedState, side);
 			for (BlockPos newPos : toolAOEData.getTargetPositions(pos, side, charge)) {
 				if (pos.equals(newPos)) {
@@ -264,18 +305,12 @@ public class ToolHelper {
 				//Check to make that the result we would get from modifying the other block is the same as the one we got on the initial block we interacted with
 				// Also make sure that it is properly valid
 				BlockState state = level.getBlockState(newPos);
-				//Create a new used context based on the original one to try and pass the proper information to the conversion
-				UseOnContext adjustedContext = new UseOnContext(level, context.getPlayer(), context.getHand(), context.getItemInHand(), new BlockHitResult(
-						context.getClickLocation().add(newPos.getX() - pos.getX(), newPos.getY() - pos.getY(), newPos.getZ() - pos.getZ()),
-						context.getClickedFace(), newPos, context.isInside()));
-				if (toolAOEData.isValid(level, newPos, state) && modifiedState == state.getToolModifiedState(adjustedContext, action, true)) {
+				if (toolAOEData.isValid(level, newPos, state) && modifiedState == getToolModifiedState(level, newPos, state, side, action)) {
 					if (ItemPE.consumeFuel(player, stack, emcCost, true)) {
 						//Some of the below methods don't behave properly when the BlockPos is mutable, so now that we are onto ones where it may actually
 						// matter we make sure to get an immutable instance of newPos
 						newPos = newPos.immutable();
 						CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger((ServerPlayer) player, newPos, context.getItemInHand());
-						//Run it without simulation in case there are any side effects
-						state.getToolModifiedState(adjustedContext, action, false);
 						//Replace the block. Note it just directly sets it (in the same way the normal tools do), rather than using our
 						// checkedReplaceBlock to make the blocks not "blink" when getting changed. We don't bother using checkedReplaceBlock
 						// as we already fired all the events/checks for seeing if we are allowed to use this item in this location and were
@@ -329,10 +364,10 @@ public class ToolHelper {
 			case WIDESHOT -> switch (sideHit.getAxis() == Axis.Y ? player.getDirection().getAxis() : sideHit.getAxis()) {
 				case X -> BlockPos.betweenClosed(pos.south(), pos.north());
 				case Z -> BlockPos.betweenClosed(pos.west(), pos.east());
-				default -> Collections.singleton(pos);
+				default -> java.util.Collections.singleton(pos);
 			};
 			case LONGSHOT -> BlockPos.betweenClosed(pos, pos.relative(sideHit.getOpposite(), 2));
-			default -> Collections.singleton(pos);
+			default -> java.util.Collections.singleton(pos);
 		};
 	}
 
@@ -426,6 +461,9 @@ public class ToolHelper {
 
 	/**
 	 * Shears entities in an AOE. Charge affects AOE. Optional per-entity EMC cost.
+	 *
+	 * @implNote On fabric this uses the vanilla {@link Shearable} interface, and the sheared drops are spawned by the entity itself rather than being collected
+	 * (and doubled) like the old behavior.
 	 */
 	public static InteractionResult shearEntityAOE(Player player, InteractionHand hand, long emcCost) {
 		Level level = player.level();
@@ -434,25 +472,16 @@ public class ToolHelper {
 		//Get all entities also making sure that they are shearable
 		List<Entity> list = level.getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate(offset, offset / 2.0, offset), SHEARABLE);
 		boolean hasAction = false;
-		List<ItemStack> drops = new ArrayList<>();
 		for (Entity ent : list) {
 			BlockPos entityPosition = ent.blockPosition();
-			IShearable target = (IShearable) ent;
-			if (target.isShearable(player, stack, level, entityPosition)) {
+			Shearable target = (Shearable) ent;
+			if (target.readyForShearing()) {
 				if (level.isClientSide) {
 					return InteractionResult.SUCCESS;
 				}
 				if (ItemPE.consumeFuel(player, stack, emcCost, true)) {
-					List<ItemStack> entDrops = target.onSheared(player, stack, level, entityPosition);
+					target.shear(SoundSource.PLAYERS);
 					ent.gameEvent(GameEvent.SHEAR, player);
-					if (!entDrops.isEmpty()) {
-						//Double all drops (just add them all twice because we compact the list later anyways)
-						//Note: The reason we don't grow the stacks like we used to is to ensure if a modded mob drops
-						// items with over half their max stack size, we don't end up potentially messing up the logic
-						// in the stack/trying to spawn in overly full stacks
-						drops.addAll(entDrops);
-						drops.addAll(entDrops);
-					}
 					hasAction = true;
 				} else {
 					//If we failed to consume EMC but needed EMC just break out early as we won't have the required EMC for any of the future blocks
@@ -464,7 +493,7 @@ public class ToolHelper {
 				if (e != null) {
 					e.setPos(ent.getX(), ent.getY(), ent.getZ());
 					if (e instanceof Mob mob) {
-						EventHooks.finalizeMobSpawn(mob, (ServerLevel) level, level.getCurrentDifficultyAt(entityPosition), MobSpawnType.EVENT, null);
+						mob.finalizeSpawn((ServerLevel) level, level.getCurrentDifficultyAt(entityPosition), MobSpawnType.EVENT, null);
 					}
 					if (e instanceof Sheep sheep) {
 						sheep.setColor(DyeColor.byId(level.random.nextInt(16)));
@@ -476,11 +505,7 @@ public class ToolHelper {
 				}
 			}
 		}
-		if (hasAction) {
-			WorldHelper.createLootDrop(drops, level, player.position());
-			return InteractionResult.SUCCESS;
-		}
-		return InteractionResult.PASS;
+		return hasAction ? InteractionResult.SUCCESS : InteractionResult.PASS;
 	}
 
 	/**
@@ -511,7 +536,7 @@ public class ToolHelper {
 		}
 		Level level = player.level();
 		ItemStack stack = player.getItemInHand(hand);
-		BiPredicate<BlockState, ItemStack> stateChecker = (state, itemStack) -> state.is(Tags.Blocks.ORES) && itemStack.isCorrectToolForDrops(state);
+		BiPredicate<BlockState, ItemStack> stateChecker = (state, itemStack) -> state.is(ConventionalBlockTags.ORES) && itemStack.isCorrectToolForDrops(state);
 		AABB area = player.getBoundingBox().inflate(getCharge(stack) + 3);
 		return harvestVein(level, player, player.blockPosition(), stack, area, stack, stateChecker, WorldHelper::createLootDrop);
 	}
@@ -544,14 +569,14 @@ public class ToolHelper {
 	}
 
 	private static int getCharge(ItemStack stack) {
-		IItemCharge charge = stack.getCapability(PECapabilities.CHARGE_ITEM_CAPABILITY);
+		IItemCharge charge = PECapabilities.CHARGE_ITEM_CAPABILITY.find(stack);
 		return charge == null ? 0 : charge.getCharge(stack);
 	}
 
-	public static void applyChargeAttributes(ItemAttributeModifierEvent event) {
-		int charge = getCharge(event.getItemStack());
+	public static void applyChargeAttributes(ItemStack stack, AttributeCollector collector) {
+		int charge = getCharge(stack);
 		if (charge > 0) {
-			event.addModifier(Attributes.ATTACK_DAMAGE, new AttributeModifier(CHARGE_MODIFIER_ID, charge, Operation.ADD_VALUE), EquipmentSlotGroup.MAINHAND);
+			collector.accept(Attributes.ATTACK_DAMAGE, new AttributeModifier(CHARGE_MODIFIER_ID, charge, Operation.ADD_VALUE), EquipmentSlotGroup.MAINHAND);
 		}
 	}
 

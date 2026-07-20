@@ -9,7 +9,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record SyncAllBagDataPKT(AlchemicalBagAttachment data) implements IPEPacket {
@@ -26,13 +26,13 @@ public record SyncAllBagDataPKT(AlchemicalBagAttachment data) implements IPEPack
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		//We have to use the client's player instance rather than context#player as the first usage of this packet is sent during player login
 		// which is before the player exists on the client so the context does not contain it.
 		//Note: This must stay LocalPlayer to not cause classloading issues
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.setData(PEAttachmentTypes.ALCHEMICAL_BAGS, data);
+			player.setAttached(PEAttachmentTypes.ALCHEMICAL_BAGS, data);
 		}
 		PECore.debugLog("** RECEIVED BAGS CLIENTSIDE **");
 	}

@@ -12,8 +12,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.connection.ConnectionType;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import moze_intel.projecte.network.PEPacketContext;
 import org.jetbrains.annotations.NotNull;
 
 public record SyncEmcPKT(Object2LongMap<ItemInfo> data) implements IPEPacket {
@@ -32,7 +31,7 @@ public record SyncEmcPKT(Object2LongMap<ItemInfo> data) implements IPEPacket {
 	}
 
 	@Override
-	public void handle(IPayloadContext context) {
+	public void handle(PEPacketContext context) {
 		PECore.debugLog("Receiving EMC data from server.");
 		EMCMappingHandler.updateEmcValues(data);
 	}
@@ -40,7 +39,7 @@ public record SyncEmcPKT(Object2LongMap<ItemInfo> data) implements IPEPacket {
 	public static SyncEmcPKT serializeEmcData(RegistryAccess registryAccess) {
 		SyncEmcPKT data = EMCMappingHandler.createPacketData();
 		//Simulate encoding the EMC packet to get an accurate size
-		RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess, ConnectionType.NEOFORGE);
+		RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess);
 		try {
 			int index = buf.writerIndex();
 			SyncEmcPKT.STREAM_CODEC.encode(buf, data);
