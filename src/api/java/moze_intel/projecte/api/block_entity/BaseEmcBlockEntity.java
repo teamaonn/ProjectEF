@@ -1,6 +1,7 @@
 package moze_intel.projecte.api.block_entity;
 
 import moze_intel.projecte.api.capabilities.block_entity.IEmcStorage;
+import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -8,7 +9,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -23,10 +23,10 @@ import org.jetbrains.annotations.Range;
 public class BaseEmcBlockEntity extends BlockEntity implements IEmcStorage {
 
 	/**
-	 * To expose the EMC Storage capability this provider or one similar should be registered for your block entity inside of
-	 * {@link net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent}
+	 * To expose the EMC Storage capability this provider or one similar should be registered for your block entity type against
+	 * {@link moze_intel.projecte.api.capabilities.PECapabilities#EMC_STORAGE_CAPABILITY}.
 	 */
-	public static final ICapabilityProvider<BaseEmcBlockEntity, @Nullable Direction, IEmcStorage> EMC_STORAGE_PROVIDER = (blockEntity, context) -> blockEntity;
+	public static final BlockApiLookup.BlockEntityApiProvider<IEmcStorage, @Nullable Direction> EMC_STORAGE_PROVIDER = (blockEntity, context) -> blockEntity instanceof BaseEmcBlockEntity be ? be : null;
 
 	private long maximumEMC;
 	private long currentEMC;

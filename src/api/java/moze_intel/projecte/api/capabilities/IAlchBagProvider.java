@@ -3,8 +3,7 @@ package moze_intel.projecte.api.capabilities;
 import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.DyeColor;
-import net.neoforged.neoforge.capabilities.EntityCapability;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -12,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * This is exposed through the Capability system.
  * <p>
- * Acquire an instance of this using {@link net.minecraft.world.entity.Entity#getCapability(EntityCapability)}.
+ * Acquire an instance of this by querying {@link moze_intel.projecte.api.capabilities.PECapabilities#ALCH_BAG_CAPABILITY} for a given entity.
  */
 public interface IAlchBagProvider {
 

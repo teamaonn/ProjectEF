@@ -5,13 +5,13 @@ import moze_intel.projecte.api.nss.NSSFake;
 import moze_intel.projecte.api.nss.NSSFluid;
 import moze_intel.projecte.api.nss.NSSItem;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
  * Helper interface to hold some helper wrapper methods to make it cleaner to interact with various built in types of {@link NormalizedSimpleStack}s.
@@ -93,16 +93,17 @@ interface CustomConversionNSSHelper<BUILDER extends ConversionBuilder<?>> {
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and output amount, and then creates a {@link BUILDER} representing it.
+	 * Helper method to wrap a {@link FluidVariant} and output amount into a {@link NormalizedSimpleStack}, and then creates a {@link BUILDER} representing it.
 	 *
-	 * @param output Stack produced by the conversion.
+	 * @param output Fluid variant produced by the conversion.
+	 * @param amount Amount the conversion outputs.
 	 *
 	 * @apiNote Either this method or {@link #conversion(NormalizedSimpleStack, int)} using
 	 * {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default BUILDER conversion(FluidStack output) {
-		return conversion(NSSFluid.createFluid(output), output.getAmount());
+	default BUILDER conversion(FluidVariant output, int amount) {
+		return conversion(NSSFluid.createFluid(output), amount);
 	}
 
 	/**

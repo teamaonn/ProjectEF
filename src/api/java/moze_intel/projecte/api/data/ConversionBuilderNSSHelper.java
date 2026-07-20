@@ -5,13 +5,13 @@ import moze_intel.projecte.api.nss.NSSFake;
 import moze_intel.projecte.api.nss.NSSFluid;
 import moze_intel.projecte.api.nss.NSSItem;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
  * Helper interface to hold some helper wrapper methods to make it cleaner to interact with various built in types of {@link NormalizedSimpleStack}s.
@@ -91,16 +91,17 @@ interface ConversionBuilderNSSHelper<PARENT> {
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and amount and add it as an input ingredient.
+	 * Helper method to wrap a {@link FluidVariant} and amount into a {@link NormalizedSimpleStack} and add it as an input ingredient.
 	 *
-	 * @param input Stack used in the conversion.
+	 * @param input  Fluid variant used in the conversion.
+	 * @param amount Amount of the input, can be negative.
 	 *
 	 * @apiNote Either this method or {@link #ingredient(NormalizedSimpleStack, int)} using
 	 * {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default ConversionBuilder<PARENT> ingredient(FluidStack input) {
-		return ingredient(NSSFluid.createFluid(input), input.getAmount());
+	default ConversionBuilder<PARENT> ingredient(FluidVariant input, int amount) {
+		return ingredient(NSSFluid.createFluid(input), amount);
 	}
 
 	/**

@@ -1,12 +1,13 @@
 package moze_intel.projecte.api.nss;
 
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Objects;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -76,12 +77,15 @@ public abstract class AbstractDataComponentHolderNSSTag<TYPE> extends AbstractNS
 	protected static <TYPE, NSS extends AbstractDataComponentHolderNSSTag<TYPE>> MapCodec<NSS> createCodec(Registry<TYPE> registry, boolean allowDefault,
 			DataComponentHolderNSSConstructor<TYPE, NSS> nssConstructor) {
 		//Note: We return a MapCodec so that dispatch codecs can inline this
-		return NeoForgeExtraCodecs.withAlternative(
+		return Codec.mapEither(
 				createTagCodec(nssConstructor),
-				RecordCodecBuilder.mapCodec(instance -> instance.group(
+				RecordCodecBuilder.<NSS>mapCodec(instance -> instance.group(
 						idComponent(registry, allowDefault),
 						DataComponentPatch.CODEC.optionalFieldOf("data", DataComponentPatch.EMPTY).forGetter(AbstractDataComponentHolderNSSTag::getComponentsPatch)
-				).apply(instance, nssConstructor::create))
+				).<NSS>apply(instance, nssConstructor::create))
+		).xmap(
+				either -> either.map(l -> l, r -> r),
+				nss -> nss.representsTag() ? Either.left(nss) : Either.right(nss)
 		);
 	}
 

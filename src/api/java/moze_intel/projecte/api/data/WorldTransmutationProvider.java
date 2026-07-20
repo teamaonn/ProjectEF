@@ -1,14 +1,18 @@
 package moze_intel.projecte.api.data;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.ParametersAreNonnullByDefault;
 import moze_intel.projecte.api.world_transmutation.WorldTransmutationFile;
+import net.fabricmc.fabric.api.resource.conditions.v1.ResourceCondition;
+import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.CachedOutput;
@@ -19,8 +23,6 @@ import net.minecraft.data.PackOutput.Target;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.conditions.ICondition;
-import net.neoforged.neoforge.common.conditions.WithConditions;
 
 /**
  * Base Data Generator Provider class for use in creating world transmutations json data files that ProjectE will read from the data pack.
@@ -55,8 +57,17 @@ public abstract class WorldTransmutationProvider implements DataProvider {
 			addWorldTransmutations(registries);
 			return registries;
 		}).thenCompose(registries -> CompletableFuture.allOf(worldTransmutations.entrySet().stream()
-				.map(entry -> DataProvider.saveStable(output, registries, WorldTransmutationFile.CONDITIONAL_CODEC,
-						entry.getValue().build(), outputProvider.json(entry.getKey())))
+				.map(entry -> {
+					ConditionalBuilder conditional = entry.getValue();
+					WorldTransmutationFile file = conditional.builder().build();
+					JsonElement json = WorldTransmutationFile.CODEC.encodeStart(registries.createSerializationContext(JsonOps.INSTANCE), file).getOrThrow();
+					if (conditional.conditions().length > 0) {
+						JsonObject obj = json.getAsJsonObject();
+						obj.add(ResourceConditions.CONDITIONS_KEY, ResourceCondition.LIST_CODEC.encodeStart(
+								registries.createSerializationContext(JsonOps.INSTANCE), java.util.List.of(conditional.conditions())).getOrThrow());
+					}
+					return DataProvider.saveStable(output, json, outputProvider.json(entry.getKey()));
+				})
 				.toArray(CompletableFuture[]::new)
 		));
 	}
@@ -76,7 +87,7 @@ public abstract class WorldTransmutationProvider implements DataProvider {
 	 *
 	 * @return Builder
 	 */
-	protected WorldTransmutationBuilder createTransmutationBuilder(ResourceLocation id, ICondition... conditions) {
+	protected WorldTransmutationBuilder createTransmutationBuilder(ResourceLocation id, ResourceCondition... conditions) {
 		Objects.requireNonNull(id, "World Transmutation Builder ID cannot be null.");
 		if (worldTransmutations.containsKey(id)) {
 			throw new RuntimeException("World transmutation file '" + id + "' has already been registered.");
@@ -86,10 +97,6 @@ public abstract class WorldTransmutationProvider implements DataProvider {
 		return builder;
 	}
 
-	private record ConditionalBuilder(WorldTransmutationBuilder builder, ICondition... conditions) {
-
-		public Optional<WithConditions<WorldTransmutationFile>> build() {
-			return Optional.of(new WithConditions<>(builder.build(), conditions));
-		}
+	private record ConditionalBuilder(WorldTransmutationBuilder builder, ResourceCondition... conditions) {
 	}
 }

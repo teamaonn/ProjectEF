@@ -1,5 +1,6 @@
 package moze_intel.projecte.api.conversion;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2LongLinkedOpenHashMap;
@@ -9,7 +10,6 @@ import java.util.List;
 import moze_intel.projecte.api.ProjectEAPI;
 import moze_intel.projecte.api.codec.IPECodecHelper;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 
 /**
  * @param setValueBefore Map of {@link NormalizedSimpleStack} to the value to set before applying conversions.
@@ -27,12 +27,15 @@ public record FixedValues(Object2LongSortedMap<NormalizedSimpleStack> setValueBe
 
 	private static final Codec<Object2LongSortedMap<NormalizedSimpleStack>> VALUE_CODEC = IPECodecHelper.INSTANCE.modifiableMap(IPECodecHelper.INSTANCE.lenientKeyUnboundedMap(
 			IPECodecHelper.INSTANCE.nssMapCodec(),
-			NeoForgeExtraCodecs.withAlternative(
+			Codec.either(
 					IPECodecHelper.INSTANCE.positiveLong(),
 					Codec.stringResolver(
 							val -> val == ProjectEAPI.FREE_ARITHMETIC_VALUE ? "free" : null,
 							str -> str.equalsIgnoreCase("free") ? ProjectEAPI.FREE_ARITHMETIC_VALUE : null
 					)
+			).xmap(
+					either -> either.map(l -> l, r -> r),
+					value -> value == ProjectEAPI.FREE_ARITHMETIC_VALUE ? Either.right(value) : Either.left(value)
 			).fieldOf("emc_value")
 	), immutableMap -> {
 		Object2LongSortedMap<NormalizedSimpleStack> map = new Object2LongLinkedOpenHashMap<>(immutableMap);

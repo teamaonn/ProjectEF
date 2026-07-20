@@ -1,11 +1,24 @@
 package moze_intel.projecte.api.event;
 
-import net.neoforged.bus.api.Event;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 
 /**
  * This event is fired on the server after all EMC values are recalculated
  * <p>
- * This event is fired on {@link net.neoforged.neoforge.common.NeoForge#EVENT_BUS}
+ * This event is fired on {@link #EVENT}
  */
-public class EMCRemapEvent extends Event {
+public class EMCRemapEvent {
+
+	public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> () -> {
+		for (Callback listener : listeners) {
+			listener.onEmcRemap();
+		}
+	});
+
+	@FunctionalInterface
+	public interface Callback {
+
+		void onEmcRemap();
+	}
 }

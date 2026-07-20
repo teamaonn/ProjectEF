@@ -1,5 +1,6 @@
 package moze_intel.projecte.api.world_transmutation;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -12,7 +13,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -26,7 +26,7 @@ public record WorldTransmutation(@NotNull BlockState originState, @NotNull Block
 	static final String RESULT_KEY = "result";
 	static final String ALT_RESULT_KEY = "alt_result";
 
-	private static final Codec<BlockState> STATE_CODEC = NeoForgeExtraCodecs.withAlternative(BuiltInRegistries.BLOCK.byNameCodec().flatXmap(
+	private static final Codec<BlockState> STATE_CODEC = Codec.either(BuiltInRegistries.BLOCK.byNameCodec().flatXmap(
 			block -> DataResult.success(block.defaultBlockState()),
 			state -> {
 				if (state.getValues().isEmpty()) {
@@ -34,7 +34,10 @@ public record WorldTransmutation(@NotNull BlockState originState, @NotNull Block
 				}
 				return DataResult.error(() -> "Flattened state codec cannot be used for blocks that define any properties.");
 			}
-	), BlockState.CODEC);
+	), BlockState.CODEC).xmap(
+			either -> either.map(l -> l, r -> r),
+			state -> state.getValues().isEmpty() ? Either.left(state) : Either.right(state)
+	);
 	private static final StreamCodec<ByteBuf, BlockState> STATE_STREAM_CODEC = ByteBufCodecs.idMapper(Block.BLOCK_STATE_REGISTRY);
 
 	/**

@@ -1,10 +1,11 @@
 package moze_intel.projecte.api;
 
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
-import net.neoforged.neoforge.registries.DeferredHolder;
 
 public final class PESounds {
 
@@ -21,6 +22,7 @@ public final class PESounds {
 	}
 
 	private static Holder<SoundEvent> get(String name) {
-		return DeferredHolder.create(Registries.SOUND_EVENT, ResourceLocation.fromNamespaceAndPath(ProjectEAPI.PROJECTE_MODID, name));
+		return BuiltInRegistries.SOUND_EVENT.getHolderOrThrow(
+				ResourceKey.create(Registries.SOUND_EVENT, ResourceLocation.fromNamespaceAndPath(ProjectEAPI.PROJECTE_MODID, name)));
 	}
 }

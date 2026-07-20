@@ -1,21 +1,31 @@
 package moze_intel.projecte.api.event;
 
 import moze_intel.projecte.api.ItemInfo;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.ICancellableEvent;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This event is fired on the server when a player is attempting to place an item in the condenser.
  * <p>
- * This event is fired on {@link net.neoforged.neoforge.common.NeoForge#EVENT_BUS}
+ * This event is fired on {@link #EVENT} and may be canceled to prevent the item from being set.
  */
-public class PlayerAttemptCondenserSetEvent extends Event implements ICancellableEvent {
+public class PlayerAttemptCondenserSetEvent {
+
+	public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+		for (Callback listener : listeners) {
+			if (event.isCanceled()) {
+				break;
+			}
+			listener.onAttemptCondenserSet(event);
+		}
+	});
 
 	private final Player player;
 	private final ItemInfo sourceInfo;
 	private final ItemInfo reducedInfo;
+	private boolean canceled;
 
 	public PlayerAttemptCondenserSetEvent(@NotNull Player entityPlayer, @NotNull ItemInfo sourceInfo, @NotNull ItemInfo reducedInfo) {
 		player = entityPlayer;
@@ -47,5 +57,22 @@ public class PlayerAttemptCondenserSetEvent extends Event implements ICancellabl
 	@NotNull
 	public ItemInfo getReducedInfo() {
 		return reducedInfo;
+	}
+
+	/**
+	 * @return Whether this event has been canceled, preventing the item from being set in the condenser.
+	 */
+	public boolean isCanceled() {
+		return canceled;
+	}
+
+	public void setCanceled(boolean canceled) {
+		this.canceled = canceled;
+	}
+
+	@FunctionalInterface
+	public interface Callback {
+
+		void onAttemptCondenserSet(PlayerAttemptCondenserSetEvent event);
 	}
 }

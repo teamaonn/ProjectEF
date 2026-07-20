@@ -5,13 +5,13 @@ import moze_intel.projecte.api.nss.NSSFake;
 import moze_intel.projecte.api.nss.NSSFluid;
 import moze_intel.projecte.api.nss.NSSItem;
 import moze_intel.projecte.api.nss.NormalizedSimpleStack;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
  * Helper interface to hold some helper wrapper methods to make it cleaner to interact with various built in types of {@link NormalizedSimpleStack}s.
@@ -181,7 +181,7 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and then add a "before" emc mapping value to it.
+	 * Helper method to wrap a {@link FluidVariant} into a {@link NormalizedSimpleStack} and then add a "before" emc mapping value to it.
 	 *
 	 * @param stack Stack to set EMC value of.
 	 * @param emc   Value
@@ -190,7 +190,7 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	 * {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default CustomConversionBuilder before(FluidStack stack, long emc) {
+	default CustomConversionBuilder before(FluidVariant stack, long emc) {
 		return before(NSSFluid.createFluid(stack), emc);
 	}
 
@@ -217,14 +217,14 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and then add a "before" emc mapping value of "free" to it.
+	 * Helper method to wrap a {@link FluidVariant} into a {@link NormalizedSimpleStack} and then add a "before" emc mapping value of "free" to it.
 	 *
 	 * @param stack Stack to set as "free" in conversions.
 	 *
 	 * @apiNote Either this method or {@link #before(NormalizedSimpleStack)} using {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default CustomConversionBuilder before(FluidStack stack) {
+	default CustomConversionBuilder before(FluidVariant stack) {
 		return before(NSSFluid.createFluid(stack));
 	}
 
@@ -249,7 +249,7 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and then add an "after" emc mapping value to it.
+	 * Helper method to wrap a {@link FluidVariant} into a {@link NormalizedSimpleStack} and then add an "after" emc mapping value to it.
 	 *
 	 * @param stack Stack to set EMC value of.
 	 * @param emc   Value
@@ -258,7 +258,7 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	 * {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default CustomConversionBuilder after(FluidStack stack, long emc) {
+	default CustomConversionBuilder after(FluidVariant stack, long emc) {
 		return after(NSSFluid.createFluid(stack), emc);
 	}
 
@@ -285,14 +285,14 @@ interface CustomConversionBuilderNSSHelper extends CustomConversionNSSHelper<Con
 	}
 
 	/**
-	 * Helper method to wrap a {@link FluidStack} into a {@link NormalizedSimpleStack} and then add an "after" emc mapping value of "free" to it.
+	 * Helper method to wrap a {@link FluidVariant} into a {@link NormalizedSimpleStack} and then add an "after" emc mapping value of "free" to it.
 	 *
 	 * @param stack Stack to set as "free" in conversions.
 	 *
 	 * @apiNote Either this method or {@link #before(NormalizedSimpleStack)} using {@link NSSFluid#createFluid(Fluid, net.minecraft.core.component.DataComponentPatch)} or
 	 * {@link NSSFluid#createFluid(net.minecraft.core.Holder, net.minecraft.core.component.DataComponentPatch)} should be used if data component specifics are needed.
 	 */
-	default CustomConversionBuilder after(FluidStack stack) {
+	default CustomConversionBuilder after(FluidVariant stack) {
 		return after(NSSFluid.createFluid(stack));
 	}
 

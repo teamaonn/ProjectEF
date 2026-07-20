@@ -2,8 +2,7 @@ package moze_intel.projecte.api.capabilities.item;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.ItemCapability;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -11,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * This is exposed through the Capability system.
  * <p>
- * Acquire an instance of this using {@link ItemStack#getCapability(ItemCapability)}.
+ * Acquire an instance of this by querying {@link moze_intel.projecte.api.capabilities.PECapabilities#ALCH_BAG_ITEM_CAPABILITY} for a given stack.
  *
  * @author williewillus
  */

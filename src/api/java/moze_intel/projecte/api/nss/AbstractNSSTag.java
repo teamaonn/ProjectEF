@@ -1,5 +1,7 @@
 package moze_intel.projecte.api.nss;
 
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -16,7 +18,6 @@ import net.minecraft.core.HolderSet.Named;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.neoforged.neoforge.common.util.NeoForgeExtraCodecs;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jetbrains.annotations.NotNull;
 
@@ -186,11 +187,14 @@ public abstract class AbstractNSSTag<TYPE> implements NSSTag {
 	protected static <TYPE, NSS extends AbstractNSSTag<TYPE>> MapCodec<NSS> createCodec(Registry<TYPE> registry, boolean allowDefault,
 			NSSTagConstructor<TYPE, NSS> nssConstructor) {
 		//Note: We return a MapCodec so that dispatch codecs can inline this
-		return NeoForgeExtraCodecs.withAlternative(
+		return Codec.mapEither(
 				createTagCodec(nssConstructor),
-				RecordCodecBuilder.mapCodec(instance -> instance.group(
+				RecordCodecBuilder.<NSS>mapCodec(instance -> instance.group(
 						idComponent(registry, allowDefault)
-				).apply(instance, nssConstructor::create))
+				).<NSS>apply(instance, nssConstructor::create))
+		).xmap(
+				either -> either.map(l -> l, r -> r),
+				nss -> nss.representsTag() ? Either.left(nss) : Either.right(nss)
 		);
 	}
 

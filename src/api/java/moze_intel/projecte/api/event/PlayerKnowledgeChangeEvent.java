@@ -1,16 +1,23 @@
 package moze_intel.projecte.api.event;
 
 import java.util.UUID;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.Event;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This event is fired serverside after a players transmutation knowledge is changed
  * <p>
- * This event is fired on {@link net.neoforged.neoforge.common.NeoForge#EVENT_BUS}
+ * This event is fired on {@link #EVENT}
  */
-public class PlayerKnowledgeChangeEvent extends Event {
+public class PlayerKnowledgeChangeEvent {
+
+	public static final Event<Callback> EVENT = EventFactory.createArrayBacked(Callback.class, listeners -> event -> {
+		for (Callback listener : listeners) {
+			listener.onKnowledgeChange(event);
+		}
+	});
 
 	private final UUID playerUUID;
 
@@ -28,5 +35,11 @@ public class PlayerKnowledgeChangeEvent extends Event {
 	@NotNull
 	public UUID getPlayerUUID() {
 		return playerUUID;
+	}
+
+	@FunctionalInterface
+	public interface Callback {
+
+		void onKnowledgeChange(PlayerKnowledgeChangeEvent event);
 	}
 }
