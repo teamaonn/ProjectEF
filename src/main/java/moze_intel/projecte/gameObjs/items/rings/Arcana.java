@@ -22,7 +22,7 @@ import moze_intel.projecte.gameObjs.items.rings.Arcana.ArcanaMode;
 import moze_intel.projecte.gameObjs.registries.PEDataComponentTypes;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
 import moze_intel.projecte.integration.IntegrationHelper;
-import moze_intel.projecte.integration.curios.IExposesCurioAttributes;
+import moze_intel.projecte.integration.IExposesCurioAttributes;
 import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.WorldHelper;
 import moze_intel.projecte.utils.text.IHasTranslationKey;
@@ -58,25 +58,43 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.ItemAbility;
-import net.neoforged.neoforge.common.NeoForgeMod;
 import org.jetbrains.annotations.NotNull;
 
 public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtector, IExtraFunction, IProjectileShooter, ICapabilityAware, IExposesCurioAttributes {
 
-	private static final AttributeModifier FLIGHT = new AttributeModifier(PECore.rl("arcana_flight"), 1, Operation.ADD_VALUE);
+	private static boolean shouldHaveFlight(Player player) {
+		for (net.minecraft.world.item.ItemStack stack : player.getInventory().items) {
+			if (!stack.isEmpty() && stack.getItem() instanceof Arcana && stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static void tickFlight(Player player) {
+		// Skip creative/spectator entirely - they have native flight
+		if (player.isCreative() || player.isSpectator()) {
+			return;
+		}
+		boolean hasFlight = shouldHaveFlight(player);
+		if (hasFlight && !player.getAbilities().mayfly) {
+			player.getAbilities().mayfly = true;
+			player.onUpdateAbilities();
+		} else if (!hasFlight && player.getAbilities().mayfly) {
+			player.getAbilities().mayfly = false;
+			player.getAbilities().flying = false;
+			player.onUpdateAbilities();
+		}
+	}
 	private final Supplier<ItemAttributeModifiers> defaultModifiers;
 
 	public Arcana(Properties props) {
-		super(props.component(PEDataComponentTypes.ACTIVE, false)
-				.component(PEDataComponentTypes.ARCANA_MODE, ArcanaMode.ZERO)
-				.component(PEDataComponentTypes.STORED_EMC, 0L)
+		super(props.component(PEDataComponentTypes.ACTIVE.get(), false)
+				.component(PEDataComponentTypes.ARCANA_MODE.get(), ArcanaMode.ZERO)
+				.component(PEDataComponentTypes.STORED_EMC.get(), 0L)
 		);
-		this.defaultModifiers = Suppliers.memoize(() -> ItemAttributeModifiers.builder()
-				.add(NeoForgeMod.CREATIVE_FLIGHT, FLIGHT, EquipmentSlotGroup.ANY)
-				.build());
+		//TODO Fabric 1.21.1: vanilla has no creative-flight attribute. Arcana's flight (all modes granted flight while worn) needs a mixin/tick approach.
+		this.defaultModifiers = Suppliers.memoize(() -> ItemAttributeModifiers.builder().build());
 	}
 
 	@NotNull
@@ -88,22 +106,13 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 
 	@Override
 	public void addAttributes(Multimap<Holder<Attribute>, AttributeModifier> attributes) {
-		attributes.put(NeoForgeMod.CREATIVE_FLIGHT, FLIGHT);
-	}
-
-	@Override
-	public boolean hasCraftingRemainingItem(@NotNull ItemStack stack) {
-		return true;
+		//TODO Fabric 1.21.1: creative flight via attributes is unavailable in vanilla; see the constructor note.
 	}
 
 	@NotNull
-	@Override
-	public ItemStack getCraftingRemainingItem(ItemStack stack) {
-		return stack.copy();
-	}
 
 	private void tick(ItemStack stack, Level level, ServerPlayer player) {
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			switch (getMode(stack)) {
 				case ZERO -> WorldHelper.freezeInBoundingBox(level, player.getBoundingBox().inflate(5), player, true);
 				case IGNITION -> WorldHelper.igniteNearby(level, player);
@@ -124,7 +133,7 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 	@Override
 	public void appendHoverText(@NotNull ItemStack stack, @NotNull Item.TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flags) {
 		super.appendHoverText(stack, context, tooltip, flags);
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			tooltip.add(getToolTip(stack));
 		} else {
 			tooltip.add(PELang.TOOLTIP_ARCANA_INACTIVE.translateColored(ChatFormatting.RED));
@@ -136,7 +145,7 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 	public InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
 		if (!level.isClientSide) {
 			ItemStack stack = player.getItemInHand(hand);
-			stack.update(PEDataComponentTypes.ACTIVE, false, active -> !active);
+			stack.update(PEDataComponentTypes.ACTIVE.get(), false, active -> !active);
 		}
 		return InteractionResultHolder.success(player.getItemInHand(hand));
 	}
@@ -209,16 +218,8 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 	}
 
 	@Override
-	public boolean canPerformAction(@NotNull ItemStack stack, @NotNull ItemAbility action) {
-		if (action == ItemAbilities.FIRESTARTER_LIGHT && getMode(stack) == ArcanaMode.IGNITION) {
-			return true;
-		}
-		return super.canPerformAction(stack, action);
-	}
-
-	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 
 	@Override

@@ -31,8 +31,8 @@ public abstract class EntityNovaPrimed extends PrimedTnt {
 
 	protected abstract BlockRegistryObject<ProjectETNT, ?> getBlock();
 
-	@NotNull
 	@Override
+	@NotNull
 	public abstract EntityType<?> getType();
 
 	protected float getExplosionPower() {
@@ -40,12 +40,14 @@ public abstract class EntityNovaPrimed extends PrimedTnt {
 	}
 
 	@Override
-	protected void explode() {
-		WorldHelper.createNovaExplosion(level(), this, getX(), getY(), getZ(), getExplosionPower());
+	public void tick() {
+		super.tick();
+		if (getFuse() == 0 && !level().isClientSide) {
+			discard();
+		}
 	}
 
-	@Override
-	public ItemStack getPickedResult(@NotNull HitResult target) {
+	public ItemStack asItemStack() {
 		return new ItemStack(getBlock());
 	}
 }

@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.IntFunction;
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.api.capabilities.item.IAlchBagItem;
 import moze_intel.projecte.api.capabilities.item.IAlchChestItem;
 import moze_intel.projecte.api.proxy.IEMCProxy;
@@ -41,21 +42,19 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.items.wrapper.PlayerMainInvWrapper;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.PlayerMainInvWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChestItem, IItemMode<GemMode>, ICapabilityAware {
 
 	public GemEternalDensity(Properties props) {
-		super(props.component(PEDataComponentTypes.ACTIVE, false)
-				.component(PEDataComponentTypes.GEM_MODE, GemMode.IRON)
-				.component(PEDataComponentTypes.GEM_DATA, GemData.EMPTY)
-				.component(PEDataComponentTypes.STORED_EMC, 0L)
+		super(props.component(PEDataComponentTypes.ACTIVE.get(), false)
+				.component(PEDataComponentTypes.GEM_MODE.get(), GemMode.IRON)
+				.component(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY)
+				.component(PEDataComponentTypes.STORED_EMC.get(), 0L)
 		);
 	}
 
@@ -71,7 +70,7 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 	 * @return Whether the inventory was changed
 	 */
 	private boolean condense(ItemStack gem, IItemHandler inv) {
-		if (!gem.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (!gem.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			return false;
 		}
 		final ItemLike target = getMode(gem).getTarget();
@@ -80,13 +79,13 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 			//Target doesn't have an EMC value set, just exit early
 			return false;
 		}
-		long gemEmc = gem.getOrDefault(PEDataComponentTypes.STORED_EMC, 0L);
+		long gemEmc = gem.getOrDefault(PEDataComponentTypes.STORED_EMC.get(), 0L);
 		if (gemEmc == Long.MAX_VALUE) {
 			//If we have max stored, just try to condense whatever we currently have stored, and skip attempting to convert more items into stored emc
 			return condenseFromStoredEmc(inv, gem, gemEmc, target, targetEmc);
 		}
 		long emcRoomFor = Long.MAX_VALUE - gemEmc;
-		GemData gemData = gem.getOrDefault(PEDataComponentTypes.GEM_DATA, GemData.EMPTY);
+		GemData gemData = gem.getOrDefault(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY);
 		for (int i = 0, slots = inv.getSlots(); i < slots; i++) {
 			ItemStack stack = inv.getStackInSlot(i);
 			if (stack.isEmpty()) {
@@ -123,8 +122,8 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 					if (!copy.isEmpty()) {
 						// and add how much emc we got from it to our stored emc
 						gemEmc += emcValue * copy.getCount();
-						gem.set(PEDataComponentTypes.STORED_EMC, gemEmc);
-						gem.set(PEDataComponentTypes.GEM_DATA, gemData.addConsumed(copy));
+						gem.set(PEDataComponentTypes.STORED_EMC.get(), gemEmc);
+						gem.set(PEDataComponentTypes.GEM_DATA.get(), gemData.addConsumed(copy));
 						condenseFromStoredEmc(inv, gem, gemEmc, target, targetEmc);
 						return true;
 					}
@@ -158,11 +157,11 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 			}
 			if (gemEmc != originalGemEmc) {
 				//Update the stored emc if it changed
-				gem.set(PEDataComponentTypes.STORED_EMC, gemEmc);
+				gem.set(PEDataComponentTypes.STORED_EMC.get(), gemEmc);
 				// and update the data to represent we no longer have any items that were consumed
 				//TODO: Re-evaluate this, as if some of the stored emc can still be distributed between the items that were consumed,
 				// then realistically we don't want to clear them from the consumed list
-				gem.update(PEDataComponentTypes.GEM_DATA, GemData.EMPTY, GemData::clearConsumed);
+				gem.update(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY, GemData::clearConsumed);
 				return true;
 			}
 		}
@@ -175,22 +174,19 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 		ItemStack stack = player.getItemInHand(hand);
 		if (!level.isClientSide) {
 			if (player.isSecondaryUseActive()) {
-				if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
-					GemData oldData = stack.update(PEDataComponentTypes.GEM_DATA, GemData.EMPTY, GemData::clearConsumed);
+				if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
+					GemData oldData = stack.update(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY, GemData::clearConsumed);
 					if (oldData != null && !oldData.consumed().isEmpty()) {
 						WorldHelper.createLootDrop(oldData.consumed(), level, player.position());
-						stack.set(PEDataComponentTypes.STORED_EMC, 0L);
+						stack.set(PEDataComponentTypes.STORED_EMC.get(), 0L);
 					}
-					stack.set(PEDataComponentTypes.ACTIVE, false);
+					stack.set(PEDataComponentTypes.ACTIVE.get(), false);
 				} else {
-					stack.set(PEDataComponentTypes.ACTIVE, true);
+					stack.set(PEDataComponentTypes.ACTIVE.get(), true);
 				}
 			} else {
 				int selected = player.getInventory().selected;
-				player.openMenu(new ContainerProvider(hand, selected), buf -> {
-					buf.writeEnum(hand);
-					buf.writeByte(selected);
-				});
+				player.openMenu(new ContainerProvider(hand, selected));
 			}
 		}
 		return InteractionResultHolder.success(stack);
@@ -224,8 +220,8 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 
 	@Override
 	public boolean updateInAlchChest(@NotNull Level level, @NotNull BlockPos pos, @NotNull ItemStack stack) {
-		if (!level.isClientSide && stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
-			IItemHandler handler = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, null);
+		if (!level.isClientSide && stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
+			IItemHandler handler = WorldHelper.getItemHandler(level, pos, null);
 			return handler != null && condense(stack, handler);
 		}
 		return false;
@@ -237,8 +233,8 @@ public class GemEternalDensity extends ItemPE implements IAlchBagItem, IAlchChes
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 
 	private record ContainerProvider(InteractionHand hand, int selected) implements MenuProvider {

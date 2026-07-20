@@ -24,22 +24,21 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ContainerItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RepairTalisman extends ItemPE implements IAlchBagItem, IAlchChestItem, IPedestalItem, ICapabilityAware {
 
 	private static final BiPredicate<ItemStack, Void> CAN_REPAIR_ITEM = (stack, ignored) -> !stack.isEmpty() &&
-																							stack.getCapability(PECapabilities.MODE_CHANGER_ITEM_CAPABILITY) == null &&
+																							PECapabilities.MODE_CHANGER_ITEM_CAPABILITY.find(stack) == null &&
 																							ItemHelper.isRepairableDamagedItem(stack);
 	private static final BiPredicate<ItemStack, Player> CAN_REPAIR_PLAYER_ITEM =
 			(stack, player) -> CAN_REPAIR_ITEM.test(stack, null) && (stack != player.getMainHandItem() || !player.swinging);
 
 	public RepairTalisman(Properties props) {
-		super(props.component(PEDataComponentTypes.COOLDOWN, (byte) 0));
+		super(props.component(PEDataComponentTypes.COOLDOWN.get(), (byte) 0));
 	}
 
 	@Override
@@ -78,7 +77,7 @@ public class RepairTalisman extends ItemPE implements IAlchBagItem, IAlchChestIt
 	@Override
 	public boolean updateInAlchChest(@NotNull Level level, @NotNull BlockPos pos, @NotNull ItemStack stack) {
 		if (!level.isClientSide) {
-			IItemHandler inv = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, null);
+			IItemHandler inv = WorldHelper.getItemHandler(level, pos, null);
 			if (inv != null) {
 				return updateInHandler(inv, stack);
 			}
@@ -92,25 +91,25 @@ public class RepairTalisman extends ItemPE implements IAlchBagItem, IAlchChestIt
 	}
 
 	private boolean updateInHandler(@NotNull IItemHandler inv, @NotNull ItemStack stack) {
-		byte coolDown = stack.getOrDefault(PEDataComponentTypes.COOLDOWN, (byte) 0);
+		byte coolDown = stack.getOrDefault(PEDataComponentTypes.COOLDOWN.get(), (byte) 0);
 		if (coolDown > 0) {
-			stack.set(PEDataComponentTypes.COOLDOWN, (byte) (coolDown - 1));
+			stack.set(PEDataComponentTypes.COOLDOWN.get(), (byte) (coolDown - 1));
 			return true;
 		} else if (repairAllItems(inv, null, CAN_REPAIR_ITEM)) {
-			stack.set(PEDataComponentTypes.COOLDOWN, (byte) 19);
+			stack.set(PEDataComponentTypes.COOLDOWN.get(), (byte) 19);
 			return true;
 		}
 		return false;
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 
 	private static void repairAllItems(Player player) {
-		repairAllItems(player.getCapability(ItemHandler.ENTITY), player, CAN_REPAIR_PLAYER_ITEM);
-		repairAllItems(player.getCapability(IntegrationHelper.CURIO_ITEM_HANDLER), player, CAN_REPAIR_PLAYER_ITEM);
+		repairAllItems(new ContainerItemHandler(player.getInventory()), player, CAN_REPAIR_PLAYER_ITEM);
+		repairAllItems(IntegrationHelper.getCuriosInventory(player), player, CAN_REPAIR_PLAYER_ITEM);
 	}
 
 	private static <DATA> boolean repairAllItems(@Nullable IItemHandler inv, DATA data, BiPredicate<ItemStack, DATA> canRepairStack) {

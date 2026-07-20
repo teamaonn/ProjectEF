@@ -23,13 +23,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import org.jetbrains.annotations.NotNull;
 
 public class BodyStone extends PEToggleItem implements IPedestalItem, ICapabilityAware {
 
 	public BodyStone(Properties props) {
-		super(props.component(PEDataComponentTypes.STORED_EMC, 0L));
+		super(props.component(PEDataComponentTypes.STORED_EMC.get(), 0L));
 	}
 
 	@Override
@@ -38,7 +37,7 @@ public class BodyStone extends PEToggleItem implements IPedestalItem, ICapabilit
 		if (level.isClientSide || !hotBarOrOffHand(slot) || !(entity instanceof Player player)) {
 			return;
 		}
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			if (consumeFuel(player, stack, 64, false)) {
 				if (PlayerHelper.checkFeedCooldown(player)) {
 					level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.HEAL.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -47,7 +46,7 @@ public class BodyStone extends PEToggleItem implements IPedestalItem, ICapabilit
 					removeEmc(stack, 64);
 				}
 			} else {
-				stack.set(PEDataComponentTypes.ACTIVE, false);
+				stack.set(PEDataComponentTypes.ACTIVE.get(), false);
 			}
 		}
 	}
@@ -83,7 +82,7 @@ public class BodyStone extends PEToggleItem implements IPedestalItem, ICapabilit
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 }

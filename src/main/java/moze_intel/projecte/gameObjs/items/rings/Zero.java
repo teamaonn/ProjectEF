@@ -26,30 +26,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import org.jetbrains.annotations.NotNull;
 
 public class Zero extends PEToggleItem implements IPedestalItem, IItemCharge, IBarHelper, ICapabilityAware {
 
 	public Zero(Properties props) {
-		super(props.component(PEDataComponentTypes.CHARGE, 0));
-	}
-
-	@Override
-	public boolean hasCraftingRemainingItem(@NotNull ItemStack stack) {
-		return true;
+		super(props.component(PEDataComponentTypes.CHARGE.get(), 0));
 	}
 
 	@NotNull
-	@Override
-	public ItemStack getCraftingRemainingItem(ItemStack stack) {
-		return stack.copy();
-	}
 
 	@Override
 	public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean isHeld) {
 		super.inventoryTick(stack, level, entity, slot, isHeld);
-		if (!level.isClientSide && entity instanceof Player player && hotBarOrOffHand(slot) && stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (!level.isClientSide && entity instanceof Player player && hotBarOrOffHand(slot) && stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			WorldHelper.freezeInBoundingBox(level, player.getBoundingBox().inflate(3), player, true);
 		}
 	}
@@ -123,7 +113,7 @@ public class Zero extends PEToggleItem implements IPedestalItem, IItemCharge, IB
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 }

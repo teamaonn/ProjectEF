@@ -1,6 +1,7 @@
 package moze_intel.projecte.gameObjs.blocks;
 
 import java.util.List;
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.api.capabilities.PECapabilities;
 import moze_intel.projecte.api.capabilities.item.IItemEmcHolder;
 import moze_intel.projecte.config.ProjectEConfig;
@@ -24,8 +25,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +51,7 @@ public class Collector extends BlockDirection implements PEEntityBlock<Collector
 		}
 		CollectorMK1BlockEntity collector = WorldHelper.getBlockEntity(CollectorMK1BlockEntity.class, level, pos, true);
 		if (collector != null) {
-			player.openMenu(collector, pos);
+			OpenScreenHelper.openMenuAt(player, collector, pos);
 		}
 		return InteractionResult.CONSUME;
 	}
@@ -96,7 +96,7 @@ public class Collector extends BlockDirection implements PEEntityBlock<Collector
 			//If something went wrong fallback to default implementation
 			return super.getAnalogOutputSignal(state, level, pos);
 		}
-		IItemHandler handler = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, state, collector, Direction.UP);
+		IItemHandler handler = WorldHelper.getItemHandler(level, pos, state, collector, Direction.UP);
 		if (handler == null) {
 			//If something went wrong fallback to default implementation
 			return super.getAnalogOutputSignal(state, level, pos);
@@ -105,7 +105,7 @@ public class Collector extends BlockDirection implements PEEntityBlock<Collector
 		if (charging.isEmpty()) {
 			return MathUtils.scaleToRedstone(collector.getStoredEmc(), collector.getMaximumEmc());
 		}
-		IItemEmcHolder emcHolder = charging.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(charging);
 		if (emcHolder != null) {
 			return MathUtils.scaleToRedstone(emcHolder.getStoredEmc(charging), emcHolder.getMaximumEmc(charging));
 		}

@@ -1,6 +1,5 @@
 package moze_intel.projecte.gameObjs.items.tools;
 
-import java.util.function.Consumer;
 import moze_intel.projecte.api.capabilities.item.IItemCharge;
 import moze_intel.projecte.gameObjs.IMatterType;
 import moze_intel.projecte.gameObjs.items.IBarHelper;
@@ -15,7 +14,6 @@ import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -27,8 +25,8 @@ public class PEAxe extends AxeItem implements IItemCharge, IBarHelper {
 
 	public PEAxe(IMatterType matterType, int numCharges, Properties props) {
 		super(matterType, props.attributes(createAttributes(matterType, 5, -3))
-				.component(PEDataComponentTypes.CHARGE, 0)
-				.component(PEDataComponentTypes.STORED_EMC, 0L)
+				.component(PEDataComponentTypes.CHARGE.get(), 0)
+				.component(PEDataComponentTypes.STORED_EMC.get(), 0L)
 		);
 		this.matterType = matterType;
 		this.numCharges = numCharges;
@@ -37,26 +35,6 @@ public class PEAxe extends AxeItem implements IItemCharge, IBarHelper {
 	@Override
 	public boolean isEnchantable(@NotNull ItemStack stack) {
 		return false;
-	}
-
-	@Override
-	public boolean isBookEnchantable(@NotNull ItemStack stack, @NotNull ItemStack book) {
-		return false;
-	}
-
-	@Override
-	public boolean isPrimaryItemFor(@NotNull ItemStack stack, @NotNull Holder<Enchantment> enchantment) {
-		return false;
-	}
-
-	@Override
-	public boolean supportsEnchantment(@NotNull ItemStack stack, @NotNull Holder<Enchantment> enchantment) {
-		return false;
-	}
-
-	@Override
-	public <T extends LivingEntity> int damageItem(@NotNull ItemStack stack, int amount, T entity, @NotNull Consumer<Item> onBroken) {
-		return 0;
 	}
 
 	@Override

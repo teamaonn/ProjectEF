@@ -17,8 +17,9 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.utils.OpenScreenHelper;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
 import org.jetbrains.annotations.NotNull;
 
 public class AlchemicalBag extends ItemPE {
@@ -34,7 +35,7 @@ public class AlchemicalBag extends ItemPE {
 	@Override
 	public InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
 		if (!level.isClientSide) {
-			player.openMenu(new ContainerProvider(player.getItemInHand(hand), hand), buf -> {
+			OpenScreenHelper.openMenuWithData(player, new ContainerProvider(player.getItemInHand(hand), hand), buf -> {
 				buf.writeEnum(hand);
 				buf.writeByte(player.getInventory().selected);
 				buf.writeBoolean(false);
@@ -49,7 +50,7 @@ public class AlchemicalBag extends ItemPE {
 		for (ItemStack stack : inventory) {
 			if (!stack.isEmpty() && stack.getItem() instanceof AlchemicalBag bag) {
 				if (alchBagProvider == null) {
-					alchBagProvider = player.getCapability(PECapabilities.ALCH_BAG_CAPABILITY);
+					alchBagProvider = PECapabilities.ALCH_BAG_CAPABILITY.find(player);
 					if (alchBagProvider == null) {
 						//If the player really doesn't have the capability, and it isn't just not loaded yet, exit
 						break;
@@ -59,7 +60,7 @@ public class AlchemicalBag extends ItemPE {
 				for (int i = 0; i < inv.getSlots(); i++) {
 					ItemStack ring = inv.getStackInSlot(i);
 					if (!ring.isEmpty() && (ring.is(PEItems.BLACK_HOLE_BAND) || ring.is(PEItems.VOID_RING))) {
-						if (ring.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+						if (ring.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 							return stack;
 						}
 					}
@@ -82,7 +83,7 @@ public class AlchemicalBag extends ItemPE {
 		@NotNull
 		@Override
 		public AbstractContainerMenu createMenu(int windowId, @NotNull Inventory playerInventory, @NotNull Player player) {
-			IItemHandlerModifiable inv = (IItemHandlerModifiable) Objects.requireNonNull(player.getCapability(PECapabilities.ALCH_BAG_CAPABILITY)).getBag(color);
+			IItemHandlerModifiable inv = (IItemHandlerModifiable) Objects.requireNonNull(PECapabilities.ALCH_BAG_CAPABILITY.find(player)).getBag(color);
 			return new AlchBagContainer(windowId, playerInventory, hand, inv, playerInventory.selected, false);
 		}
 

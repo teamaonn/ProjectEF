@@ -21,9 +21,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult.Type;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class VoidRing extends GemEternalDensity implements IPedestalItem, IExtraFunction {
@@ -63,18 +61,14 @@ public class VoidRing extends GemEternalDensity implements IPedestalItem, IExtra
 		} else {
 			c = lookingAt.getBlockPos();
 		}
-		EntityTeleportEvent event = new EntityTeleportEvent(player, c.getX(), c.getY(), c.getZ());
-		if (!NeoForge.EVENT_BUS.post(event).isCanceled()) {
-			if (player.isPassenger()) {
-				player.stopRiding();
-			}
-			player.resetFallDistance();
-			player.teleportTo(event.getTargetX(), event.getTargetY(), event.getTargetZ());
-			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1, 1);
-			cooldowns.addCooldown(this, SharedConstants.TICKS_PER_SECOND / 2);
-			return true;
+		if (player.isPassenger()) {
+			player.stopRiding();
 		}
-		return false;
+		player.resetFallDistance();
+		player.teleportTo(c.getX() + 0.5, c.getY(), c.getZ() + 0.5);
+		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1, 1);
+		cooldowns.addCooldown(this, SharedConstants.TICKS_PER_SECOND / 2);
+		return true;
 	}
 
 	@Override

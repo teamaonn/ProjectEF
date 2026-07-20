@@ -16,6 +16,11 @@ import moze_intel.projecte.utils.PEKeybind;
 import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.WorldHelper;
 import moze_intel.projecte.utils.text.PELang;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,28 +37,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.ServerLevelData;
-import net.neoforged.neoforge.capabilities.Capabilities.FluidHandler;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class VolcaniteAmulet extends ItemPE implements IProjectileShooter, IPedestalItem, IFireProtector, ICapabilityAware {
 
 	public VolcaniteAmulet(Properties props) {
-		super(props.component(PEDataComponentTypes.STORED_EMC, 0L));
-	}
-
-	@Override
-	public boolean hasCraftingRemainingItem(@NotNull ItemStack stack) {
-		return true;
-	}
-
-	@NotNull
-	@Override
-	public ItemStack getCraftingRemainingItem(ItemStack stack) {
-		return stack.copy();
+		super(props.component(PEDataComponentTypes.STORED_EMC.get(), 0L));
 	}
 
 	@NotNull
@@ -68,9 +57,12 @@ public class VolcaniteAmulet extends ItemPE implements IProjectileShooter, IPede
 		ItemStack stack = ctx.getItemInHand();
 		if (!level.isClientSide && PlayerHelper.hasEditPermission(player, level, pos) && consumeFuel(player, stack, 32, true)) {
 			Direction sideHit = ctx.getClickedFace();
-			IFluidHandler fluidHandler = WorldHelper.getCapability(level, FluidHandler.BLOCK, pos, sideHit);
-			if (fluidHandler != null) {
-				fluidHandler.fill(new FluidStack(Fluids.LAVA, FluidType.BUCKET_VOLUME), IFluidHandler.FluidAction.EXECUTE);
+			Storage<FluidVariant> fluidStorage = WorldHelper.getCapability(level, FluidStorage.SIDED, pos, sideHit);
+			if (fluidStorage != null) {
+				try (Transaction tx = Transaction.openOuter()) {
+					fluidStorage.insert(FluidVariant.of(Fluids.LAVA), FluidConstants.BUCKET, tx);
+					tx.commit();
+				}
 				return InteractionResult.CONSUME;
 			}
 			WorldHelper.placeFluid(player, level, pos, sideHit, Fluids.LAVA, false);
@@ -128,7 +120,7 @@ public class VolcaniteAmulet extends ItemPE implements IProjectileShooter, IPede
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 }

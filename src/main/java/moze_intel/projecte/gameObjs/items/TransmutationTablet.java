@@ -1,5 +1,6 @@
 package moze_intel.projecte.gameObjs.items;
 
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.gameObjs.container.TransmutationContainer;
 import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.network.chat.Component;
@@ -23,7 +24,7 @@ public class TransmutationTablet extends ItemPE {
 	@Override
 	public InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player player, @NotNull InteractionHand hand) {
 		if (!level.isClientSide) {
-			player.openMenu(new ContainerProvider(hand), buf -> {
+			OpenScreenHelper.openMenuWithData(player, new ContainerProvider(hand), buf -> {
 				buf.writeBoolean(true);
 				buf.writeEnum(hand);
 				buf.writeByte(player.getInventory().selected);

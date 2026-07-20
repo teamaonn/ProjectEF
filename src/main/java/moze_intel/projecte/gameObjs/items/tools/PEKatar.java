@@ -10,6 +10,7 @@ import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.IMatterType;
 import moze_intel.projecte.gameObjs.PETags;
 import moze_intel.projecte.gameObjs.items.IHasConditionalAttributes;
+import moze_intel.projecte.gameObjs.items.IHasConditionalAttributes.AttributeCollector;
 import moze_intel.projecte.gameObjs.items.IItemMode;
 import moze_intel.projecte.gameObjs.items.IModeEnum;
 import moze_intel.projecte.gameObjs.items.tools.PEKatar.KatarMode;
@@ -19,11 +20,11 @@ import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.ToolHelper;
 import moze_intel.projecte.utils.text.IHasTranslationKey;
 import moze_intel.projecte.utils.text.PELang;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.util.StringRepresentable;
@@ -32,6 +33,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Shearable;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -40,19 +42,14 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.common.IShearable;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.ItemAbility;
-import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 import org.jetbrains.annotations.NotNull;
 
 public class PEKatar extends PETool implements IItemMode<KatarMode>, IExtraFunction, IHasConditionalAttributes {
 
 	public PEKatar(IMatterType matterType, int numCharges, Properties props) {
 		super(matterType, PETags.Blocks.MINEABLE_WITH_PE_KATAR, numCharges, props.attributes(createAttributes(matterType, 19, -2.4F))
-				.component(PEDataComponentTypes.KATAR_MODE, KatarMode.SLAY_HOSTILE)
+				.component(PEDataComponentTypes.KATAR_MODE.get(), KatarMode.SLAY_HOSTILE)
 		);
 	}
 
@@ -62,19 +59,7 @@ public class PEKatar extends PETool implements IItemMode<KatarMode>, IExtraFunct
 		tooltip.add(getToolTip(stack));
 	}
 
-	@Override
-	public boolean canPerformAction(@NotNull ItemStack stack, @NotNull ItemAbility toolAction) {
-		return ItemAbilities.DEFAULT_AXE_ACTIONS.contains(toolAction) || ItemAbilities.DEFAULT_SHEARS_ACTIONS.contains(toolAction) ||
-			   ItemAbilities.DEFAULT_SWORD_ACTIONS.contains(toolAction) || ItemAbilities.DEFAULT_HOE_ACTIONS.contains(toolAction) ||
-			   ToolHelper.DEFAULT_PE_KATAR_ACTIONS.contains(toolAction);
-	}
-
 	@NotNull
-	@Override
-	public AABB getSweepHitBox(@NotNull ItemStack stack, @NotNull Player player, @NotNull Entity target) {
-		int charge = getCharge(stack);
-		return target.getBoundingBox().inflate(charge, charge / 4D, charge);
-	}
 
 	@Override
 	protected float getShortCutDestroySpeed(@NotNull ItemStack stack, @NotNull BlockState state) {
@@ -156,8 +141,8 @@ public class PEKatar extends PETool implements IItemMode<KatarMode>, IExtraFunct
 	}
 
 	@Override
-	public void adjustAttributes(ItemAttributeModifierEvent event) {
-		ToolHelper.applyChargeAttributes(event);
+	public void adjustAttributes(ItemStack stack, AttributeCollector collector) {
+		ToolHelper.applyChargeAttributes(stack, collector);
 	}
 
 	/**
@@ -166,15 +151,11 @@ public class PEKatar extends PETool implements IItemMode<KatarMode>, IExtraFunct
 	@NotNull
 	@Override
 	public InteractionResult interactLivingEntity(@NotNull ItemStack stack, @NotNull Player player, @NotNull LivingEntity entity, @NotNull InteractionHand hand) {
-		if (entity instanceof IShearable target) {
-			BlockPos pos = entity.blockPosition();
+		if (entity instanceof Shearable target) {
 			Level level = entity.level();
-			if (target.isShearable(player, stack, level, pos)) {
+			if (target.readyForShearing()) {
 				if (!level.isClientSide) {
-					for (ItemStack drop : target.onSheared(player, stack, level, pos)) {
-						target.spawnShearedDrop(level, pos, drop);
-					}
-					entity.gameEvent(GameEvent.SHEAR, player);
+					target.shear(SoundSource.PLAYERS);
 				}
 				return InteractionResult.sidedSuccess(level.isClientSide);
 			}

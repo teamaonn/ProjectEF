@@ -106,18 +106,6 @@ public class Pedestal extends Block implements SimpleWaterloggedBlock, PEEntityB
 		}
 	}
 
-	@Override
-	public boolean onDestroyedByPlayer(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, Player player, boolean willHarvest, @NotNull FluidState fluid) {
-		if (player.isCreative() && dropItem(level, pos)) {
-			//If the player is creative, try to drop the item, and if we succeeded return false to cancel removing the pedestal
-			// Note: we notify the block of an update to make sure that it re-appears visually on the client instead of having there
-			// be a desync
-			level.sendBlockUpdated(pos, state, state, Block.UPDATE_IMMEDIATE);
-			return false;
-		}
-		return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
-	}
-
 	@NotNull
 	@Override
 	@Deprecated
@@ -130,7 +118,7 @@ public class Pedestal extends Block implements SimpleWaterloggedBlock, PEEntityB
 			}
 			ItemStack item = pedestal.getInventory().getStackInSlot(0);
 			if (stack.isEmpty() && !item.isEmpty()) {
-				IPedestalItem pedestalItem = item.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY);
+				IPedestalItem pedestalItem = PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(item);
 				if (pedestalItem != null) {
 					pedestal.setActive(level, pos, !pedestal.getActive());
 					level.sendBlockUpdated(pos, state, state, Block.UPDATE_IMMEDIATE);
@@ -152,7 +140,7 @@ public class Pedestal extends Block implements SimpleWaterloggedBlock, PEEntityB
 			if (hasSignal) {
 				ItemStack stack = ped.getInventory().getStackInSlot(0);
 				//Note: Checking the capability is present will validate that the stack is not empty
-				if (stack.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY) != null) {
+				if (PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(stack) != null) {
 					ped.setActive(level, pos, !ped.getActive());
 					level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL_IMMEDIATE);
 				}
@@ -175,7 +163,7 @@ public class Pedestal extends Block implements SimpleWaterloggedBlock, PEEntityB
 		if (pedestal != null) {
 			ItemStack stack = pedestal.getInventory().getStackInSlot(0);
 			if (!stack.isEmpty()) {
-				if (stack.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY) != null) {
+				if (PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(stack) != null) {
 					return pedestal.getActive() ? 15 : 10;
 				}
 				return 5;

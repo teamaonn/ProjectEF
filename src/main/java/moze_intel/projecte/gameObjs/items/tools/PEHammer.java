@@ -3,6 +3,7 @@ package moze_intel.projecte.gameObjs.items.tools;
 import moze_intel.projecte.gameObjs.IMatterType;
 import moze_intel.projecte.gameObjs.PETags;
 import moze_intel.projecte.gameObjs.items.IHasConditionalAttributes;
+import moze_intel.projecte.gameObjs.items.IHasConditionalAttributes.AttributeCollector;
 import moze_intel.projecte.utils.ToolHelper;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,9 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.ItemAbility;
-import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 import org.jetbrains.annotations.NotNull;
 
 public class PEHammer extends PETool implements IHasConditionalAttributes {
@@ -28,18 +26,13 @@ public class PEHammer extends PETool implements IHasConditionalAttributes {
 	}
 
 	@Override
-	public boolean canPerformAction(@NotNull ItemStack stack, @NotNull ItemAbility toolAction) {
-		return ItemAbilities.DEFAULT_PICKAXE_ACTIONS.contains(toolAction) || ToolHelper.DEFAULT_PE_HAMMER_ACTIONS.contains(toolAction);
-	}
-
-	@Override
 	public float getDestroySpeed(@NotNull ItemStack stack, @NotNull BlockState state) {
 		return ToolHelper.canMatterMine(matterType, state.getBlock()) ? 1_200_000 : super.getDestroySpeed(stack, state);
 	}
 
 	@Override
-	public void adjustAttributes(ItemAttributeModifierEvent event) {
-		ToolHelper.applyChargeAttributes(event);
+	public void adjustAttributes(ItemStack stack, AttributeCollector collector) {
+		ToolHelper.applyChargeAttributes(stack, collector);
 	}
 
 	@NotNull

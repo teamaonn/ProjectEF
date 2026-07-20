@@ -1,5 +1,6 @@
 package moze_intel.projecte.gameObjs.blocks;
 
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.gameObjs.block_entities.EmcChestBlockEntity;
 import moze_intel.projecte.gameObjs.registration.impl.BlockEntityTypeRegistryObject;
 import moze_intel.projecte.gameObjs.registries.PEBlockEntityTypes;
@@ -28,8 +29,7 @@ import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +77,7 @@ public class AlchemicalChest extends BlockDirection implements SimpleWaterlogged
 		}
 		EmcChestBlockEntity chest = WorldHelper.getBlockEntity(EmcChestBlockEntity.class, level, pos, true);
 		if (chest != null) {
-			player.openMenu(chest, pos);
+			OpenScreenHelper.openMenuAt(player, chest, pos);
 			player.awardStat(Stats.OPEN_CHEST);
 			PiglinAi.angerNearbyPiglins(player, true);
 		}
@@ -115,7 +115,7 @@ public class AlchemicalChest extends BlockDirection implements SimpleWaterlogged
 	@Override
 	@Deprecated
 	public int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos) {
-		return ItemHandlerHelper.calcRedstoneFromInventory(WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, state, null, null));
+		return ItemHandlerHelper.calcRedstoneFromInventory(WorldHelper.getItemHandler(level, pos, state, null, null));
 	}
 
 	@NotNull

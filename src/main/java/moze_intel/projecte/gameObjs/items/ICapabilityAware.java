@@ -1,9 +1,11 @@
 package moze_intel.projecte.gameObjs.items;
 
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-
+/**
+ * Implemented by items that need to register additional (non ProjectE) capabilities for themselves, for example fluid or item transfer apis. Called once during
+ * item registration.
+ */
 @FunctionalInterface
 public interface ICapabilityAware {
 
-	void attachCapabilities(RegisterCapabilitiesEvent event);
+	void attachCapabilities();
 }

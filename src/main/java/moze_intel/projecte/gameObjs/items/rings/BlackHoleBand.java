@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
 import moze_intel.projecte.api.block_entity.IDMPedestal;
 import moze_intel.projecte.api.capabilities.item.IAlchBagItem;
 import moze_intel.projecte.api.capabilities.item.IAlchChestItem;
@@ -37,10 +38,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchChestItem, IPedestalItem, ICapabilityAware {
@@ -57,7 +55,7 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 		BlockPos fluidPos = result.getBlockPos();
 		BlockState state = level.getBlockState(fluidPos);
 		if (level.mayInteract(player, fluidPos) && player.mayUseItemAt(fluidPos, result.getDirection(), stack) && state.getBlock() instanceof BucketPickup pickup) {
-			Optional<SoundEvent> sound = pickup.getPickupSound(state);
+			Optional<SoundEvent> sound = pickup.getPickupSound();
 			ItemStack itemStack = pickup.pickupBlock(player, level, fluidPos, state);
 			if (!itemStack.isEmpty()) {
 				//noinspection OptionalIsPresent - Capturing lambda
@@ -84,7 +82,7 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 	@Override
 	public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean isHeld) {
 		super.inventoryTick(stack, level, entity, slot, isHeld);
-		if (entity instanceof Player player && stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (entity instanceof Player player && stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(7))) {
 				if (ItemHelper.simulateFit(player.getInventory().items, item.getItem()) < item.getItem().getCount()) {
 					WorldHelper.gravitateEntityTowards(item, player.position());
@@ -105,7 +103,7 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 					//Cache the item handlers in various spots so that we only query each neighboring position once
 					IItemHandler inv = nearbyHandlers.get(dir);
 					if (inv == null) {
-						inv = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos.relative(dir), dir);
+						inv = WorldHelper.getItemHandler(level, pos.relative(dir), dir);
 						nearbyHandlers.put(dir, inv);
 					}
 					ItemStack result = ItemHandlerHelper.insertItemStacked(inv, item.getItem(), false);
@@ -131,8 +129,8 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 
 	@Override
 	public boolean updateInAlchChest(@NotNull Level level, @NotNull BlockPos pos, @NotNull ItemStack stack) {
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
-			IItemHandler handler = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, null);
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
+			IItemHandler handler = WorldHelper.getItemHandler(level, pos, null);
 			if (handler != null) {
 				AABB aabb = new AABB(pos).inflate(5);
 				Vec3 center = aabb.getCenter();
@@ -154,7 +152,7 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 
 	@Override
 	public boolean updateInAlchBag(@NotNull IItemHandler inv, @NotNull Player player, @NotNull ItemStack stack) {
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			for (ItemEntity e : player.level().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(5))) {
 				WorldHelper.gravitateEntityTowards(e, player.position());
 			}
@@ -163,7 +161,7 @@ public class BlackHoleBand extends PEToggleItem implements IAlchBagItem, IAlchCh
 	}
 
 	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 }

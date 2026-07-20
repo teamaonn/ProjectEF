@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import moze_intel.projecte.api.capabilities.item.IItemCharge;
 import moze_intel.projecte.config.ProjectEConfig;
@@ -36,10 +35,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.Tags;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import org.jetbrains.annotations.NotNull;
 
 public class PEPickaxe extends PickaxeItem implements IItemCharge, IItemMode<PickaxeMode>, IBarHelper {
@@ -49,8 +47,8 @@ public class PEPickaxe extends PickaxeItem implements IItemCharge, IItemMode<Pic
 
 	public PEPickaxe(IMatterType matterType, int numCharges, Properties props) {
 		super(matterType, props.attributes(createAttributes(matterType, 4, -2.8F))
-				.component(PEDataComponentTypes.PICKAXE_MODE, PickaxeMode.STANDARD)
-				.component(PEDataComponentTypes.CHARGE, 0)
+				.component(PEDataComponentTypes.PICKAXE_MODE.get(), PickaxeMode.STANDARD)
+				.component(PEDataComponentTypes.CHARGE.get(), 0)
 		);
 		this.matterType = matterType;
 		this.numCharges = numCharges;
@@ -59,26 +57,6 @@ public class PEPickaxe extends PickaxeItem implements IItemCharge, IItemMode<Pic
 	@Override
 	public boolean isEnchantable(@NotNull ItemStack stack) {
 		return false;
-	}
-
-	@Override
-	public boolean isBookEnchantable(@NotNull ItemStack stack, @NotNull ItemStack book) {
-		return false;
-	}
-
-	@Override
-	public boolean isPrimaryItemFor(@NotNull ItemStack stack, @NotNull Holder<Enchantment> enchantment) {
-		return false;
-	}
-
-	@Override
-	public boolean supportsEnchantment(@NotNull ItemStack stack, @NotNull Holder<Enchantment> enchantment) {
-		return false;
-	}
-
-	@Override
-	public <T extends LivingEntity> int damageItem(@NotNull ItemStack stack, int amount, T entity, @NotNull Consumer<Item> onBroken) {
-		return 0;
 	}
 
 	@Override
@@ -141,7 +119,7 @@ public class PEPickaxe extends PickaxeItem implements IItemCharge, IItemMode<Pic
 			return InteractionResult.PASS;
 		}
 		BlockPos pos = context.getClickedPos();
-		if (context.getLevel().getBlockState(pos).is(Tags.Blocks.ORES)) {
+		if (context.getLevel().getBlockState(pos).is(ConventionalBlockTags.ORES)) {
 			return ToolHelper.tryVeinMine(player, context.getItemInHand(), pos, context.getClickedFace());
 		}
 		return InteractionResult.PASS;

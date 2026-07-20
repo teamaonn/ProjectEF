@@ -24,7 +24,8 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.loading.FMLEnvironment;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.NotNull;
 
 public class GemFeet extends GemArmorBase {
@@ -36,7 +37,7 @@ public class GemFeet extends GemArmorBase {
 	private final Supplier<ItemAttributeModifiers> defaultWithStepAssistModifiers;
 
 	public GemFeet(Properties props) {
-		super(ArmorItem.Type.BOOTS, props.component(PEDataComponentTypes.STEP_ASSIST, STEP_ASSIST_DEFAULT));
+		super(ArmorItem.Type.BOOTS, props.component(PEDataComponentTypes.STEP_ASSIST.get(), STEP_ASSIST_DEFAULT));
 		this.defaultModifiers = Suppliers.memoize(() -> super.getDefaultAttributeModifiers().withModifierAdded(
 				Attributes.MOVEMENT_SPEED,
 				new AttributeModifier(PECore.rl("armor"), 1.0, Operation.ADD_MULTIPLIED_TOTAL),
@@ -55,21 +56,15 @@ public class GemFeet extends GemArmorBase {
 		return this.defaultModifiers.get();
 	}
 
-	@NotNull
-	@Override
-	public ItemAttributeModifiers getDefaultAttributeModifiers(@NotNull ItemStack stack) {
-		return isStepAssist(stack) ? this.defaultWithStepAssistModifiers.get() : super.getDefaultAttributeModifiers(stack);
-	}
-
 	public static void toggleStepAssist(ItemStack boots, Player player) {
 		boolean oldValue = isStepAssist(boots);
-		boots.set(PEDataComponentTypes.STEP_ASSIST, !oldValue);
+		boots.set(PEDataComponentTypes.STEP_ASSIST.get(), !oldValue);
 		player.sendSystemMessage(getComponent(!oldValue));
 	}
 
 	private static boolean isJumpPressed(Player player) {
-		if (FMLEnvironment.dist.isClient() && player instanceof LocalPlayer clientPlayer) {
-			return clientPlayer.input.jumping;
+		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+			return ClientHelper.isJumpPressed(player);
 		}
 		return false;
 	}
@@ -113,7 +108,7 @@ public class GemFeet extends GemArmorBase {
 	}
 
 	private static boolean isStepAssist(ItemStack stack) {
-		return stack.getOrDefault(PEDataComponentTypes.STEP_ASSIST, STEP_ASSIST_DEFAULT);
+		return stack.getOrDefault(PEDataComponentTypes.STEP_ASSIST.get(), STEP_ASSIST_DEFAULT);
 	}
 
 	private static Component getComponent(boolean enabled) {
@@ -121,5 +116,18 @@ public class GemFeet extends GemArmorBase {
 			return PELang.STEP_ASSIST.translate(ChatFormatting.GREEN, PELang.GEM_ENABLED);
 		}
 		return PELang.STEP_ASSIST.translate(ChatFormatting.RED, PELang.GEM_DISABLED);
+	}
+
+	/**
+	 * Nested so that the client-only {@link LocalPlayer} is never referenced on a dedicated server (classes are only loaded on first access).
+	 */
+	private static class ClientHelper {
+
+		private static boolean isJumpPressed(Player player) {
+			if (player instanceof LocalPlayer clientPlayer) {
+				return clientPlayer.input.jumping;
+			}
+			return false;
+		}
 	}
 }

@@ -61,15 +61,15 @@ public class PETags {
 		public static final TagKey<Item> TOOLS_MORNING_STARS = commonTag("tools/morning_stars");
 
 		private static TagKey<Item> tag(String name) {
-			return ItemTags.create(PECore.rl(name));
+			return TagKey.create(net.minecraft.core.registries.Registries.ITEM, PECore.rl(name));
 		}
 
 		private static TagKey<Item> curiosTag(String name) {
-			return ItemTags.create(ResourceLocation.fromNamespaceAndPath(IntegrationHelper.CURIO_MODID, name));
+			return TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.fromNamespaceAndPath("trinkets", name));
 		}
 
 		private static TagKey<Item> commonTag(String name) {
-			return ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
+			return TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", name));
 		}
 	}
 
@@ -117,11 +117,11 @@ public class PETags {
 
 
 		private static TagKey<Block> tag(String name) {
-			return BlockTags.create(PECore.rl(name));
+			return TagKey.create(net.minecraft.core.registries.Registries.BLOCK, PECore.rl(name));
 		}
 
 		private static TagKey<Block> commonTag(String name) {
-			return BlockTags.create(ResourceLocation.fromNamespaceAndPath("c", name));
+			return TagKey.create(net.minecraft.core.registries.Registries.BLOCK, ResourceLocation.fromNamespaceAndPath("c", name));
 		}
 	}
 

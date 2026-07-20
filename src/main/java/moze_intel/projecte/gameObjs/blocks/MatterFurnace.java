@@ -1,6 +1,7 @@
 package moze_intel.projecte.gameObjs.blocks;
 
 import com.mojang.serialization.MapCodec;
+import moze_intel.projecte.utils.OpenScreenHelper;
 import moze_intel.projecte.gameObjs.EnumMatterType;
 import moze_intel.projecte.gameObjs.block_entities.DMFurnaceBlockEntity;
 import moze_intel.projecte.gameObjs.registration.impl.BlockEntityTypeRegistryObject;
@@ -12,9 +13,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +44,7 @@ public class MatterFurnace extends AbstractFurnaceBlock implements IMatterBlock,
 		if (!level.isClientSide) {
 			DMFurnaceBlockEntity furnace = WorldHelper.getBlockEntity(DMFurnaceBlockEntity.class, level, pos, true);
 			if (furnace != null) {
-				player.openMenu(furnace, pos);
+				OpenScreenHelper.openMenuAt(player, furnace, pos);
 			}
 		}
 	}
@@ -53,7 +53,7 @@ public class MatterFurnace extends AbstractFurnaceBlock implements IMatterBlock,
 	@Deprecated
 	public void onRemove(BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean isMoving) {
 		if (state.getBlock() != newState.getBlock()) {
-			IItemHandler handler = WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, state, null, null);
+			IItemHandler handler = WorldHelper.getItemHandler(level, pos, state, null, null);
 			WorldHelper.dropInventory(handler, level, pos);
 			super.onRemove(state, level, pos, newState, isMoving);
 		}
@@ -62,7 +62,7 @@ public class MatterFurnace extends AbstractFurnaceBlock implements IMatterBlock,
 	@Override
 	@Deprecated
 	public int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos) {
-		return ItemHandlerHelper.calcRedstoneFromInventory(WorldHelper.getCapability(level, ItemHandler.BLOCK, pos, state, null, null));
+		return ItemHandlerHelper.calcRedstoneFromInventory(WorldHelper.getItemHandler(level, pos, state, null, null));
 	}
 
 	@Override

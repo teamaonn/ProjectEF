@@ -27,16 +27,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.common.ItemAbilities;
-import net.neoforged.neoforge.common.ItemAbility;
 import org.jetbrains.annotations.NotNull;
 
 public class Ignition extends PEToggleItem implements IPedestalItem, IFireProtector, IProjectileShooter, ICapabilityAware {
 
 	public Ignition(Properties props) {
-		super(props.component(PEDataComponentTypes.STORED_EMC, 0L)
-				.component(PEDataComponentTypes.UNPROCESSED_EMC, 0.0)
+		super(props.component(PEDataComponentTypes.STORED_EMC.get(), 0L)
+				.component(PEDataComponentTypes.UNPROCESSED_EMC.get(), 0.0)
 		);
 	}
 
@@ -46,9 +43,9 @@ public class Ignition extends PEToggleItem implements IPedestalItem, IFireProtec
 		if (level.isClientSide || !hotBarOrOffHand(slot) || !(entity instanceof Player player)) {
 			return;
 		}
-		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE, false)) {
+		if (stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
 			if (!hasEmc(player, stack, 64, true)) {
-				stack.set(PEDataComponentTypes.ACTIVE, false);
+				stack.set(PEDataComponentTypes.ACTIVE.get(), false);
 			} else {
 				WorldHelper.igniteNearby(level, player);
 				removeEmc(stack, 0.32F);
@@ -106,12 +103,7 @@ public class Ignition extends PEToggleItem implements IPedestalItem, IFireProtec
 	}
 
 	@Override
-	public boolean canPerformAction(@NotNull ItemStack stack, @NotNull ItemAbility action) {
-		return action == ItemAbilities.FIRESTARTER_LIGHT || super.canPerformAction(stack, action);
-	}
-
-	@Override
-	public void attachCapabilities(RegisterCapabilitiesEvent event) {
-		IntegrationHelper.registerCuriosCapability(event, this);
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 }
