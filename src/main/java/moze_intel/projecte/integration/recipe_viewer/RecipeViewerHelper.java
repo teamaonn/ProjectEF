@@ -20,7 +20,7 @@ public class RecipeViewerHelper {
 	}
 
 	public static String stripForSynthetic(Holder<?> holder) {
-		ResourceKey<?> key = holder.getKey();
+		ResourceKey<?> key = holder.unwrapKey().orElse(null);
 		return key == null ? "unregistered" : key.location().toString().replace(':', '_');
 	}
 

@@ -32,7 +32,7 @@ public class PEEmiPlugin implements EmiPlugin {
 		if (stack.getItem() instanceof IModeChanger<?> modeChanger) {
 			representation.add(modeChanger.getMode(stack));
 		}
-		Long stored = stack.get(PEDataComponentTypes.STORED_EMC);
+		Long stored = stack.get(PEDataComponentTypes.STORED_EMC.get());
 		if (stored != null && stored > 0) {
 			representation.add(stored);
 		}

@@ -12,7 +12,6 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.ICodecHelper;
 import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -20,14 +19,14 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.gameObjs.registries.PEItems;
+import moze_intel.projecte.integration.recipe_viewer.FluidInfo;
 import moze_intel.projecte.integration.recipe_viewer.RecipeViewerHelper;
 import moze_intel.projecte.integration.recipe_viewer.WorldTransmuteEntry;
 import moze_intel.projecte.utils.text.PELang;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidType;
 import org.jetbrains.annotations.NotNull;
 
 public class WorldTransmuteRecipeCategory implements IRecipeCategory<WorldTransmuteEntry> {
@@ -86,14 +85,15 @@ public class WorldTransmuteRecipeCategory implements IRecipeCategory<WorldTransm
 		}
 	}
 
-	private void addIngredient(IRecipeLayoutBuilder builder, RecipeIngredientRole role, int xPos, Either<ItemStack, FluidStack> ingredient) {
+	private void addIngredient(IRecipeLayoutBuilder builder, RecipeIngredientRole role, int xPos, Either<ItemStack, FluidInfo> ingredient) {
 		IRecipeSlotBuilder slot = builder.addSlot(role, xPos, 5);
 		ingredient.ifLeft(slot::addItemStack);
-		Optional<FluidStack> right = ingredient.right();
+		Optional<FluidInfo> right = ingredient.right();
 		//noinspection OptionalIsPresent - Capturing lambda
 		if (right.isPresent()) {
-			slot.addIngredient(NeoForgeTypes.FLUID_STACK, right.get())
-					.setFluidRenderer(FluidType.BUCKET_VOLUME, false, 16, 16);
+			FluidInfo info = right.get();
+			slot.addFluidStack(info.fluid(), info.amount())
+					.setFluidRenderer(FluidConstants.BUCKET, false, 16, 16);
 		}
 	}
 

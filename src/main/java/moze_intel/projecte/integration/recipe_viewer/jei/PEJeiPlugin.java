@@ -31,7 +31,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.fml.ModList;
+import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +49,7 @@ public class PEJeiPlugin implements IModPlugin {
 				if (stack.getItem() instanceof IModeChanger<?> modeChanger) {
 					mode = modeChanger.getMode(stack);
 				}
-				Long stored = stack.get(PEDataComponentTypes.STORED_EMC);
+				Long stored = stack.get(PEDataComponentTypes.STORED_EMC.get());
 				if (stored != null && stored > 0) {
 					return mode == null ? stored : List.of(mode, stored);
 				}
@@ -66,7 +66,7 @@ public class PEJeiPlugin implements IModPlugin {
 				if (stack.getItem() instanceof IModeChanger<?> modeChanger) {
 					mode = modeChanger.getMode(stack);
 				}
-				Long stored = stack.get(PEDataComponentTypes.STORED_EMC);
+				Long stored = stack.get(PEDataComponentTypes.STORED_EMC.get());
 				if (stored != null && stored > 0) {
 					return mode == null ? stored.toString() : mode + ";" + stored;
 				} else if (mode != null) {
@@ -85,7 +85,7 @@ public class PEJeiPlugin implements IModPlugin {
 
 	private static boolean shouldLoad() {
 		//Skip handling if both EMI and JEI are loaded as otherwise some things behave strangely
-		return !ModList.get().isLoaded(IntegrationHelper.EMI_MODID);
+		return !FabricLoader.getInstance().isModLoaded(IntegrationHelper.EMI_MODID);
 	}
 
 	public static void registerItemSubtypes(ISubtypeRegistration registry, Collection<? extends Holder<? extends ItemLike>> itemProviders) {

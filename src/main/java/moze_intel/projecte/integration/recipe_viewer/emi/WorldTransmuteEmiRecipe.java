@@ -1,7 +1,6 @@
 package moze_intel.projecte.integration.recipe_viewer.emi;
 
 import com.mojang.datafixers.util.Either;
-import dev.emi.emi.api.neoforge.NeoForgeEmiStack;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -12,7 +11,9 @@ import dev.emi.emi.api.widget.TextureWidget;
 import dev.emi.emi.api.widget.WidgetHolder;
 import java.util.List;
 import moze_intel.projecte.gameObjs.registries.PEItems;
+import moze_intel.projecte.integration.recipe_viewer.FluidInfo;
 import moze_intel.projecte.integration.recipe_viewer.RecipeViewerHelper;
+import moze_intel.projecte.integration.recipe_viewer.FluidInfo;
 import moze_intel.projecte.integration.recipe_viewer.WorldTransmuteEntry;
 import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -20,7 +21,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.Nullable;
 
 public class WorldTransmuteEmiRecipe implements EmiRecipe {
@@ -41,8 +41,8 @@ public class WorldTransmuteEmiRecipe implements EmiRecipe {
 		}
 	}
 
-	private static EmiStack asStack(Either<ItemStack, FluidStack> ingredient) {
-		return ingredient.map(EmiStack::of, NeoForgeEmiStack::of);
+	private static EmiStack asStack(Either<ItemStack, FluidInfo> ingredient) {
+		return ingredient.map(EmiStack::of, info -> EmiStack.of(info.fluid(), info.amount()));
 	}
 
 	@Override

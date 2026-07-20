@@ -17,13 +17,11 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidType;
 import org.jetbrains.annotations.Nullable;
 
-public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<ItemStack, FluidStack> output, @Nullable Either<ItemStack, FluidStack> altOutput) {
+public record WorldTransmuteEntry(Either<ItemStack, FluidInfo> input, Either<ItemStack, FluidInfo> output, @Nullable Either<ItemStack, FluidInfo> altOutput) {
 
-	private static final Codec<Either<ItemStack, FluidStack>> EITHER_CODEC = Codec.either(ItemStack.SINGLE_ITEM_CODEC, FluidStack.fixedAmountCodec(FluidType.BUCKET_VOLUME));
+	private static final Codec<Either<ItemStack, FluidInfo>> EITHER_CODEC = Codec.either(ItemStack.SINGLE_ITEM_CODEC, FluidInfo.BUCKET_CODEC);
 	public static final Codec<WorldTransmuteEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			EITHER_CODEC.fieldOf("input").forGetter(WorldTransmuteEntry::input),
 			EITHER_CODEC.fieldOf("output").forGetter(WorldTransmuteEntry::output),
@@ -38,11 +36,11 @@ public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<It
 		return PECore.rl("/world_transmutation/" + name + "/");
 	}
 
-	private String stripForSynthetic(Either<ItemStack, FluidStack> either) {
-		return RecipeViewerHelper.stripForSynthetic(either.map(ItemStack::getItemHolder, FluidStack::getFluidHolder));
+	private String stripForSynthetic(Either<ItemStack, FluidInfo> either) {
+		return RecipeViewerHelper.stripForSynthetic(either.map(ItemStack::getItemHolder, FluidInfo::holder));
 	}
 
-	private static boolean equals(@Nullable Either<ItemStack, FluidStack> a, @Nullable Either<ItemStack, FluidStack> b) {
+	private static boolean equals(@Nullable Either<ItemStack, FluidInfo> a, @Nullable Either<ItemStack, FluidInfo> b) {
 		if (a == b) {
 			return true;
 		} else if (a == null || b == null) {
@@ -55,8 +53,8 @@ public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<It
 		} else if (leftA.isPresent()) {
 			return ItemStack.isSameItemSameComponents(leftA.get(), leftB.get());
 		}
-		//Note: These should always be present, but use orElse just to avoid the warning of get without isPreset check
-		return FluidStack.isSameFluidSameComponents(a.right().orElse(FluidStack.EMPTY), b.right().orElse(FluidStack.EMPTY));
+		//Note: These should always be present, but use orElse just to avoid the warning of get without isPresent check
+		return a.right().map(FluidInfo::fluid).orElse(Fluids.EMPTY) == b.right().map(FluidInfo::fluid).orElse(Fluids.EMPTY);
 	}
 
 	@Override
@@ -70,8 +68,8 @@ public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<It
 		return equals(input, other.input) && equals(output, other.output) && equals(altOutput, other.altOutput);
 	}
 
-	private static int hash(Either<ItemStack, FluidStack> either) {
-		return either.map(ItemStack::hashItemAndComponents, FluidStack::hashFluidAndComponents);
+	private static int hash(Either<ItemStack, FluidInfo> either) {
+		return either.map(ItemStack::hashItemAndComponents, info -> info.fluid().hashCode());
 	}
 
 	@Override
@@ -86,7 +84,7 @@ public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<It
 
 	@Nullable
 	public static WorldTransmuteEntry create(IWorldTransmutation transmutation) {
-		Either<ItemStack, FluidStack> input, output, altOutput;
+		Either<ItemStack, FluidInfo> input, output, altOutput;
 		if (transmutation instanceof SimpleWorldTransmutation(Holder<Block> origin, Holder<Block> result, Holder<Block> altResult)) {
 			input = createInfo(origin.value());
 			output = createInfo(result.value());
@@ -102,28 +100,28 @@ public record WorldTransmuteEntry(Either<ItemStack, FluidStack> input, Either<It
 	}
 
 	@Nullable
-	private static <STATE> Either<ItemStack, FluidStack> createInfo(STATE state, Function<STATE, Block> blockGetter, Function<STATE, ItemStack> itemGetter) {
+	private static <STATE> Either<ItemStack, FluidInfo> createInfo(STATE state, Function<STATE, Block> blockGetter, Function<STATE, ItemStack> itemGetter) {
 		if (blockGetter.apply(state) instanceof LiquidBlock liquidBlock && liquidBlock.fluid != Fluids.EMPTY) {
-			return Either.right(new FluidStack(liquidBlock.fluid, FluidType.BUCKET_VOLUME));
+			return Either.right(FluidInfo.bucket(liquidBlock.fluid));
 		}
 		ItemStack item = itemGetter.apply(state);
 		return item.isEmpty() ? null : Either.left(item);
 	}
 
 	@Nullable
-	private static Either<ItemStack, FluidStack> createInfo(Block block) {
+	private static Either<ItemStack, FluidInfo> createInfo(Block block) {
 		return createInfo(block, Function.identity(), ItemStack::new);
 	}
 
 	@Nullable
-	private static Either<ItemStack, FluidStack> createInfo(BlockState state) {
+	private static Either<ItemStack, FluidInfo> createInfo(BlockState state) {
 		return createInfo(state, BlockStateBase::getBlock, WorldTransmuteEntry::itemFromBlock);
 	}
 
 	private static ItemStack itemFromBlock(BlockState state) {
 		try {
 			//We don't have a world or position, but try pick block anyways
-			return state.getCloneItemStack(null, null, null, null);
+			return state.getBlock().getCloneItemStack(null, null, state);
 		} catch (Exception e) {
 			//It failed, probably because of the null world and pos
 			return new ItemStack(state.getBlock());
