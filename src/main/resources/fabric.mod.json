@@ -5,6 +5,9 @@
   "name": "ProjectE",
   "description": "A complete rewrite of EE2 for modern Minecraft versions.",
   "authors": [
+    "Chiway Wang"
+  ],
+  "contributors": [
     "SinKillerJ",
     "MaPePeR",
     "williewillus",
@@ -12,9 +15,9 @@
     "pupnewfster"
   ],
   "contact": {
-    "homepage": "https://github.com/sinkillerj/ProjectE",
-    "issues": "https://github.com/sinkillerj/ProjectE/issues",
-    "sources": "https://github.com/sinkillerj/ProjectE"
+    "homepage": "https://github.com/wchiway/ProjectE",
+    "issues": "https://github.com/wchiway/ProjectE/issues",
+    "sources": "https://github.com/wchiway/ProjectE"
   },
   "license": "MIT",
   "icon": "logo.png",

@@ -295,11 +295,11 @@ publishing {
                 name.set('ProjectE')
                 packaging = 'jar'
                 scm {
-                    url.set('https://github.com/sinkillerj/ProjectE.git')
+                    url.set('https://github.com/wchiway/ProjectE.git')
                 }
                 issueManagement {
                     system.set('github')
-                    url.set('https://github.com/sinkillerj/ProjectE/issues')
+                    url.set('https://github.com/wchiway/ProjectE/issues')
                 }
                 licenses {
                     license {

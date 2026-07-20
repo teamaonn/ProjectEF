@@ -1,56 +1,92 @@
-![](/src/main/resources/logo.png?raw=true)
+<p align="center">
+  <img src="src/main/resources/logo.png" alt="ProjectE logo" width="256">
+</p>
 
-Repository for ProjectE, a complete rewrite of EE2 (Equivalent Exchange 2) for modern Minecraft versions. Transmutation tables, collectors, condensers, flying rings, and all the other trinkets you love are here.
+# ProjectE for Fabric 1.21.1
 
-Discover powerful alchemical tools, items, and devices. Break down unwanted items into EMC (Energy-Matter Covalence) and use that EMC to create new items.
+ProjectE is a modern reimplementation of EE2 (Equivalent Exchange 2), centered on EMC-based transmutation, collectors, condensers, matter tools, flying rings, and other alchemical equipment.
 
+This repository contains the Fabric 1.21.1 port maintained by [Chiway Wang](https://github.com/wchiway). Source code, releases, and issue tracking are hosted at [github.com/wchiway/ProjectE](https://github.com/wchiway/ProjectE).
 
-# I found a bug
-Bugs can be reported at: https://github.com/sinkillerj/ProjectE/issues
+## Port status
 
-Please try the latest release build before reporting, be sure to also include any logs or steps to reproduce you may have, as well as your Forge version, and whether or not you are using a third party loader such as Cauldron. When submitting logs please use a service such as Pastebin, do not paste the log directly into the issue.
+| Component | Status |
+| --- | --- |
+| Minecraft | 1.21.1 |
+| Project version | 1.1.0 |
+| Mod loader | Fabric Loader 0.16.9 or newer |
+| Fabric API | 0.116.14+1.21.1 |
+| Java | 21 |
+| Build system | Fabric Loom 1.10.5 with Mojang and Parchment mappings |
 
-# Downloads
-https://www.curseforge.com/minecraft/mc-mods/projecte/files
+The public API, registration system, networking, events, configuration, EMC mapping, items, blocks, entities, recipes, block entities, containers, client rendering, and runtime hooks have been migrated to Fabric.
 
-# Support Development
-![](/patreon.png?raw=true)
+Recent port work also restores:
 
-We accept donations via Patreon and other methods, visit the team members section to learn more.
+- Creative and ring-provided flight behavior.
+- GEM armor abilities, including helmet night vision and boot step assist.
+- Dark Matter and Red Matter tool area modes.
+- Philosopher's Stone world transmutation, selection rendering, and recipe interactions.
+- ProjectE fuel support in Dark Matter and Red Matter Furnaces.
+- Pedestal, alchemical bag, Eternal Density, and other container interactions.
+- Fabric-compatible recipe conditions and client rendering hooks.
+- Built-in EMC values for classic Avaritia items.
+- Expanded Simplified Chinese translations.
 
-# Join the Conversation
+## Installation
 
-Discord: https://discord.gg/fkpxV5Z
+1. Install Minecraft 1.21.1 with Fabric Loader 0.16.9 or newer.
+2. Install a compatible Fabric API release.
+3. Download the ProjectE JAR from this repository's [Releases](https://github.com/wchiway/ProjectE/releases), or build it from source.
+4. Place the JAR in the Minecraft `mods` directory.
 
-# Current Team Members
-Members actively working on ProjectE.
+Forge Config API Port and the permissions API are bundled in the ProjectE JAR. Optional recipe display support is available for JEI and EMI; Jade and WTHIT integrations are also included when those mods are installed.
 
-SinKillerJ - Head of Alchemical Studies - Main Project & Community Lead:
+## Building from source
 
-* Bluesky: https://bsky.app/profile/sinkillerj.bsky.social
-* Patreon: https://www.patreon.com/sinkillerj
+Clone the repository and run the Gradle build:
 
-pupnewfster - Alchemical Adaptation - Lead of New Version Ports
+```bash
+git clone https://github.com/wchiway/ProjectE.git
+cd ProjectE
+./gradlew build
+```
 
-* Bluesky: https://bsky.app/profile/sara.freimer.dev
-* GitHub Sponsors: https://github.com/sponsors/pupnewfster
-* Ko-fi: https://ko-fi.com/pupnewfster
-* Patreon: https://www.patreon.com/pupnewfster
+On Windows, use:
 
-MaPePeR(Blubberbub) - Alchemical Value Archivist - Lead EMC Mapper Developer: 
+```bat
+gradlew.bat build
+```
 
-* Twitter: https://twitter.com/Blubb3rbub
+Build artifacts are written to `build/libs/`. To launch a Fabric development client, run `./gradlew runClient` or `gradlew.bat runClient`.
 
-# Former Team Members
-MozeIntel - Original lead developer: https://twitter.com/Moze_Intel
+The development recipe viewer defaults to JEI. It can be changed with the `recipe_viewer` Gradle property, for example:
 
-Kolatra - Former collaborator: https://twitter.com/ItsKolatra
+```bash
+./gradlew runClient -Precipe_viewer=emi
+```
 
-Williewillus - Maintainer, 1.8.x-1.13.x: https://twitter.com/williewillus
+## Compatibility notes
 
-Lilylicious - Assistant Developer: https://twitter.com/Lilyliciously
+- CraftTweaker, The One Probe, and Curios integrations from the NeoForge codebase are not part of this Fabric port.
+- Trinkets support is planned but is not currently implemented.
+- Generated recipes are shipped with Fabric load conditions; the legacy NeoForge test framework and data generator are not run by the current Fabric build.
 
-# Thanks To
-x3n0ph0b3 - EE2 creator, Allowed use of EE2 assets: https://twitter.com/x3n0ph0b3x
+## Reporting issues
 
-MidnightLightning - EE2 GUI Textures: https://github.com/MidnightLightning
+Report bugs through the [GitHub issue tracker](https://github.com/wchiway/ProjectE/issues). Include the ProjectE version, Fabric Loader and Fabric API versions, a minimal reproduction procedure, and the relevant game log. Attach logs as files or use a paste service instead of placing an entire log directly in the issue body.
+
+## Developer
+
+- [Chiway Wang](https://github.com/wchiway) — Fabric port developer and maintainer
+
+## Upstream and credits
+
+This port is based on the original [ProjectE](https://github.com/sinkillerj/ProjectE) project. Credit for the original implementation and prior version work belongs to its maintainers and contributors, including SinKillerJ, pupnewfster, MaPePeR, williewillus, Lilylicious, MozeIntel, and Kolatra.
+
+- x3n0ph0b3 — EE2 creator and original asset permission
+- MidnightLightning — EE2 GUI textures
+
+## License
+
+ProjectE is distributed under the [MIT License](LICENSE).
