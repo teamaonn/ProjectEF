@@ -8,13 +8,14 @@ import moze_intel.projecte.gameObjs.items.PhilosophersStone;
 import moze_intel.projecte.gameObjs.items.PhilosophersStone.PhilosophersStoneMode;
 import moze_intel.projecte.gameObjs.registries.PEItems;
 import moze_intel.projecte.utils.Constants;
-import net.minecraft.client.Camera;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,40 +25,38 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.client.event.RenderHighlightEvent;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class TransmutationRenderingOverlay implements LayeredDraw.Layer {
+public class TransmutationRenderingOverlay {
 
 	private final Minecraft mc = Minecraft.getInstance();
 	@Nullable
 	private Block transmutationResult;
 	private long lastGameTime;
 
-	public TransmutationRenderingOverlay() {
-		NeoForge.EVENT_BUS.addListener(this::onOverlay);
-	}
-
-	@Override
-	public void render(@NotNull GuiGraphics graphics, @NotNull DeltaTracker delta) {
+	/**
+	 * Renders the little preview of what the philosopher's stone will transmute the targeted block into, hooked into the hud render callback.
+	 */
+	public void onHudRender(@NotNull GuiGraphics graphics, @NotNull DeltaTracker delta) {
 		if (!mc.options.hideGui && transmutationResult != null) {
 			if (transmutationResult instanceof LiquidBlock liquidBlock) {
-				IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(liquidBlock.fluid);
-				int color = properties.getTintColor();
-				float red = (color >> 16 & 0xFF) / 255.0F;
-				float green = (color >> 8 & 0xFF) / 255.0F;
-				float blue = (color & 0xFF) / 255.0F;
-				float alpha = (color >> 24 & 0xFF) / 255.0F;
-				TextureAtlasSprite sprite = mc.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(properties.getStillTexture());
-				graphics.blit(1, 1, 0, 16, 16, sprite, red, green, blue, alpha);
+				FluidState fluidState = liquidBlock.fluid.defaultFluidState();
+				FluidRenderHandler renderHandler = FluidRenderHandlerRegistry.INSTANCE.get(liquidBlock.fluid);
+				if (renderHandler != null) {
+					int color = renderHandler.getFluidColor(null, null, fluidState);
+					float red = (color >> 16 & 0xFF) / 255.0F;
+					float green = (color >> 8 & 0xFF) / 255.0F;
+					float blue = (color & 0xFF) / 255.0F;
+					TextureAtlasSprite sprite = renderHandler.getFluidSprites(null, null, fluidState)[0];
+					graphics.blit(1, 1, 0, 16, 16, sprite, red, green, blue, 1);
+				}
 			} else {
 				//Just render it normally instead of with the given model as some block's don't render properly then as an item
 				// for example glass panes
@@ -74,10 +73,14 @@ public class TransmutationRenderingOverlay implements LayeredDraw.Layer {
 		}
 	}
 
-	private void onOverlay(RenderHighlightEvent.Block event) {
-		Camera activeRenderInfo = event.getCamera();
-		if (!(activeRenderInfo.getEntity() instanceof Player player)) {
-			return;
+	/**
+	 * Highlights the blocks the philosopher's stone would change and remembers the result for the hud preview, hooked into the block outline render event.
+	 *
+	 * @return always true so the vanilla outline still renders.
+	 */
+	public boolean onBlockOutline(WorldRenderContext context, WorldRenderContext.BlockOutlineContext outlineContext) {
+		if (!(outlineContext.entity() instanceof Player player)) {
+			return true;
 		}
 		Level level = player.level();
 		lastGameTime = level.getGameTime();
@@ -87,11 +90,11 @@ public class TransmutationRenderingOverlay implements LayeredDraw.Layer {
 		}
 		if (stack.isEmpty() || !stack.is(PEItems.PHILOSOPHERS_STONE)) {
 			transmutationResult = null;
-			return;
+			return true;
 		}
 		boolean isSneaking = player.isSecondaryUseActive();
 		PhilosophersStone philoStone = (PhilosophersStone) stack.getItem();
-		//Note: We use the philo stone's ray trace instead of the event's ray trace as we want to make sure that we
+		//Note: We use the philo stone's ray trace instead of the outline's position as we want to make sure that we
 		// can properly take fluid into account/ignore it when needed
 		BlockHitResult rtr = philoStone.getHitBlock(level, player, isSneaking);
 		if (rtr.getType() == HitResult.Type.BLOCK) {
@@ -103,10 +106,17 @@ public class TransmutationRenderingOverlay implements LayeredDraw.Layer {
 				transmutationResult = null;
 			} else {
 				transmutationResult = changes.values().iterator().next().getBlock();
-				Vec3 viewPosition = activeRenderInfo.getPosition();
+				Vec3 viewPosition = context.camera().getPosition();
 				float alpha = ProjectEConfig.client.pulsatingOverlay.get() ? getPulseProportion() * 0.60F : 0.35F;
-				VertexConsumer builder = event.getMultiBufferSource().getBuffer(PERenderType.TRANSMUTATION_OVERLAY);
-				PoseStack matrix = event.getPoseStack();
+				MultiBufferSource consumers = context.consumers();
+				if (consumers == null) {
+					return true;
+				}
+				VertexConsumer builder = consumers.getBuffer(PERenderType.TRANSMUTATION_OVERLAY);
+				PoseStack matrix = context.matrixStack();
+				if (matrix == null) {
+					return true;
+				}
 				CollisionContext selectionContext = CollisionContext.of(player);
 				for (BlockPos pos : changes.keySet()) {
 					BlockState state = level.getBlockState(pos);
@@ -129,6 +139,7 @@ public class TransmutationRenderingOverlay implements LayeredDraw.Layer {
 		} else {
 			transmutationResult = null;
 		}
+		return true;
 	}
 
 	private float getPulseProportion() {

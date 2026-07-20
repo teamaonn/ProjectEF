@@ -26,38 +26,19 @@ public class PedestalRenderer implements BlockEntityRenderer<DMPedestalBlockEnti
 	}
 
 	@Override
-	public void render(@NotNull DMPedestalBlockEntity pedestal, float partialTick, @NotNull PoseStack matrix, @NotNull MultiBufferSource renderer, int light, int overlayLight) {
-		if (!pedestal.isRemoved() && pedestal.getLevel() != null) {
-			if (this.context.getEntityRenderer().shouldRenderHitBoxes()) {
-				matrix.pushPose();
-				BlockPos pos = pedestal.getBlockPos();
-				AABB aabb = pedestal.getEffectBounds().move(-pos.getX(), -pos.getY(), -pos.getZ());
-				VertexConsumer vertexBuilder = renderer.getBuffer(RenderType.lines());
-				LevelRenderer.renderLineBox(matrix, vertexBuilder, aabb.minX, aabb.minY, aabb.minZ, aabb.maxX, aabb.maxY, aabb.maxZ,
-						1, 0, 1, 1, 1, 0, 1);
-				matrix.popPose();
-			}
-			ItemStack stack = pedestal.getInventory().getStackInSlot(0);
-			if (!stack.isEmpty()) {
-				matrix.pushPose();
-				matrix.translate(0.5, 0.7, 0.5);
-				long gameTime = pedestal.getLevel().getGameTime();
-				matrix.translate(0, Mth.sin((gameTime + partialTick) / 10.0F) * 0.1 + 0.1, 0);
-				matrix.scale(0.75F, 0.75F, 0.75F);
-				float angle = (gameTime + partialTick) / (float) SharedConstants.TICKS_PER_SECOND;
-				matrix.mulPose(Axis.YP.rotation(angle));
-				this.context.getItemRenderer().renderStatic(stack, ItemDisplayContext.GROUND, light, overlayLight, matrix, renderer, pedestal.getLevel(), (int) pedestal.getBlockPos().asLong());
-				matrix.popPose();
-			}
+	public void render(DMPedestalBlockEntity pedestal, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+		net.minecraft.world.item.ItemStack stack = pedestal.getInventory().getStackInSlot(0);
+		if (stack.isEmpty()) {
+			return;
 		}
-	}
-
-	@NotNull
-	@Override
-	public AABB getRenderBoundingBox(@NotNull DMPedestalBlockEntity pedestal) {
-		if (this.context.getEntityRenderer().shouldRenderHitBoxes()) {
-			return pedestal.getEffectBounds();
-		}
-		return BlockEntityRenderer.super.getRenderBoundingBox(pedestal);
+		poseStack.pushPose();
+		poseStack.translate(0.5, 1.0, 0.5);
+		long time = pedestal.getLevel() != null ? pedestal.getLevel().getGameTime() : 0;
+		float angle = (time % 80) / 80.0F * 360.0F;
+		poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(angle));
+		poseStack.scale(0.6F, 0.6F, 0.6F);
+		var mc = net.minecraft.client.Minecraft.getInstance();
+		mc.getItemRenderer().renderStatic(stack, net.minecraft.world.item.ItemDisplayContext.FIXED, packedLight, packedOverlay, poseStack, bufferSource, pedestal.getLevel(), 0);
+		poseStack.popPose();
 	}
 }
