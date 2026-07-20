@@ -1,4 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import moze_intel.projecte.UpdateJson
@@ -10,15 +9,17 @@ plugins {
     id('eclipse')
     id('idea')
     id('maven-publish')
-    id('com.gradleup.shadow') version('8.3.6')
-    // https://projects.neoforged.net/neoforged/ModDevGradle
-    id('net.neoforged.moddev') version('2.0.78')
+    // https://fabricmc.net/develop/
+    // Note: Loom 1.10.x is published under the legacy 'fabric-loom' plugin id
+    // (the 'net.fabricmc.fabric-loom' id only exists for newer Loom versions that require Gradle 8.13+)
+    id('fabric-loom') version("${loom_version}")
 }
 
 tasks.named('wrapper', Wrapper) {
     //Define wrapper values here so as to not have to always do so when updating gradlew.properties
-    gradleVersion = '8.12.1'
-    distributionType = Wrapper.DistributionType.ALL
+    //Note: Gradle distribution is downloaded from the Tencent mirror for better speeds in China;
+    // setting distributionUrl directly (instead of gradleVersion) keeps the mirror after './gradlew wrapper' regenerations
+    distributionUrl = 'https://mirrors.cloud.tencent.com/gradle/gradle-8.12.1-all.zip'
 }
 
 defaultTasks 'build'
@@ -31,6 +32,10 @@ idea {
         }
     }
 }
+
+version = "${projecte_version}"
+group = "moze_intel.projecte"
+project.base.archivesName = "projecte"
 
 sourceSets {
     api {
@@ -47,41 +52,21 @@ sourceSets {
         compileClasspath += api.output
         runtimeClasspath += api.output
     }
-    datagen {
-        java.srcDirs = ['src/datagen/java']
-        resources.srcDirs = ['src/datagen/resources']
-        compileClasspath += api.output + main.output
-    }
+    //Note: The datagen source set is not compiled during the Fabric port; its generated output above is
+    // shipped as-is. Porting datagen to Fabric Data Generation API is tracked in FABRIC_PORT_PLAN.md
     test {
-        //The test module has no resources
+        //The test source set is disabled during the Fabric port (depended on the NeoForge test framework)
+        java.srcDirs = []
         resources.srcDirs = []
-        compileClasspath += api.output + main.output
-        runtimeClasspath += api.output + main.output
-    }
-
-    // These source-sets only exist for the sake of assembling a dependency graph
-    // for IntelliJ. Each of these will become an IntelliJ module when the project is imported,
-    // and will be set as the "main module" for the IntelliJ runs. A compile dependency
-    // on the other source sets is enough, since runtime classpath is managed by MDG anyway.
-    runMain {
-        runtimeClasspath += main.runtimeClasspath + api.runtimeClasspath
-        compileClasspath += main.output + api.output
-    }
-    runData {
-        compileClasspath += runMain.compileClasspath + datagen.compileClasspath
-        runtimeClasspath += runMain.runtimeClasspath + datagen.runtimeClasspath
     }
 }
 
 configurations { configContainer ->
-    //Make sure all our sub source set stuff extends the proper base methods so that
-    // they can see all the dependencies we have in dependencies including forge
-    extendConfigurations(implementation, apiImplementation, testImplementation, datagenImplementation)
-    extendConfigurations(compileOnly, apiCompileOnly, testCompileOnly, datagenCompileOnly)
-    extendConfigurations(runtimeOnly, apiRuntimeOnly, datagenRuntimeOnly)
-    extendConfigurations(localRuntime, apiLocalRuntime)
-    sourceSets.main.runtimeClasspath += localRuntime
-    sourceSets.runMain.runtimeClasspath += sourceSets.main.runtimeClasspath
+    //Make sure all our sub source set stuff extends the proper base configurations so that
+    // they can see all the dependencies we have in dependencies, including Minecraft
+    extendConfigurations(implementation, apiImplementation)
+    extendConfigurations(compileOnly, apiCompileOnly)
+    extendConfigurations(runtimeOnly, apiRuntimeOnly)
 }
 
 static void extendConfigurations(Configuration base, Configuration... configurations) {
@@ -89,38 +74,6 @@ static void extendConfigurations(Configuration base, Configuration... configurat
         configuration.extendsFrom(base)
     }
 }
-
-def replaceResources = tasks.register("replaceResources", Copy) {
-    def versionProperties = ["version": projecte_version, "mc_version": minecraft_version_range, "neo_version": neo_version_range, "loader_version": loader_version_range]
-    inputs.properties(versionProperties)
-    def modsToml = copySpec {
-        from(sourceSets.main.resources) {
-            include "META-INF/neoforge.mods.toml"
-            expand versionProperties
-        }
-    }
-    //Copy it into the build dir
-    it.with modsToml
-    it.into layout.buildDirectory.dir('resources/main/')
-    //If IntelliJ's output dir exists, copy it there as well
-    if (new File("$rootDir/out/production/").exists()) {
-        copy {
-            with modsToml
-            into "$rootDir/out/production/"
-        }
-    }
-    //If Eclipse's output dir exists, copy it there as well
-    if (new File("$rootDir/bin/main/").exists()) {
-        copy {
-            with modsToml
-            into "$rootDir/bin/main/"
-        }
-    }
-}
-
-version = "${projecte_version}"
-group = "moze_intel.projecte"
-project.base.archivesName = "projecte"
 
 java {
     toolchain {
@@ -130,79 +83,52 @@ java {
     withSourcesJar()
 }
 
-neoForge {
-    enable {
-        version = neo_version
-        enabledSourceSets = sourceSets // All source sets use Minecraft code
-    }
-
-    accessTransformers.from(
-            file('src/main/resources/META-INF/accesstransformer.cfg'),
-            //Dev time only ATs so the file name doesn't have to match accesstransformer.cfg
-            file('src/datagen/resources/META-INF/datagen_ats.cfg')
-    )
+loom {
+    accessWidenerPath = file('src/main/resources/projecte.accesswidener')
 
     mods {
         projecte {
             sourceSet(sourceSets.main)
             sourceSet(sourceSets.api)
         }
-        projecte_datagen {
-            sourceSet(sourceSets.main)
-            sourceSet(sourceSets.api)
-            sourceSet(sourceSets.datagen)
-        }
     }
 
-    unitTest {
-        enable()
-        testedMod = mods.projecte
-        loadedMods = [mods.projecte]
+    runs {
+        configureEach {
+            if (project.hasProperty('forge_force_ansi')) {
+                //Force ansi if declared as a gradle variable, as the auto detection doesn't detect IntelliJ properly
+                // or eclipse's plugin that adds support for ansi escape in console
+                property('terminal.ansi', (String) project.property('forge_force_ansi'))
+            }
+            property('projecte.skip_top', 'true')
+
+            //if the selected toolchain is a JBR, enable DCEVM
+            if (javaToolchains.launcherFor(java.toolchain).map { it.metadata.vendor }.getOrElse('').contains('JetBrains')) {
+                vmArgs('-XX:+IgnoreUnrecognizedVMOptions', '-XX:+AllowEnhancedClassRedefinition')
+            }
+        }
+        client {
+            client()
+            configName = 'Fabric Client'
+        }
+        clientAlt {
+            client()
+            configName = 'Fabric Client Alt'
+            // Force a different username for testing multiplayer interactions
+            programArgs('--username', 'AltDev')
+        }
+        server {
+            server()
+            configName = 'Fabric Server'
+            programArg('--nogui')
+        }
     }
 }
 
-neoForge.runs {
-    configureEach {
-        if (project.hasProperty('forge_force_ansi')) {
-            //Force ansi if declared as a gradle variable, as the auto detection doesn't detect IntelliJ properly
-            // or eclipse's plugin that adds support for ansi escape in console
-            systemProperties.put('terminal.ansi', (String) property('forge_force_ansi'))
-        }
-        systemProperties.put('projecte.skip_top', "true")
-
-        //if the selected toolchain is a JBR, enable DCEVM
-        if (javaToolchains.launcherFor(java.toolchain).map { it.metadata.vendor }.getOrElse('').contains('JetBrains')) {
-            jvmArguments.addAll('-XX:+IgnoreUnrecognizedVMOptions', '-XX:+AllowEnhancedClassRedefinition')
-        }
-
-        sourceSet = sourceSets.runMain
-    }
-    client {
-        client()
-        //Note: To enable logging into the client account, set the mc_devlogin property to true in your gradle user home
-        if (findProperty('mc_devlogin') ?: false) {
-            //If the property is present and set to true, enable dev login
-            devLogin = true
-        }
-    }
-    clientAlt {
-        client()
-        // Force a different username in case devlogin is not enabled for the main run
-        programArguments.addAll((String[]) ['--username', 'AltDev'])
-    }
-    server {
-        server()
-        programArgument('--nogui')
-    }
-    data {
-        data()
-        programArguments.addAll('--all', '--output', project.file('src/datagen/generated/').getAbsolutePath(),
-                '--mod', 'projecte', '--existing', project.file('src/main/resources/').getAbsolutePath())
-
-        sourceSet = sourceSets.runData
-        loadedMods = [neoForge.mods.projecte_datagen]
-    }
-}
+//Give the api source set access to the Minecraft/Fabric/mod dependencies of the main compile classpath.
+//Note: We use the configuration (dependencies only) instead of sourceSets.main.compileClasspath, as the latter
+// also contains api.output (added above), which would create a circular task dependency compileApiJava -> apiClasses
+sourceSets.api.compileClasspath += configurations.compileClasspath
 
 static void exclusiveRepo(RepositoryHandler handler, String url, String... groups) {
     exclusiveRepo(handler, url, filter -> {
@@ -222,73 +148,80 @@ static void exclusiveRepo(RepositoryHandler handler, String url, Consumer<Inclus
 }
 
 repositories { RepositoryHandler handler ->
-    exclusiveRepo(handler, 'https://maven.blamejared.com', filter -> {
-        filter.includeGroupAndSubgroups('com.blamejared')
-        filter.includeGroup('mezz.jei')
-        filter.includeGroup('org.openzen.zencode')
+    mavenCentral()
+    exclusiveRepo(handler, 'https://maven.parchmentmc.org', filter -> {
+        filter.includeGroupAndSubgroups('org.parchmentmc')
     })
+    exclusiveRepo(handler, 'https://maven.blamejared.com', 'mezz.jei')
     exclusiveRepo(handler, 'https://maven.terraformersmc.com/', 'dev.emi')
-    exclusiveRepo(handler, 'https://maven.theillusivec4.top/', 'top.theillusivec4.curios')
+    exclusiveRepo(handler, 'https://maven.shedaniel.me/', 'me.shedaniel', 'me.shedaniel.cloth')
+    exclusiveRepo(handler, 'https://maven.architectury.dev/', 'dev.architectury')
+    exclusiveRepo(handler, 'https://maven.ladysnake.org/releases', filter -> {
+        filter.includeGroupAndSubgroups('org.ladysnake')
+    })
     exclusiveRepo(handler, 'https://maven2.bai.lol', 'lol.bai', 'mcp.mobius.waila')//WTHIT
-    exclusiveRepo(handler, 'https://modmaven.dev/', 'mcjty.theoneprobe')
-    exclusiveRepo(handler, 'https://www.cursemaven.com', 'curse.maven')
-}
-
-test {
-    useJUnitPlatform()
+    exclusiveRepo(handler, 'https://api.modrinth.com/maven', 'maven.modrinth')//Jade, Trinkets
+    exclusiveRepo(handler, 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/', filter -> {
+        filter.includeGroupAndSubgroups('fuzs.forgeconfigapiport')
+    })
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junit_version}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junit_version}")
-    testImplementation("net.neoforged:testframework:${neo_version}") {
-        transitive = false
-    }
+    minecraft("com.mojang:minecraft:${minecraft_version}")
+    mappings(loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_version}@zip")
+    })
+    modImplementation("net.fabricmc:fabric-loader:${loader_version}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
 
-    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    //Java 21 no longer bundles JSR305 annotations
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+
+    //Forge Config API Port keeps the NeoForge ModConfigSpec API available on Fabric; shipped via jar-in-jar
+    include(modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcap_version}"))
+    //Permission node support (falls back to vanilla op levels when no permission mod is present); shipped via jar-in-jar
+    include(modImplementation("me.lucko:fabric-permissions-api:${permissions_api_version}"))
+    //Math library used by the EMC solver; nested jar instead of shading (Fabric loads nested libraries fine)
+    include(implementation("org.apache.commons:commons-math3:3.6.1"))
+
+    modCompileOnly("mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}")
     if (recipe_viewer == 'jei' || recipe_viewer == 'hybrid') {
-        localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+        modLocalRuntime("mezz.jei:jei-${minecraft_version}-fabric:${jei_version}")
     }
 
-    compileOnly("dev.emi:emi-neoforge:${emi_version}+${minecraft_version}:api")
-    def emi = "dev.emi:emi-neoforge:${emi_version}+${minecraft_version}"
-    //TODO: Re-evaluate (https://github.com/emilyploszaj/emi/issues/537) might allow us to not have to do this
-    //Compile against full emi in datagen
-    datagenCompileOnly(emi)
+    modCompileOnly("dev.emi:emi-fabric:${emi_version}+${minecraft_version}:api")
     if (recipe_viewer == 'emi' || recipe_viewer == 'hybrid') {
-        localRuntime(emi)
-    } else {
-        //We still need it to load in datagen regardless of if we are using emi or a different viewer so that we can access EMI related objects
-        datagenRuntimeOnly(emi)
+        modLocalRuntime("dev.emi:emi-fabric:${emi_version}+${minecraft_version}")
     }
 
-
-    compileOnly("top.theillusivec4.curios:curios-neoforge:${curios_version}:api")
-    localRuntime("top.theillusivec4.curios:curios-neoforge:${curios_version}")
-
-    //TODO: Remove having to specify these as non transitive once https://github.com/McJtyMods/TheOneProbe/issues/548 is fixed
-    compileOnly("mcjty.theoneprobe:theoneprobe:${top_version}:api") {
-        transitive = false
+    modCompileOnly("me.shedaniel:RoughlyEnoughItems-api-fabric:${rei_version}")
+    modCompileOnly("me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:${rei_version}")
+    if (recipe_viewer == 'rei') {
+        modLocalRuntime("me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}")
     }
-    localRuntime("mcjty.theoneprobe:theoneprobe:${top_version}") {
-        transitive = false
-    }
-    compileOnly("curse.maven:jade-api-324717:${jade_api_id}")
-    localRuntime("curse.maven:jade-324717:${jade_id}")
-    compileOnly("mcp.mobius.waila:wthit-api:forge-${wthit_version}")
 
-    def crt = "com.blamejared.crafttweaker:CraftTweaker-neoforge-${minecraft_version}:${crafttweaker_version}"
-    compileOnly(crt)
-    localRuntime(crt)
+    modCompileOnly("maven.modrinth:jade:${jade_version}")
+    modCompileOnly("mcp.mobius.waila:wthit-api:fabric-${wthit_version}")
 
-    additionalRuntimeClasspath(implementation(shadow(group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1')))
+    modCompileOnly("maven.modrinth:trinkets:${trinkets_version}")
+    modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
+    modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
 }
 
 //Set the various variables/settings for the different process resources tasks
 tasks.named('processResources', ProcessResources) {
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    exclude('META-INF/neoforge.mods.toml')
-    finalizedBy(replaceResources)
+    def versionProperties = ["version"             : projecte_version,
+                             "minecraft_version"   : minecraft_version_range,
+                             "loader_version_range": loader_version_range,
+                             "fcap_version_range"  : fcap_version_range]
+    inputs.properties(versionProperties)
+    filesMatching('fabric.mod.json') {
+        expand versionProperties
+    }
+    //Reference file kept from the NeoForge branch until the access widener conversion is fully validated
+    exclude('META-INF/accesstransformer.cfg')
     def files = fileTree(dir: outputs.files.asPath, includes: ['**/*.json', '**/*.mcmeta'])
     doLast {
         for (def file : files) {
@@ -296,9 +229,6 @@ tasks.named('processResources', ProcessResources) {
         }
     }
 }
-
-//Make the various classes tasks depend on the corresponding replaceResources tasks in addition to the default processResources tasks they depend on
-tasks.named('classes') { dependsOn(replaceResources) }
 
 def getManifestAttributes() {
     return [
@@ -308,16 +238,14 @@ def getManifestAttributes() {
             "Implementation-Title"    : "ProjectE",
             "Implementation-Version"  : "${project.projecte_version}",
             "Implementation-Vendor"   : "ProjectE",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
             "Automatic-Module-Name"   : "projecte"
     ]
 }
 
 tasks.named('jar', Jar) {
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    from([sourceSets.api.output, sourceSets.main.output])
+    from(sourceSets.api.output)
     manifest.attributes(getManifestAttributes())
-    finalizedBy(shadowJar)
 }
 
 tasks.named('sourcesJar', Jar) {
@@ -333,24 +261,6 @@ def apiJar = tasks.register('apiJar', Jar) {
     archiveClassifier.set("api")
     from(sourceSets.api.output)
     manifest.attributes(getManifestAttributes())
-}
-
-def shadowJar = tasks.named('shadowJar', ShadowJar) {
-    //Note: We use the include duplicate strategy instead of FAIL as minimize causes
-    // the things to get "added" twice but it is filtered separately by the shadow
-    // plugin anyways
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    archiveClassifier.set('') // Replace the default JAR
-    from([sourceSets.api.output, sourceSets.main.output])
-
-    configurations = [project.configurations.shadow]
-    exclude('assets/org/**')
-    exclude('META-INF/maven/**')
-    exclude('META-INF/*.txt')
-    // Relocate apache commons-math3 to prevent conflicts with other mods that include it
-    relocate('org.apache.commons.math3', 'moze_intel.projecte.shaded.org.apache.commons.math3')
-    // Minimize the required files so we only include what is needed
-    minimize()
 }
 
 tasks.register('updateJSON', UpdateJson)
@@ -371,18 +281,16 @@ tasks.withType(Javadoc).configureEach({
 
 artifacts {
     archives(apiJar)
-    archives(shadowJar)
-    archives(sourcesJar)
 }
 
 publishing {
     publications { PublicationContainer publicationContainer ->
-        shadow(MavenPublication) { MavenPublication publication ->
-            publication.from((SoftwareComponent) components.shadow)
+        mavenJava(MavenPublication) { MavenPublication publication ->
+            publication.from((SoftwareComponent) components.java)
             publication.groupId = project.group
             publication.version = project.version
             publication.artifactId = 'ProjectE'
-            publication.artifacts = [apiJar, shadowJar, sourcesJar]
+            publication.artifact(apiJar)
             publication.pom {
                 name.set('ProjectE')
                 packaging = 'jar'

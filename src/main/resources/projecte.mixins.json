@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "moze_intel.projecte.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+    "client.AbstractClientPlayerMixin"
+  ],
+  "mixins": [
+    "EntityMixin",
+    "ItemEntityMixin",
+    "ItemStackMixin",
+    "LivingEntityMixin",
+    "PlayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
