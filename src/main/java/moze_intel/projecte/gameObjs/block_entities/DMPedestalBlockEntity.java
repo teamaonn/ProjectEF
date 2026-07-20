@@ -18,15 +18,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import java.util.function.BiFunction;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class DMPedestalBlockEntity extends EmcBlockEntity implements IDMPedestal {
+public class DMPedestalBlockEntity extends EmcBlockEntity implements IDMPedestal , PEWorldlyContainer{
 
-	public static final ICapabilityProvider<DMPedestalBlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (pedestal, side) -> pedestal.inventory;
+	public static final BiFunction<DMPedestalBlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (pedestal, side) -> pedestal.inventory;
 	private static final int RANGE = 4;
 
 	private final StackHandler inventory = new StackHandler(1) {
@@ -52,7 +52,7 @@ public class DMPedestalBlockEntity extends EmcBlockEntity implements IDMPedestal
 	public static void tickClient(Level level, BlockPos pos, BlockState state, DMPedestalBlockEntity pedestal) {
 		if (pedestal.getActive()) {
 			ItemStack stack = pedestal.inventory.getStackInSlot(0);
-			IPedestalItem pedestalItem = stack.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY);
+			IPedestalItem pedestalItem = PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(stack);
 			if (pedestalItem == null) {
 				pedestal.setActive(level, pos, false);
 			} else {
@@ -70,7 +70,7 @@ public class DMPedestalBlockEntity extends EmcBlockEntity implements IDMPedestal
 	public static void tickServer(Level level, BlockPos pos, BlockState state, DMPedestalBlockEntity pedestal) {
 		if (pedestal.getActive()) {
 			ItemStack stack = pedestal.inventory.getStackInSlot(0);
-			IPedestalItem pedestalItem = stack.getCapability(PECapabilities.PEDESTAL_ITEM_CAPABILITY);
+			IPedestalItem pedestalItem = PECapabilities.PEDESTAL_ITEM_CAPABILITY.find(stack);
 			if (pedestalItem == null) {
 				pedestal.setActive(level, pos, false);
 			} else if (pedestalItem.updateInPedestal(stack, level, pos, pedestal)) {
@@ -178,4 +178,11 @@ public class DMPedestalBlockEntity extends EmcBlockEntity implements IDMPedestal
 	public IItemHandlerModifiable getInventory() {
 		return inventory;
 	}
+
+
+	@Override
+	public IItemHandler getFullHandler() { return this.inventory; }
+
+	@Override
+	public IItemHandler getSideHandler(@org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) { return this.inventory; }
 }

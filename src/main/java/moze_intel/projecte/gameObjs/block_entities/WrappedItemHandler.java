@@ -1,7 +1,7 @@
 package moze_intel.projecte.gameObjs.block_entities;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
 import org.jetbrains.annotations.NotNull;
 
 /**

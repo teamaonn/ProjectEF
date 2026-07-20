@@ -23,9 +23,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.network.PacketDistributor;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.PlayerMainInvWrapper;
+import moze_intel.projecte.network.PENetwork;
 import org.jetbrains.annotations.NotNull;
 
 public class TransmutationContainer extends PEHandContainer {
@@ -137,7 +137,7 @@ public class TransmutationContainer extends PEHandContainer {
 						transmutationInventory.removeEmc(BigInteger.valueOf(itemEmc));
 					}
 					stack.setCount(1);
-					ItemHandlerHelper.insertItemStacked(player.getCapability(ItemHandler.ENTITY), stack, false);
+					ItemHandlerHelper.insertItemStacked(new PlayerMainInvWrapper(player.getInventory()), stack, false);
 				} else if (itemsRoomFor > 1) {
 					BigInteger availableEMC = transmutationInventory.getAvailableEmc();
 					BigInteger emc = BigInteger.valueOf(itemEmc);
@@ -158,13 +158,13 @@ public class TransmutationContainer extends PEHandContainer {
 					}
 					//Set the stack size to what we found the max value is we have room for (capped at the stack's own max size)
 					stack.setCount(itemsRoomFor);
-					ItemHandlerHelper.insertItemStacked(player.getCapability(ItemHandler.ENTITY), stack, false);
+					ItemHandlerHelper.insertItemStacked(new PlayerMainInvWrapper(player.getInventory()), stack, false);
 				}
 			}
 		} else if (slotIndex > 26) {
 			ItemStack slotStack = currentSlot.getItem();
 			ItemStack stackToInsert = slotStack;
-			if (stackToInsert.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY) != null) {
+			if (PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stackToInsert) != null) {
 				//We are in the main inventory or the hot bar and are handling an item that can store EMC
 				//Start by trying to insert it into the input slots, first attempting to stack with other items
 				stackToInsert = insertItem(inputSlots, stackToInsert, true);
@@ -195,7 +195,7 @@ public class TransmutationContainer extends PEHandContainer {
 		if (player.level().isClientSide && transmutationInventory.getHandlerForSlot(slotIndex) == transmutationInventory.outputs) {
 			Slot slot = tryGetSlot(slotIndex);
 			if (slot != null) {
-				PacketDistributor.sendToServer(new SearchUpdatePKT(transmutationInventory.getIndexFromSlot(slotIndex), slot.getItem()));
+				PENetwork.sendToServer(new SearchUpdatePKT(transmutationInventory.getIndexFromSlot(slotIndex), slot.getItem()));
 			}
 		}
 		super.clickPostValidate(slotIndex, dragType, clickType, player);

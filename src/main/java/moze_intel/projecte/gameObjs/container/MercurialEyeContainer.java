@@ -1,9 +1,9 @@
 package moze_intel.projecte.gameObjs.container;
 
-import java.util.Objects;
 import moze_intel.projecte.gameObjs.container.slots.ComponentSlotGhost;
 import moze_intel.projecte.gameObjs.container.slots.ISlotGhost;
 import moze_intel.projecte.gameObjs.container.slots.InventoryContainerCopySlot;
+import moze_intel.projecte.gameObjs.items.MercurialEye.EyeItemHandler;
 import moze_intel.projecte.gameObjs.registries.PEContainerTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
@@ -12,8 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class MercurialEyeContainer extends PEHandContainer {
@@ -26,7 +25,7 @@ public class MercurialEyeContainer extends PEHandContainer {
 
 	public MercurialEyeContainer(int windowId, Inventory playerInv, InteractionHand hand, int selected) {
 		super(PEContainerTypes.MERCURIAL_EYE_CONTAINER, windowId, playerInv, hand, selected);
-		IItemHandler handler = Objects.requireNonNull(this.stack.getCapability(ItemHandler.ITEM));
+		IItemHandler handler = new EyeItemHandler(this.stack);
 		//Klein Star
 		this.addSlot(new InventoryContainerCopySlot(handler, 0, 50, 26));
 		//Target

@@ -14,7 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
 import org.jetbrains.annotations.NotNull;
 
 public class EternalDensityContainer extends PEHandContainer {
@@ -41,7 +41,7 @@ public class EternalDensityContainer extends PEHandContainer {
 	}
 
 	public boolean isWhitelistMode() {
-		return getStack().getOrDefault(PEDataComponentTypes.GEM_DATA, GemData.EMPTY).isWhitelist();
+		return getStack().getOrDefault(PEDataComponentTypes.GEM_DATA.get(), GemData.EMPTY).isWhitelist();
 	}
 
 	@NotNull

@@ -18,14 +18,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.items.IItemHandler;
+import java.util.function.BiFunction;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class AlchBlockEntityChest extends EmcChestBlockEntity {
+public class AlchBlockEntityChest extends EmcChestBlockEntity implements PEWorldlyContainer {
 
-	public static final ICapabilityProvider<AlchBlockEntityChest, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (chest, side) -> chest.inventory;
+	public static final BiFunction<AlchBlockEntityChest, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (chest, side) -> chest.inventory;
 
 	private final StackHandler inventory = new StackHandler(104) {
 		@Override
@@ -57,7 +57,7 @@ public class AlchBlockEntityChest extends EmcChestBlockEntity {
 	public static void tickClient(Level level, BlockPos pos, BlockState state, AlchBlockEntityChest alchChest) {
 		for (int i = 0, slots = alchChest.inventory.getSlots(); i < slots; i++) {
 			ItemStack stack = alchChest.inventory.getStackInSlot(i);
-			IAlchChestItem alchChestItem = stack.getCapability(PECapabilities.ALCH_CHEST_ITEM_CAPABILITY);
+			IAlchChestItem alchChestItem = PECapabilities.ALCH_CHEST_ITEM_CAPABILITY.find(stack);
 			if (alchChestItem != null) {
 				alchChestItem.updateInAlchChest(level, pos, stack);
 			}
@@ -69,7 +69,7 @@ public class AlchBlockEntityChest extends EmcChestBlockEntity {
 		StackHandler inventory = alchChest.inventory;
 		for (int i = 0, slots = inventory.getSlots(); i < slots; i++) {
 			ItemStack stack = inventory.getStackInSlot(i);
-			IAlchChestItem alchChestItem = stack.getCapability(PECapabilities.ALCH_CHEST_ITEM_CAPABILITY);
+			IAlchChestItem alchChestItem = PECapabilities.ALCH_CHEST_ITEM_CAPABILITY.find(stack);
 			if (alchChestItem != null && alchChestItem.updateInAlchChest(level, pos, stack)) {
 				inventory.onContentsChanged(i);
 			}
@@ -97,4 +97,11 @@ public class AlchBlockEntityChest extends EmcChestBlockEntity {
 	public Component getDisplayName() {
 		return TextComponentUtil.build(PEBlocks.ALCHEMICAL_CHEST);
 	}
+
+
+	@Override
+	public IItemHandler getFullHandler() { return this.inventory; }
+
+	@Override
+	public IItemHandler getSideHandler(@org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) { return this.inventory; }
 }

@@ -22,17 +22,17 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
+import java.util.function.BiFunction;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.api.item_handlers.CombinedInvWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider, IRelay {
+public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider, IRelay , PEWorldlyContainer{
 
-	public static final ICapabilityProvider<RelayMK1BlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (relay, side) -> {
+	public static final BiFunction<RelayMK1BlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (relay, side) -> {
 		if (side == null) {
 			return relay.joined;
 		} else if (side.getAxis().isVertical()) {
@@ -79,7 +79,7 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 			@Override
 			public ItemStack extractItem(int slot, int amount, boolean simulate) {
 				ItemStack stack = getStackInSlot(slot);
-				IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+				IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 				if (emcHolder != null && emcHolder.getNeededEmc(stack) > 0) {
 					return ItemStack.EMPTY;
 				}
@@ -120,7 +120,7 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 		relay.input.compact();
 		ItemStack stack = relay.getBurn();
 		if (!stack.isEmpty()) {
-			IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 			if (emcHolder != null) {
 				//Try to take emc from the stack in the burn slot and put it in the relay
 				long simulatedVal = relay.forceInsertEmc(emcHolder.extractEmc(stack, relay.chargeRate, EmcAction.SIMULATE), EmcAction.SIMULATE);
@@ -138,7 +138,7 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 		}
 		if (relay.getStoredEmc() > 0) {
 			ItemStack chargeable = relay.getCharging();
-			IItemEmcHolder emcHolder = chargeable.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(chargeable);
 			if (emcHolder != null) {
 				long actualSent = emcHolder.insertEmc(chargeable, relay.getAvailableCharge(), EmcAction.EXECUTE);
 				relay.forceExtractEmc(actualSent, EmcAction.EXECUTE);
@@ -153,7 +153,7 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 
 	public double getItemChargeProportion() {
 		ItemStack charging = getCharging();
-		IItemEmcHolder emcHolder = charging.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(charging);
 		if (emcHolder != null) {
 			return (double) emcHolder.getStoredEmc(charging) / emcHolder.getMaximumEmc(charging);
 		}
@@ -165,7 +165,7 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 		if (burn.isEmpty()) {
 			return 0;
 		}
-		IItemEmcHolder emcHolder = burn.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(burn);
 		if (emcHolder != null) {
 			return (double) emcHolder.getStoredEmc(burn) / emcHolder.getMaximumEmc(burn);
 		}
@@ -216,5 +216,16 @@ public class RelayMK1BlockEntity extends EmcBlockEntity implements MenuProvider,
 	@Override
 	public Component getDisplayName() {
 		return PELang.GUI_RELAY_MK1.translate();
+	}
+
+
+	@Override
+	public IItemHandler getFullHandler() { return this.joined; }
+
+	@Override
+	public IItemHandler getSideHandler(@org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) {
+		if (side == null) return this.joined;
+		else if (side.getAxis().isVertical()) return this.automationOutput;
+		return this.automationInput;
 	}
 }

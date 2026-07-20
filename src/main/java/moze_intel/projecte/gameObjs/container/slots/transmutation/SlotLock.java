@@ -34,15 +34,9 @@ public class SlotLock extends InventoryContainerSlot {
 		//Decrease the size of the stack
 		if (!stack.isEmpty() && inv.isServer()) {
 			//Sync the change to the client
-			inv.syncChangedSlots(IntList.of(getSlotIndex()), TargetUpdateType.ALL);
+			inv.syncChangedSlots(IntList.of(getContainerSlot()), TargetUpdateType.ALL);
 		}
 		return stack;
-	}
-
-	@Override
-	public void initialize(@NotNull ItemStack stack) {
-		//Note: We don't need to copy any of the logic from set as initialize is only ever called on the client
-		super.initialize(stack);
 	}
 
 	@Override
@@ -50,24 +44,24 @@ public class SlotLock extends InventoryContainerSlot {
 		super.set(stack);
 		if (inv.isServer()) {
 			if (stack.isEmpty()) {
-				inv.syncChangedSlots(IntList.of(getSlotIndex()), TargetUpdateType.ALL);
+				inv.syncChangedSlots(IntList.of(getContainerSlot()), TargetUpdateType.ALL);
 			} else {
 				if (IEMCProxy.INSTANCE.hasValue(stack)) {
 					inv.handleKnowledge(stack);
 				}
-				IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+				IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 				if (emcHolder != null) {
 					long actualExtracted = emcHolder.extractEmc(stack, emcHolder.getStoredEmc(stack), EmcAction.EXECUTE);
 					if (actualExtracted > 0) {
-						inv.syncChangedSlots(IntList.of(getSlotIndex()), TargetUpdateType.NONE);
+						inv.syncChangedSlots(IntList.of(getContainerSlot()), TargetUpdateType.NONE);
 						inv.addEmc(BigInteger.valueOf(actualExtracted));
 					} else {
 						//If we didn't move any EMC into the inventory we still need to sync the fact the slot changed so to update targets
-						inv.syncChangedSlots(IntList.of(getSlotIndex()), TargetUpdateType.ALL);
+						inv.syncChangedSlots(IntList.of(getContainerSlot()), TargetUpdateType.ALL);
 					}
 				} else {
 					//If there is no capability we still need to sync the change
-					inv.syncChangedSlots(IntList.of(getSlotIndex()), TargetUpdateType.ALL);
+					inv.syncChangedSlots(IntList.of(getContainerSlot()), TargetUpdateType.ALL);
 				}
 			}
 		}

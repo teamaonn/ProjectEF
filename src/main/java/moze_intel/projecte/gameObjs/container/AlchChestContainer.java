@@ -6,7 +6,7 @@ import moze_intel.projecte.gameObjs.registries.PEContainerTypes;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class AlchChestContainer extends EmcChestBlockEntityContainer<AlchBlockEntityChest> {

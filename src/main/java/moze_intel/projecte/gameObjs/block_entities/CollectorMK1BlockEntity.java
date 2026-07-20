@@ -28,20 +28,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
-import net.neoforged.neoforge.items.wrapper.RangedWrapper;
+import java.util.function.BiFunction;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.api.item_handlers.CombinedInvWrapper;
+import moze_intel.projecte.api.item_handlers.RangedWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvider {
+public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvider , PEWorldlyContainer{
 
-	public static final ICapabilityProvider<CollectorMK1BlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (collector, side) -> {
+	public static final BiFunction<CollectorMK1BlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (collector, side) -> {
 		if (side == null) {
 			return collector.joined;
 		} else if (side.getAxis().isVertical()) {
@@ -170,7 +170,7 @@ public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvi
 	private void checkFuelOrKlein() {
 		ItemStack upgrading = getUpgrading();
 		if (!upgrading.isEmpty()) {
-			IItemEmcHolder emcHolder = upgrading.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(upgrading);
 			if (emcHolder != null) {
 				if (emcHolder.getNeededEmc(upgrading) > 0) {
 					hasChargeableItem = true;
@@ -202,7 +202,7 @@ public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvi
 		if (this.getStoredEmc() > 0) {
 			ItemStack upgrading = getUpgrading();
 			if (hasChargeableItem) {
-				IItemEmcHolder emcHolder = upgrading.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+				IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(upgrading);
 				if (emcHolder != null) {
 					long actualInserted = emcHolder.insertEmc(upgrading, Math.min(getStoredEmc(), emcGen), EmcAction.EXECUTE);
 					forceExtractEmc(actualInserted, EmcAction.EXECUTE);
@@ -255,7 +255,7 @@ public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvi
 
 	public long getItemCharge() {
 		ItemStack upgrading = getUpgrading();
-		IItemEmcHolder emcHolder = upgrading.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(upgrading);
 		if (emcHolder != null) {
 			return emcHolder.getStoredEmc(upgrading);
 		}
@@ -268,7 +268,7 @@ public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvi
 			return -1;
 		}
 		ItemStack upgrading = getUpgrading();
-		IItemEmcHolder emcHolder = upgrading.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+		IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(upgrading);
 		if (emcHolder == null) {
 			return -1;
 		}
@@ -351,5 +351,16 @@ public class CollectorMK1BlockEntity extends EmcBlockEntity implements MenuProvi
 	@Override
 	public Component getDisplayName() {
 		return TextComponentUtil.build(PEBlocks.COLLECTOR);
+	}
+
+
+	@Override
+	public IItemHandler getFullHandler() { return this.joined; }
+
+	@Override
+	public IItemHandler getSideHandler(@org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) {
+		if (side == null) return this.joined;
+		else if (side.getAxis().isVertical()) return this.automationAuxSlots;
+		return this.automationInput;
 	}
 }

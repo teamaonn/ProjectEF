@@ -4,8 +4,7 @@ import moze_intel.projecte.gameObjs.block_entities.DMFurnaceBlockEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.event.EventHooks;
-import net.neoforged.neoforge.items.IItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 //[VanillaCopy] Adapted from FurnaceResultSlot
@@ -55,6 +54,5 @@ public class MatterFurnaceOutputSlot extends InventoryContainerSlot {
 		}
 
 		removeCount = 0;
-		EventHooks.firePlayerSmeltedEvent(player, stack);
 	}
 }

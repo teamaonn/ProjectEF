@@ -3,8 +3,7 @@ package moze_intel.projecte.gameObjs.container.slots;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class SlotGhost extends SlotItemHandler implements ISlotGhost {
@@ -22,11 +21,6 @@ public class SlotGhost extends SlotItemHandler implements ISlotGhost {
 			set(stack);
 		}
 		return false;
-	}
-
-	@Override
-	public void initialize(@NotNull ItemStack stack) {
-		super.initialize(stack.copyWithCount(1));
 	}
 
 	@Override

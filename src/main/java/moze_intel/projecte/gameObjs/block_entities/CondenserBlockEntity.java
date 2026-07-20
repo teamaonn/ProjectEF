@@ -24,17 +24,16 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import java.util.function.BiFunction;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CondenserBlockEntity extends EmcChestBlockEntity {
+public class CondenserBlockEntity extends EmcChestBlockEntity implements PEWorldlyContainer {
 
-	public static final ICapabilityProvider<CondenserBlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (condenser, side) -> condenser.automationInventory;
+	public static final BiFunction<CondenserBlockEntity, @Nullable Direction, IItemHandler> INVENTORY_PROVIDER = (condenser, side) -> condenser.automationInventory;
 
 	protected final ItemStackHandler inputInventory = createInput();
 	private final ItemStackHandler outputInventory = createOutput();
@@ -203,7 +202,9 @@ public class CondenserBlockEntity extends EmcChestBlockEntity {
 			if (!stack.isEmpty()) {
 				ItemInfo sourceInfo = ItemInfo.fromStack(stack);
 				ItemInfo reducedInfo = IEMCProxy.INSTANCE.getPersistentInfo(sourceInfo);
-				if (!NeoForge.EVENT_BUS.post(new PlayerAttemptCondenserSetEvent(player, sourceInfo, reducedInfo)).isCanceled()) {
+				PlayerAttemptCondenserSetEvent event = new PlayerAttemptCondenserSetEvent(player, sourceInfo, reducedInfo);
+				PlayerAttemptCondenserSetEvent.EVENT.invoker().onAttemptCondenserSet(event);
+				if (!event.isCanceled()) {
 					lockInfo = reducedInfo;
 					checkLockAndUpdate(true);
 					markDirty(level, pos, false);
@@ -256,4 +257,11 @@ public class CondenserBlockEntity extends EmcChestBlockEntity {
 	public Component getDisplayName() {
 		return TextComponentUtil.build(PEBlocks.CONDENSER);
 	}
+
+
+	@Override
+	public IItemHandler getFullHandler() { return this.automationInventory; }
+
+	@Override
+	public IItemHandler getSideHandler(@org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) { return this.automationInventory; }
 }

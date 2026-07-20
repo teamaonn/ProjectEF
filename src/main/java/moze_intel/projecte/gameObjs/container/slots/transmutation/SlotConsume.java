@@ -18,11 +18,6 @@ public class SlotConsume extends InventoryContainerSlot {
 	}
 
 	@Override
-	public void initialize(@NotNull ItemStack stack) {
-		//Note: We don't need to copy any of the logic from set as initialize is only ever called on the client
-	}
-
-	@Override
 	public void set(@NotNull ItemStack stack) {
 		if (inv.isServer() && !stack.isEmpty()) {
 			inv.handleKnowledge(stack);

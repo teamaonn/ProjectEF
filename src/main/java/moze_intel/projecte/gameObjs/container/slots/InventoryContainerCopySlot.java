@@ -1,8 +1,7 @@
 package moze_intel.projecte.gameObjs.container.slots;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerCopySlot;
+import moze_intel.projecte.api.item_handlers.IItemHandler;
 
 public class InventoryContainerCopySlot extends ItemHandlerCopySlot implements IInventoryContainerSlot {
 

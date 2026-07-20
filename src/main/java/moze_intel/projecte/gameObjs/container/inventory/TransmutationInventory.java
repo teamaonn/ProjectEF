@@ -25,10 +25,9 @@ import moze_intel.projecte.utils.text.SearchQueryParser.ISearchQuery;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
+import moze_intel.projecte.api.item_handlers.IItemHandlerModifiable;
+import moze_intel.projecte.api.item_handlers.ItemStackHandler;
+import moze_intel.projecte.api.item_handlers.CombinedInvWrapper;
 
 public class TransmutationInventory extends CombinedInvWrapper {
 
@@ -51,10 +50,10 @@ public class TransmutationInventory extends CombinedInvWrapper {
 	private long lastAvailableEmc;
 
 	public TransmutationInventory(Player player) {
-		super((IItemHandlerModifiable) Objects.requireNonNull(player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY)).getInputAndLocks(),
+		super((IItemHandlerModifiable) Objects.requireNonNull(PECapabilities.KNOWLEDGE_CAPABILITY.find(player)).getInputAndLocks(),
 				new ItemStackHandler(2), new ItemStackHandler(16));
 		this.player = player;
-		this.provider = Objects.requireNonNull(player.getCapability(PECapabilities.KNOWLEDGE_CAPABILITY));
+		this.provider = Objects.requireNonNull(PECapabilities.KNOWLEDGE_CAPABILITY.find(player));
 		this.inputLocks = itemHandler[0];
 		this.learning = itemHandler[1];
 		this.outputs = itemHandler[2];
@@ -88,8 +87,10 @@ public class TransmutationInventory extends CombinedInvWrapper {
 	public void handleKnowledge(ItemInfo info) {
 		ItemInfo cleanedInfo = IEMCProxy.INSTANCE.getPersistentInfo(info);
 		//Pass both stacks to the Attempt Learn Event in case a mod cares about the data component/damage difference when comparing
-		if (!provider.hasKnowledge(cleanedInfo) && !NeoForge.EVENT_BUS.post(new PlayerAttemptLearnEvent(player, info, cleanedInfo)).isCanceled()) {
-			if (provider.addKnowledge(cleanedInfo)) {
+		if (!provider.hasKnowledge(cleanedInfo)) {
+			PlayerAttemptLearnEvent event = new PlayerAttemptLearnEvent(player, info, cleanedInfo);
+			PlayerAttemptLearnEvent.EVENT.invoker().onAttemptLearn(event);
+			if (!event.isCanceled() && provider.addKnowledge(cleanedInfo)) {
 				//Only sync the knowledge changed if the provider successfully added it
 				provider.syncKnowledgeChange((ServerPlayer) player, cleanedInfo, true);
 			}
@@ -439,7 +440,7 @@ public class TransmutationInventory extends CombinedInvWrapper {
 				continue;
 			}
 			ItemStack stack = inputLocks.getStackInSlot(slotIndex);
-			IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 			if (emcHolder != null) {
 				long shrunkenValue = MathUtils.clampToLong(value);
 				long actualInserted = emcHolder.insertEmc(stack, shrunkenValue, EmcAction.EXECUTE);
@@ -487,7 +488,7 @@ public class TransmutationInventory extends CombinedInvWrapper {
 					continue;
 				}
 				ItemStack stack = inputLocks.getStackInSlot(slotIndex);
-				IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+				IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 				if (emcHolder != null) {
 					long shrunkenToRemove = MathUtils.clampToLong(toRemove);
 					long actualExtracted = emcHolder.extractEmc(stack, shrunkenToRemove, EmcAction.EXECUTE);
@@ -562,7 +563,7 @@ public class TransmutationInventory extends CombinedInvWrapper {
 				continue;
 			}
 			ItemStack stack = inputLocks.getStackInSlot(i);
-			IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 			if (emcHolder != null) {
 				long storedEmc = emcHolder.getStoredEmc(stack);
 				if (storedEmc >= emcToMax) {
@@ -586,7 +587,7 @@ public class TransmutationInventory extends CombinedInvWrapper {
 				continue;
 			}
 			ItemStack stack = inputLocks.getStackInSlot(i);
-			IItemEmcHolder emcHolder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+			IItemEmcHolder emcHolder = PECapabilities.EMC_HOLDER_ITEM_CAPABILITY.find(stack);
 			if (emcHolder != null) {
 				emc = emc.add(BigInteger.valueOf(emcHolder.getStoredEmc(stack)));
 			}
