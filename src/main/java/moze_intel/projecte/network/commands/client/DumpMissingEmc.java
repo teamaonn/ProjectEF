@@ -45,13 +45,13 @@ public class DumpMissingEmc {
 	private static final boolean SKIP_TOP = Boolean.parseBoolean(System.getProperties().getProperty("projecte.skip_top"));
 
 	/**
-	 * Registers the client-side "/projecte dumpmissingemc" command.
+	 * Registers the client-side "/projecteclient dumpmissingemc" command.
 	 * Called by the client mod initializer (PECoreClient). Uses Fabric's client command API
 	 * (FabricClientCommandSource) instead of the server-side CommandSourceStack.
 	 */
 	public static void registerClientCommand() {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
-				dispatcher.register(ClientCommandManager.literal("projecte").then(buildCommand())));
+				dispatcher.register(ClientCommandManager.literal("projecteclient").then(buildCommand())));
 	}
 
 	private static LiteralArgumentBuilder<FabricClientCommandSource> buildCommand() {
