@@ -338,12 +338,12 @@ public class ToolHelper {
 			return;
 		}
 		BlockHitResult result = tracePointer.rayTrace(level, player, ClipContext.Fluid.NONE);
-		if (result.getType() == Type.MISS || !pos.equals(result.getBlockPos())) {
-			//Ensure that the ray trace agrees with the position we were told about
-			return;
-		}
+		//Vanilla removes the original block before ItemStack#mineBlock is invoked, so a second ray trace
+		//cannot be required to hit pos. It will normally hit the block behind it; fall back to the
+		//opposite of the player's look direction when there is no block behind the original target.
+		Direction sideHit = result.getType() == Type.MISS ? Direction.getNearest(player.getLookAngle()).getOpposite() : result.getDirection();
 		List<ItemStack> drops = new ArrayList<>();
-		for (BlockPos digPos : getTargets(pos, player, result.getDirection(), mode)) {
+		for (BlockPos digPos : getTargets(pos, player, sideHit, mode)) {
 			BlockState state = level.getBlockState(digPos);
 			if (!state.isAir() && state.getDestroySpeed(level, digPos) != Block.INDESTRUCTIBLE && stack.isCorrectToolForDrops(state)) {
 				//Ensure we are immutable so that changing blocks doesn't act weird
