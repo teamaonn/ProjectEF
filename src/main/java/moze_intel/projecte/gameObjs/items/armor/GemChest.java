@@ -33,7 +33,7 @@ public class GemChest extends GemArmorBase implements IFireProtector {
 	@Override
 	public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean isHeld) {
 		super.inventoryTick(stack, level, entity, slot, isHeld);
-		if (isArmorSlot(slot) && !level.isClientSide && entity instanceof Player player && PlayerHelper.checkFeedCooldown(player)) {
+		if (!level.isClientSide && entity instanceof Player player && isEquipped(stack, player) && PlayerHelper.checkFeedCooldown(player)) {
 			player.getFoodData().eat(2, 10);
 			entity.gameEvent(GameEvent.EAT);
 		}

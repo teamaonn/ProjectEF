@@ -9,7 +9,6 @@ import moze_intel.projecte.api.item_handlers.ContainerItemHandler;
 import moze_intel.projecte.api.item_handlers.IItemHandler;
 import moze_intel.projecte.gameObjs.container.AlchBagContainer;
 import moze_intel.projecte.gameObjs.items.AlchemicalBag;
-import moze_intel.projecte.gameObjs.items.rings.Arcana;
 import moze_intel.projecte.gameObjs.items.IFireProtector;
 import moze_intel.projecte.handlers.InternalAbilities;
 import moze_intel.projecte.utils.PlayerHelper;
@@ -49,7 +48,6 @@ public class TickEvents {
 		}
 
 		InternalAbilities.tick(player);
-		Arcana.tickFlight(player);
 		if (!player.level().isClientSide()) {
 			if (player.isOnFire() && shouldPlayerResistFire(player)) {
 				player.clearFire();

@@ -10,6 +10,7 @@ import moze_intel.projecte.utils.PEKeybind;
 import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlotGroup;
@@ -58,8 +59,23 @@ public class GemFeet extends GemArmorBase {
 
 	public static void toggleStepAssist(ItemStack boots, Player player) {
 		boolean oldValue = isStepAssist(boots);
-		boots.set(PEDataComponentTypes.STEP_ASSIST.get(), !oldValue);
-		player.sendSystemMessage(getComponent(!oldValue));
+		boolean enabled = !oldValue;
+		boots.set(PEDataComponentTypes.STEP_ASSIST.get(), enabled);
+		if (boots.getItem() instanceof GemFeet gemFeet) {
+			gemFeet.syncStepAssistModifiers(boots, enabled);
+		}
+		player.sendSystemMessage(getComponent(enabled));
+	}
+
+	private void syncStepAssistModifiers(ItemStack stack, boolean enabled) {
+		ItemAttributeModifiers expected = enabled ? defaultWithStepAssistModifiers.get() : defaultModifiers.get();
+		if (!expected.equals(stack.get(DataComponents.ATTRIBUTE_MODIFIERS))) {
+			stack.set(DataComponents.ATTRIBUTE_MODIFIERS, expected);
+		}
+	}
+
+	private void syncStepAssistModifiers(ItemStack stack) {
+		syncStepAssistModifiers(stack, isStepAssist(stack));
 	}
 
 	private static boolean isJumpPressed(Player player) {
@@ -72,8 +88,9 @@ public class GemFeet extends GemArmorBase {
 	@Override
 	public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean isHeld) {
 		super.inventoryTick(stack, level, entity, slot, isHeld);
-		if (isArmorSlot(slot) && entity instanceof Player player) {
+		if (entity instanceof Player player && isEquipped(stack, player)) {
 			if (!level.isClientSide) {
+				syncStepAssistModifiers(stack);
 				player.resetFallDistance();
 			} else {
 				//TODO: Do we want to try and make use of just applying Attributes.GRAVITY to the player instead? Default gravity is 0.08

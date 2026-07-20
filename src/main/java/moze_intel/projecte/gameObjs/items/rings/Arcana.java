@@ -62,30 +62,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtector, IExtraFunction, IProjectileShooter, ICapabilityAware, IExposesCurioAttributes {
 
-	private static boolean shouldHaveFlight(Player player) {
-		for (net.minecraft.world.item.ItemStack stack : player.getInventory().items) {
-			if (!stack.isEmpty() && stack.getItem() instanceof Arcana && stack.getOrDefault(PEDataComponentTypes.ACTIVE.get(), false)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public static void tickFlight(Player player) {
-		// Skip creative/spectator entirely - they have native flight
-		if (player.isCreative() || player.isSpectator()) {
-			return;
-		}
-		boolean hasFlight = shouldHaveFlight(player);
-		if (hasFlight && !player.getAbilities().mayfly) {
-			player.getAbilities().mayfly = true;
-			player.onUpdateAbilities();
-		} else if (!hasFlight && player.getAbilities().mayfly) {
-			player.getAbilities().mayfly = false;
-			player.getAbilities().flying = false;
-			player.onUpdateAbilities();
-		}
-	}
 	private final Supplier<ItemAttributeModifiers> defaultModifiers;
 
 	public Arcana(Properties props) {

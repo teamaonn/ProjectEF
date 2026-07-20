@@ -3,7 +3,7 @@ package moze_intel.projecte.gameObjs.items.armor;
 import net.minecraft.core.Holder;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
@@ -60,8 +60,8 @@ public abstract class PEArmor extends ArmorItem {
 		return 0;
 	}
 
-	protected static boolean isArmorSlot(int slot) {
-		return slot >= Inventory.INVENTORY_SIZE && slot < Inventory.INVENTORY_SIZE + 4;
+	protected boolean isEquipped(ItemStack stack, Player player) {
+		return player.getItemBySlot(type.getSlot()) == stack;
 	}
 
 	public record ReductionInfo(float percentReduced, float maxDamagedAbsorbed) {

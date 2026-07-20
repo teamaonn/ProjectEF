@@ -40,7 +40,7 @@ public class GemLegs extends GemArmorBase {
 	@Override
 	public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean isHeld) {
 		super.inventoryTick(stack, level, entity, slot, isHeld);
-		if (isArmorSlot(slot) && entity instanceof Player player) {
+		if (entity instanceof Player player && isEquipped(stack, player)) {
 			if (level.isClientSide) {
 				//Fabric has no LivingJumpEvent, so approximate the jump moment client side as the first tick the player rises while airborne
 				if (!player.onGround() && player.getDeltaMovement().y() > 0 && !jumpedRecently(player)) {

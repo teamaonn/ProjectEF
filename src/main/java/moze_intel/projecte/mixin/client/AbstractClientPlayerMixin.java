@@ -19,7 +19,7 @@ public abstract class AbstractClientPlayerMixin {
 	private float projecte$gemBootsFov(float original) {
 		AbstractClientPlayer self = (AbstractClientPlayer) (Object) this;
 		ItemStack boots = self.getItemBySlot(EquipmentSlot.FEET);
-		if (!boots.isEmpty() && boots.is(PEItems.GEM_BOOTS)) {
+		if (!boots.isEmpty() && boots.is(PEItems.GEM_BOOTS.get())) {
 			return original - 0.5F * Minecraft.getInstance().options.fovEffectScale().get().floatValue();
 		}
 		return original;

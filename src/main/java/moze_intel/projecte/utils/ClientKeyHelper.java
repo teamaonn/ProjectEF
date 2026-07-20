@@ -1,6 +1,6 @@
 package moze_intel.projecte.utils;
 
-import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.platform.InputConstants;
 import moze_intel.projecte.network.PENetwork;
 import moze_intel.projecte.network.packets.to_server.KeyPressPKT;
@@ -8,12 +8,13 @@ import moze_intel.projecte.utils.text.PELang;
 import moze_intel.projecte.utils.text.TextComponentUtil;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public class ClientKeyHelper {
 
-	private static ImmutableBiMap<PEKeybind, KeyMapping> peToMc = ImmutableBiMap.of();
+	private static ImmutableMap<PEKeybind, KeyMapping> peToMc = ImmutableMap.of();
 
 	/**
 	 * Called by client mod initializer (stage 4) to register all ProjectE key bindings.
@@ -21,9 +22,12 @@ public class ClientKeyHelper {
 	 * KeyConflictContext and KeyModifier have been dropped — now uses pure vanilla KeyMapping.
 	 */
 	public static void registerKeyBindings() {
-		ImmutableBiMap.Builder<PEKeybind, KeyMapping> builder = ImmutableBiMap.builder();
-		addKeyBinding(builder, PEKeybind.HELMET_TOGGLE, GLFW.GLFW_KEY_X);
-		addKeyBinding(builder, PEKeybind.BOOTS_TOGGLE, GLFW.GLFW_KEY_X);
+		ImmutableMap.Builder<PEKeybind, KeyMapping> builder = ImmutableMap.builder();
+		//Fabric's vanilla KeyMapping has no modifier support and duplicate physical keys mask one another.
+		//Register one armor key and dispatch X/Shift+X as boots/helmet below, matching the NeoForge behavior.
+		KeyMapping armorToggle = registerKeyBinding(PEKeybind.BOOTS_TOGGLE, GLFW.GLFW_KEY_X);
+		builder.put(PEKeybind.HELMET_TOGGLE, armorToggle);
+		builder.put(PEKeybind.BOOTS_TOGGLE, armorToggle);
 		addKeyBinding(builder, PEKeybind.CHARGE, GLFW.GLFW_KEY_V);
 		addKeyBinding(builder, PEKeybind.EXTRA_FUNCTION, GLFW.GLFW_KEY_C);
 		addKeyBinding(builder, PEKeybind.FIRE_PROJECTILE, GLFW.GLFW_KEY_R);
@@ -31,18 +35,23 @@ public class ClientKeyHelper {
 		peToMc = builder.build();
 	}
 
-	private static void addKeyBinding(ImmutableBiMap.Builder<PEKeybind, KeyMapping> builder, PEKeybind keyBind, int keyCode) {
+	private static void addKeyBinding(ImmutableMap.Builder<PEKeybind, KeyMapping> builder, PEKeybind keyBind, int keyCode) {
+		builder.put(keyBind, registerKeyBinding(keyBind, keyCode));
+	}
+
+	private static KeyMapping registerKeyBinding(PEKeybind keyBind, int keyCode) {
 		KeyMapping keyMapping = new PEKeyMapping(keyBind, keyCode);
-		builder.put(keyBind, keyMapping);
 		KeyBindingHelper.registerKeyBinding(keyMapping);
+		return keyMapping;
 	}
 
 	public static Component getKeyName(PEKeybind k) {
 		KeyMapping keyMapping = peToMc.get(k);
-		if (keyMapping == null) {
-			return TextComponentUtil.build(k);
+		Component keyName = keyMapping == null ? TextComponentUtil.build(k) : keyMapping.getTranslatedKeyMessage();
+		if (k == PEKeybind.HELMET_TOGGLE) {
+			return Component.translatable("key.keyboard.left.shift").append(" + ").append(keyName);
 		}
-		return keyMapping.getTranslatedKeyMessage();
+		return keyName;
 	}
 
 	private static class PEKeyMapping extends KeyMapping {
@@ -61,7 +70,8 @@ public class ClientKeyHelper {
 			boolean state = isDown();
 			if (state != lastState) {
 				if (state) {
-					PENetwork.sendToServer(new KeyPressPKT(keybind));
+					PEKeybind pressed = keybind == PEKeybind.BOOTS_TOGGLE && Screen.hasShiftDown() ? PEKeybind.HELMET_TOGGLE : keybind;
+					PENetwork.sendToServer(new KeyPressPKT(pressed));
 				}
 				lastState = state;
 			}
