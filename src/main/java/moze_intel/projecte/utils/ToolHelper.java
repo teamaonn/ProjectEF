@@ -433,9 +433,9 @@ public class ToolHelper {
 	}
 
 	/**
-	 * Attacks in an AOE. Charge affects AOE, not damage (intentional). Optional per-entity EMC cost.
+	 * Slays entities in an AOE. Charge affects AOE, not damage (intentional). Optional per-entity EMC cost.
 	 */
-	public static void attackAOE(ItemStack stack, Player player, boolean slayAll, float damage, long emcCost, InteractionHand hand) {
+	public static void attackAOE(ItemStack stack, Player player, boolean slayAll, float minimumDamage, long emcCost, InteractionHand hand) {
 		Level level = player.level();
 		if (level.isClientSide) {
 			return;
@@ -446,7 +446,9 @@ public class ToolHelper {
 		boolean hasAction = false;
 		for (Entity entity : toAttack) {
 			if (ItemPE.consumeFuel(player, stack, emcCost, true)) {
-				entity.hurt(src, damage);
+				LivingEntity living = (LivingEntity) entity;
+				float lethalDamage = living.getHealth() + living.getAbsorptionAmount() + 1.0F;
+				living.hurt(src, Math.max(minimumDamage, lethalDamage));
 				hasAction = true;
 			} else {
 				//If we failed to consume EMC but needed EMC just break out early as we won't have the required EMC for any of the future blocks

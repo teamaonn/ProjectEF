@@ -48,7 +48,7 @@ import org.jetbrains.annotations.NotNull;
 public class PEKatar extends PETool implements IItemMode<KatarMode>, IExtraFunction, IHasConditionalAttributes {
 
 	public PEKatar(IMatterType matterType, int numCharges, Properties props) {
-		super(matterType, PETags.Blocks.MINEABLE_WITH_PE_KATAR, numCharges, props.attributes(createAttributes(matterType, 19, -2.4F))
+		super(matterType, PETags.Blocks.MINEABLE_WITH_PE_KATAR, numCharges, props.attributes(createAttributes(matterType, 27, -2.4F))
 				.component(PEDataComponentTypes.KATAR_MODE.get(), KatarMode.SLAY_HOSTILE)
 		);
 	}
