@@ -18,7 +18,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-@EMCMapper
+@EMCMapper(priority = Integer.MIN_VALUE)
 public class CustomEMCMapper implements IEMCMapper<NormalizedSimpleStack, Long> {
 	private static final Map<String, Long> AVARITIA_EMC = Map.ofEntries(
 			Map.entry("avaritia:compressed_crafting_table", 288L),
