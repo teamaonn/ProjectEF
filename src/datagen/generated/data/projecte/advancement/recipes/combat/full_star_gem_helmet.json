@@ -1,9 +1,4 @@
 {
-  "neoforge:conditions": [
-    {
-      "type": "projecte:full_klein_stars"
-    }
-  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_helmet": {
@@ -33,5 +28,10 @@
     "recipes": [
       "projecte:full_star_gem_helmet"
     ]
-  }
+  },
+  "fabric:load_conditions": [
+    {
+      "condition": "projecte:full_klein_stars"
+    }
+  ]
 }

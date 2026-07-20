@@ -1,12 +1,4 @@
 {
-  "neoforge:conditions": [
-    {
-      "type": "projecte:tome_enabled"
-    },
-    {
-      "type": "projecte:full_klein_stars"
-    }
-  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_covalence_dust": {
@@ -42,5 +34,13 @@
     "recipes": [
       "projecte:full_star_tome_alt"
     ]
-  }
+  },
+  "fabric:load_conditions": [
+    {
+      "condition": "projecte:tome_enabled"
+    },
+    {
+      "condition": "projecte:full_klein_stars"
+    }
+  ]
 }

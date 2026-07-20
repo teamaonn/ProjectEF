@@ -1,12 +1,4 @@
 {
-  "neoforge:conditions": [
-    {
-      "type": "neoforge:not",
-      "value": {
-        "type": "projecte:full_klein_stars"
-      }
-    }
-  ],
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
   "ingredients": [
@@ -26,5 +18,13 @@
   "result": {
     "count": 1,
     "id": "projecte:gem_helmet"
-  }
+  },
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:not",
+      "value": {
+        "condition": "projecte:full_klein_stars"
+      }
+    }
+  ]
 }
