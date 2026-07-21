@@ -20,7 +20,7 @@
     "sources": "https://github.com/wchiway/ProjectEF"
   },
   "license": "MIT",
-  "icon": "logo.png",
+  "icon": "assets/projecte/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

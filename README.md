@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/main/resources/logo.png" alt="ProjectEF logo" width="256">
+  <img src="src/main/resources/assets/projecte/logo.png" alt="ProjectEF logo" width="256">
 </p>
 
 # ProjectEF for Fabric 1.21.1
@@ -37,10 +37,11 @@ Recent port work also restores:
 
 1. Install Minecraft 1.21.1 with Fabric Loader 0.16.9 or newer.
 2. Install a compatible Fabric API release.
-3. Download the ProjectEF JAR from this repository's [Releases](https://github.com/wchiway/ProjectEF/releases), or build it from source.
-4. Place the JAR in the Minecraft `mods` directory.
+3. Install [Forge Config API Port](https://www.curseforge.com/minecraft/mc-mods/forge-config-api-port), which is required by ProjectEF.
+4. Download the ProjectEF JAR from this repository's [Releases](https://github.com/wchiway/ProjectEF/releases), or build it from source.
+5. Place the JAR in the Minecraft `mods` directory.
 
-Forge Config API Port and the permissions API are bundled in the ProjectEF JAR. Optional recipe display support is available for JEI and EMI; Jade and WTHIT integrations are also included when those mods are installed.
+The permissions API is bundled in the ProjectEF JAR. Optional recipe display support is available for JEI and EMI; Jade and WTHIT integrations are also included when those mods are installed.
 
 ## Building from source
 
