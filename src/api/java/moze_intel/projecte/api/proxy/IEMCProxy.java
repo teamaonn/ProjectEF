@@ -19,7 +19,7 @@ public interface IEMCProxy extends ToLongFunction<ItemInfo> {
 	 * The proxy for EMC-based API queries.
 	 */
 	IEMCProxy INSTANCE = ServiceLoader.load(IEMCProxy.class).findFirst()
-			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IEMCProxy found, ProjectE may be absent, damaged, or outdated"));
+			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IEMCProxy found, ProjectEF may be absent, damaged, or outdated"));
 
 	/**
 	 * Queries the EMC value registry if the given item has an EMC value

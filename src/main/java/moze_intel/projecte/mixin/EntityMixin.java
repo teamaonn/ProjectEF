@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Makes players wearing fire protecting ProjectE gear invulnerable to fire damage, replacing the invulnerability check event.
+ * Makes players wearing fire protecting ProjectEF gear invulnerable to fire damage, replacing the invulnerability check event.
  */
 @Mixin(Entity.class)
 public abstract class EntityMixin {

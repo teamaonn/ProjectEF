@@ -11,7 +11,7 @@ public interface ITransmutationProxy {
 	 * The proxy for Transmutation-based API queries.
 	 */
 	ITransmutationProxy INSTANCE = ServiceLoader.load(ITransmutationProxy.class).findFirst()
-			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for ITransmutationProxy found, ProjectE may be absent, damaged, or outdated"));
+			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for ITransmutationProxy found, ProjectEF may be absent, damaged, or outdated"));
 
 	/**
 	 * Gets an {@link IKnowledgeProvider} representing the UUID provided.

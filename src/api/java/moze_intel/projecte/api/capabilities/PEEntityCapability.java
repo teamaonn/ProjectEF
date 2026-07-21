@@ -8,7 +8,7 @@ import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapper around a context-less {@link EntityApiLookup} representing an entity capability exposed by ProjectE.
+ * Wrapper around a context-less {@link EntityApiLookup} representing an entity capability exposed by ProjectEF.
  *
  * @param <A> Type of the api this capability provides access to.
  */

@@ -29,7 +29,7 @@ public class ProjectETNT extends TntBlock {
 
 	/**
 	 * Fabric: fire-spread-triggered priming falls through to vanilla TntBlock.explode, which spawns
-	 * a plain PrimedTnt (not the custom ProjectE entity). {@link WorldHelper#igniteBlock} and
+	 * a plain PrimedTnt (not the custom ProjectEF entity). {@link WorldHelper#igniteBlock} and
 	 * dispenser logic still create the custom entity. Flammability is registered in the block registry.
 	 */
 

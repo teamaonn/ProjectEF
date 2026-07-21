@@ -101,7 +101,12 @@ import org.slf4j.Logger;
 public class PECore implements ModInitializer {
 
 	public static final String MODID = ProjectEAPI.PROJECTE_MODID;
-	public static final String MODNAME = "ProjectE";
+	public static final String MODNAME = "ProjectEF";
+
+	/**
+	 * Legacy configuration directory retained for compatibility with existing installations.
+	 */
+	public static final String CONFIG_DIR_NAME = "ProjectE";
 	public static final GameProfile FAKEPLAYER_GAMEPROFILE = new GameProfile(UUID.fromString("590e39c7-9fb6-471b-a4c2-c0e539b2423d"), "[" + MODNAME + "]");
 	public static final Logger LOGGER = LogUtils.getLogger();
 

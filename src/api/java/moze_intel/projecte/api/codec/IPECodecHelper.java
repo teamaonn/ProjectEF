@@ -19,10 +19,10 @@ import org.jetbrains.annotations.Nullable;
 public interface IPECodecHelper {
 
 	/**
-	 * Helper for dealing with {@link Codec Codecs} related to ProjectE.
+	 * Helper for dealing with {@link Codec Codecs} related to ProjectEF.
 	 */
 	IPECodecHelper INSTANCE = ServiceLoader.load(IPECodecHelper.class).findFirst()
-			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IPECodecHelper found, ProjectE may be absent, damaged, or outdated"));
+			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IPECodecHelper found, ProjectEF may be absent, damaged, or outdated"));
 
 	/**
 	 * {@link Codec} that tries to encode a {@link NormalizedSimpleStack}..

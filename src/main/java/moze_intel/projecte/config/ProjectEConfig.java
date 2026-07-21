@@ -25,11 +25,11 @@ public class ProjectEConfig {
 	public static final ClientConfig client = new ClientConfig();
 
 	private static Path createConfigDir() {
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(PECore.MODNAME);
+		Path path = FabricLoader.getInstance().getConfigDir().resolve(PECore.CONFIG_DIR_NAME);
 		try {
 			Files.createDirectories(path);
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to create " + PECore.MODNAME + " config directory", e);
+			throw new UncheckedIOException("Failed to create " + PECore.CONFIG_DIR_NAME + " config directory", e);
 		}
 		return path;
 	}
@@ -53,7 +53,7 @@ public class ProjectEConfig {
 	 * Creates and registers a mod config, and tracks it so that we can properly clear cached values.
 	 */
 	public static void registerConfig(IPEConfig config) {
-		NeoForgeConfigRegistry.INSTANCE.register(PECore.MODID, config.getConfigType(), config.getConfigSpec(), PECore.MODNAME + "/" + config.getFileName() + ".toml");
+		NeoForgeConfigRegistry.INSTANCE.register(PECore.MODID, config.getConfigType(), config.getConfigSpec(), PECore.CONFIG_DIR_NAME + "/" + config.getFileName() + ".toml");
 		KNOWN_CONFIGS.put(config.getConfigSpec(), config);
 	}
 

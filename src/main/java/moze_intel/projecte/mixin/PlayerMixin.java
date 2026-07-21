@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Runs ProjectE's per player tick logic (alchemical bag item ticking, internal abilities, fire resistance), replacing the player tick event.
+ * Runs ProjectEF's per player tick logic (alchemical bag item ticking, internal abilities, fire resistance), replacing the player tick event.
  */
 @Mixin(Player.class)
 public abstract class PlayerMixin {

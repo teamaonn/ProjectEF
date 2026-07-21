@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Adds the conditional (stack state dependent) attribute modifiers of ProjectE items, replacing the item attribute modifier event that used to provide this.
+ * Adds the conditional (stack state dependent) attribute modifiers of ProjectEF items, replacing the item attribute modifier event that used to provide this.
  */
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {

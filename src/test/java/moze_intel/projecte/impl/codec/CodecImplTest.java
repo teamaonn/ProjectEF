@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Test implementation of ProjectE Codecs")
+@DisplayName("Test implementation of ProjectEF Codecs")
 class CodecImplTest {
 
 	@Test

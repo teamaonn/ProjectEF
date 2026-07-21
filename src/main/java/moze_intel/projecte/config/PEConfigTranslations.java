@@ -10,7 +10,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 	//Client Config
 	CLIENT_PHILO_OVERLAY("client.philo_overlay", "Pulsating Overlay", "The Philosopher's Stone overlay softly pulsates."),
 
-	CLIENT_TOOLTIPS("client.tooltips", "Tooltip Settings", "Settings for configuring Tooltips provided by ProjectE.", true),
+	CLIENT_TOOLTIPS("client.tooltips", "Tooltip Settings", "Settings for configuring Tooltips provided by ProjectEF.", true),
 
 	CLIENT_TOOLTIPS_EMC("client.tooltips.emc", "EMC Tooltips", "Show the EMC value as a tooltip on items and blocks."),
 	CLIENT_TOOLTIPS_EMC_SHIFT("client.tooltips.emc.shift", "Shift EMC Tooltips",
@@ -18,20 +18,20 @@ public enum PEConfigTranslations implements IConfigTranslation {
 	CLIENT_TOOLTIPS_LEARNED_SHIFT("client.tooltips.learned.shift", "Shift Learned Tooltips",
 			"Requires holding shift to display the learned/unlearned text as a tooltip on items and blocks. Note: this does nothing if EMC Tooltips are disabled."),
 	CLIENT_TOOLTIPS_PEDESTAL("client.tooltips.pedestal", "DM Pedestal Tooltips", "Show Dark Matter Pedestal functions in item tooltips."),
-	CLIENT_TOOLTIPS_STATS("client.tooltips.stats", "Stat Tooltips", "Show stats as tooltips for various ProjectE blocks."),
+	CLIENT_TOOLTIPS_STATS("client.tooltips.stats", "Stat Tooltips", "Show stats as tooltips for various ProjectEF blocks."),
 	CLIENT_TOOLTIPS_TAGS("client.tooltips.tags", "Tag Tooltips", "Show item tags in tooltips (useful for custom EMC registration)."),
 
 	//Common Config
 	COMMON_DEBUG_LOGGING("common.debug_logging", "Debug Logging", "Enable more verbose debug logging."),
 
-	COMMON_CRAFTING("common.crafting", "Crafting Settings", "Settings for configuring crafting requirements of specific ProjectE recipes.", true),
+	COMMON_CRAFTING("common.crafting", "Crafting Settings", "Settings for configuring crafting requirements of specific ProjectEF recipes.", true),
 	COMMON_CRAFTING_TOME("common.crafting.tome", "Craftable Tome", "Enable crafting the Tome of Knowledge."),
 	COMMON_CRAFTING_FULL_KLEIN("common.crafting.full_klein", "Require Full Klein Stars",
 			"Require full omega klein stars in the tome of knowledge and gem armor recipes. This is the same behavior that EE2 had."),
 
 	//Server Config
 	SERVER_COOLDOWN("server.cooldown", "Cooldown Settings",
-			"Settings for configuring the Cooldown (in ticks) for various features in ProjectE. "
+			"Settings for configuring the Cooldown (in ticks) for various features in ProjectEF. "
 			+ "A cooldown of -1 will disable the functionality. A cooldown of 0 will allow the actions to happen every tick. "
 			+ "Use caution as a very low value on features that run automatically could cause TPS issues.", true),
 
@@ -72,7 +72,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 			"Delay between feed attempts while in a player's inventory. (Body Stone, Life Stone, Gem Helmet)."),
 
 
-	SERVER_DIFFICULTY("server.difficulty", "Difficulty Settings", "Settings for configuring Difficulty options provided by ProjectE.", true),
+	SERVER_DIFFICULTY("server.difficulty", "Difficulty Settings", "Settings for configuring Difficulty options provided by ProjectEF.", true),
 	SERVER_DIFFICULTY_OFFENSIVE_ABILITIES("server.difficulty.offensive_abilities", "Offensive Abilities",
 			"Set to false to disable Gem Armor offensive abilities (helmet zap and chestplate explosion)."),
 	SERVER_DIFFICULTY_KATAR_DEATH_AURA("server.difficulty.katar_death_aura", "Katar Death Aura", "Amount of damage the Katar's Extra Function deals."),
@@ -83,7 +83,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 			"How rounding occurs when Covalence Loss results in a burn value less than 1 EMC. If true the value will be rounded up to 1. "
 			+ "If false the value will be rounded down to 0."),
 
-	SERVER_EFFECTS("server.effects", "Effect Settings", "Settings for configuring Effect options provided by ProjectE.", true),
+	SERVER_EFFECTS("server.effects", "Effect Settings", "Settings for configuring Effect options provided by ProjectEF.", true),
 	SERVER_EFFECTS_TIME_PEDESTAL_BONUS("server.effects.time_pedestal.bonus", "Time Pedestal Bonus",
 			"Bonus ticks given by the Watch of Flowing Time while in the pedestal. 0 = effectively no bonus."),
 	SERVER_EFFECTS_TIME_PEDESTAL_MOB_SLOWNESS("server.effects.time_pedestal.mob_slowness", "Time Pedestal Mob Slowness",
@@ -91,7 +91,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 	SERVER_EFFECTS_INTERDICTION_MODE("server.effects.interdiction_mode", "Interdiction Mode",
 			"If true the Interdiction Torch only affects hostile mobs and projectiles. If false it affects all non blacklisted living entities."),
 
-	SERVER_ITEMS("server.items", "Item Settings", "Settings for configuring Item options provided by ProjectE.", true),
+	SERVER_ITEMS("server.items", "Item Settings", "Settings for configuring Item options provided by ProjectEF.", true),
 	SERVER_ITEMS_PICKAXE_AOE_VEIN_MINING("server.items.pickaxe_aoe_vein_mining", "Pickaxe AOE Vein Mining",
 			"Instead of vein mining the ore you right click with your Dark/Red Matter Pick/Star it vein mines all ores in an AOE around you "
 			+ "like it did in ProjectE before version 1.4.4."),
@@ -103,7 +103,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 	SERVER_ITEMS_OP_EVERTIDE("server.items.op_evertide", "Overpowered Evertide Amulet",
 			"Allow the Evertide amulet to place water in dimensions that water evaporates. For example: The Nether."),
 
-	SERVER_MISC("server.misc", "Misc Settings", "Settings for configuring misc options provided by ProjectE.", true),
+	SERVER_MISC("server.misc", "Misc Settings", "Settings for configuring misc options provided by ProjectEF.", true),
 	SERVER_MISC_UNSAFE_KEY_BINDS("server.misc.unsafe_key_binds", "Unsafe Key Binds",
 			"False requires your hand be empty for Gem Armor Offensive Abilities to be readied or triggered."),
 	SERVER_MISC_LOOKING_AT_DISPLAY("server.misc.looking_at_display", "Looking At Display",
@@ -117,7 +117,7 @@ public enum PEConfigTranslations implements IConfigTranslation {
 			+ "does not exist, this setting is set to false, or an error occurred parsing that file."),
 	MAPPING_LOG_EXPLOITS("mapping.log_exploits", "Log Known EMC Exploits",
 			"Logs known EMC Exploits. This can not and will not find all possible exploits. This will only find exploits that result in fixed/custom emc values "
-			+ "that the algorithm did not overwrite. Exploits that derive from conversions that are unknown to ProjectE will not be found."),
+			+ "that the algorithm did not overwrite. Exploits that derive from conversions that are unknown to ProjectEF will not be found."),
 
 	MAPPING_MAPPERS("mapping.mapper", "EMC Mappers", "Used to configure settings for the various EMC Mappers.", true),
 

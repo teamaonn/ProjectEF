@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Range;
 /**
  * This interface represents a capability for block entities that want to support storing, providing, or receiving EMC.
  * <p>
- * The contract of this interface is only the above statement However, ProjectE implements an "active-push" system, where providers automatically send EMC to acceptors.
+ * The contract of this interface is only the above statement However, ProjectEF implements an "active-push" system, where providers automatically send EMC to acceptors.
  * You are recommended to follow this convention.
  * <p>
  * This is exposed through the Capability system.
@@ -106,7 +106,7 @@ public interface IEmcStorage {
 	 *
 	 * @return True if this {@link IEmcStorage} should be considered to be a relay.
 	 *
-	 * @implNote If two neighboring {@link IEmcStorage}s are both relays, ProjectE's blocks (relays) will not try send Emc to each other. This is to prevent thrashing.
+	 * @implNote If two neighboring {@link IEmcStorage}s are both relays, ProjectEF's blocks (relays) will not try send Emc to each other. This is to prevent thrashing.
 	 */
 	default boolean isRelay() {
 		return false;

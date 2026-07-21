@@ -6,7 +6,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
 /**
- * Permission nodes for the ProjectE commands, checked through the fabric permissions api (falling back to the given vanilla permission level when no permission
+ * Permission nodes for the ProjectEF commands, checked through the fabric permissions api (falling back to the given vanilla permission level when no permission
  * mod is installed).
  */
 public class PEPermissions {

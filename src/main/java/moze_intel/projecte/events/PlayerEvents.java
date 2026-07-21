@@ -114,7 +114,7 @@ public class PlayerEvents {
 	}
 
 	/**
-	 * Gets the combined damage reduction of any worn ProjectE armor pieces against the given source, called from the damage mixin.
+	 * Gets the combined damage reduction of any worn ProjectEF armor pieces against the given source, called from the damage mixin.
 	 */
 	public static ReductionInfo getArmorReduction(LivingEntity entity, DamageSource source) {
 		ReductionInfo reductionInfo = ReductionInfo.ZERO;

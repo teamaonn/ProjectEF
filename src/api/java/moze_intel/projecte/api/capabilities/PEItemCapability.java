@@ -7,7 +7,7 @@ import net.minecraft.world.level.ItemLike;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapper around a context-less {@link ItemApiLookup} representing an item capability exposed by ProjectE.
+ * Wrapper around a context-less {@link ItemApiLookup} representing an item capability exposed by ProjectEF.
  *
  * @param <A> Type of the api this capability provides access to.
  */

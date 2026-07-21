@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="src/main/resources/logo.png" alt="ProjectE logo" width="256">
+  <img src="src/main/resources/logo.png" alt="ProjectEF logo" width="256">
 </p>
 
-# ProjectE for Fabric 1.21.1
+# ProjectEF for Fabric 1.21.1
 
-ProjectE is a modern reimplementation of EE2 (Equivalent Exchange 2), centered on EMC-based transmutation, collectors, condensers, matter tools, flying rings, and other alchemical equipment.
+ProjectEF is a modern reimplementation of EE2 (Equivalent Exchange 2), centered on EMC-based transmutation, collectors, condensers, matter tools, flying rings, and other alchemical equipment.
 
-This repository contains the Fabric 1.21.1 port maintained by [Chiway Wang](https://github.com/wchiway). Source code, releases, and issue tracking are hosted at [github.com/wchiway/ProjectE](https://github.com/wchiway/ProjectE).
+This repository contains the Fabric 1.21.1 port maintained by [Chiway Wang](https://github.com/wchiway). The `F` in ProjectEF means Fabric. Source code, releases, and issue tracking are hosted at [github.com/wchiway/ProjectEF](https://github.com/wchiway/ProjectEF).
 
 ## Port status
 
 | Component | Status |
 | --- | --- |
 | Minecraft | 1.21.1 |
-| Project version | 1.1.0 |
+| ProjectEF version | 1.1.0 |
 | Mod loader | Fabric Loader 0.16.9 or newer |
 | Fabric API | 0.116.14+1.21.1 |
 | Java | 21 |
@@ -27,7 +27,7 @@ Recent port work also restores:
 - GEM armor abilities, including helmet night vision and boot step assist.
 - Dark Matter and Red Matter tool area modes.
 - Philosopher's Stone world transmutation, selection rendering, and recipe interactions.
-- ProjectE fuel support in Dark Matter and Red Matter Furnaces.
+- ProjectEF fuel support in Dark Matter and Red Matter Furnaces.
 - Pedestal, alchemical bag, Eternal Density, and other container interactions.
 - Fabric-compatible recipe conditions and client rendering hooks.
 - Built-in EMC values for classic Avaritia items.
@@ -37,18 +37,18 @@ Recent port work also restores:
 
 1. Install Minecraft 1.21.1 with Fabric Loader 0.16.9 or newer.
 2. Install a compatible Fabric API release.
-3. Download the ProjectE JAR from this repository's [Releases](https://github.com/wchiway/ProjectE/releases), or build it from source.
+3. Download the ProjectEF JAR from this repository's [Releases](https://github.com/wchiway/ProjectEF/releases), or build it from source.
 4. Place the JAR in the Minecraft `mods` directory.
 
-Forge Config API Port and the permissions API are bundled in the ProjectE JAR. Optional recipe display support is available for JEI and EMI; Jade and WTHIT integrations are also included when those mods are installed.
+Forge Config API Port and the permissions API are bundled in the ProjectEF JAR. Optional recipe display support is available for JEI and EMI; Jade and WTHIT integrations are also included when those mods are installed.
 
 ## Building from source
 
 Clone the repository and run the Gradle build:
 
 ```bash
-git clone https://github.com/wchiway/ProjectE.git
-cd ProjectE
+git clone https://github.com/wchiway/ProjectEF.git
+cd ProjectEF
 ./gradlew build
 ```
 
@@ -71,10 +71,11 @@ The development recipe viewer defaults to JEI. It can be changed with the `recip
 - CraftTweaker, The One Probe, and Curios integrations from the NeoForge codebase are not part of this Fabric port.
 - Trinkets support is planned but is not currently implemented.
 - Generated recipes are shipped with Fabric load conditions; the legacy NeoForge test framework and data generator are not run by the current Fabric build.
+- The internal Fabric mod ID remains `projecte`, and existing configuration files remain under `config/ProjectE`, so worlds, resources, and settings stay compatible.
 
 ## Reporting issues
 
-Report bugs through the [GitHub issue tracker](https://github.com/wchiway/ProjectE/issues). Include the ProjectE version, Fabric Loader and Fabric API versions, a minimal reproduction procedure, and the relevant game log. Attach logs as files or use a paste service instead of placing an entire log directly in the issue body.
+Report bugs through the [GitHub issue tracker](https://github.com/wchiway/ProjectEF/issues). Include the ProjectEF version, Fabric Loader and Fabric API versions, a minimal reproduction procedure, and the relevant game log. Attach logs as files or use a paste service instead of placing an entire log directly in the issue body.
 
 ## Developer
 
@@ -89,4 +90,4 @@ This port is based on the original [ProjectE](https://github.com/sinkillerj/Proj
 
 ## License
 
-ProjectE is distributed under the [MIT License](LICENSE).
+ProjectEF is distributed under the [MIT License](LICENSE).

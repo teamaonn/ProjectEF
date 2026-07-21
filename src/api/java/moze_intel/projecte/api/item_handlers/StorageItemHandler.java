@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Adapts a fabric transfer api {@link Storage} of items to the {@link IItemHandler} interface, so that ProjectE's inventory interactions can work against any
+ * Adapts a fabric transfer api {@link Storage} of items to the {@link IItemHandler} interface, so that ProjectEF's inventory interactions can work against any
  * inventory another mod exposes. Slotted storages (which vanilla containers and most modded inventories are) map directly to slots; non slotted storages are
  * exposed as a single virtual slot.
  */

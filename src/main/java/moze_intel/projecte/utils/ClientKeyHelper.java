@@ -17,7 +17,7 @@ public class ClientKeyHelper {
 	private static ImmutableMap<PEKeybind, KeyMapping> peToMc = ImmutableMap.of();
 
 	/**
-	 * Called by client mod initializer (stage 4) to register all ProjectE key bindings.
+	 * Called by client mod initializer (stage 4) to register all ProjectEF key bindings.
 	 * Uses Fabric KeyBindingHelper instead of NeoForge RegisterKeyMappingsEvent.
 	 * KeyConflictContext and KeyModifier have been dropped — now uses pure vanilla KeyMapping.
 	 */

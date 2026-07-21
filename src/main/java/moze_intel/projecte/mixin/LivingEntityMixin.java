@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Applies the damage reduction of worn ProjectE armor, replacing the incoming damage event.
+ * Applies the damage reduction of worn ProjectEF armor, replacing the incoming damage event.
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {

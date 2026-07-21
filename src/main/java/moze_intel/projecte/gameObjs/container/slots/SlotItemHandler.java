@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Clean-room implementation of {@link Slot} backed by an {@link IItemHandler}.
  * <p>
- * Adapted from NeoForge's SlotItemHandler to work with ProjectE's own IItemHandler interface.
+ * Adapted from NeoForge's SlotItemHandler to work with ProjectEF's own IItemHandler interface.
  * All methods delegate to the underlying handler rather than a vanilla Container.
  */
 public class SlotItemHandler extends Slot {

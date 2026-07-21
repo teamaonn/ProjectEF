@@ -35,7 +35,7 @@ idea {
 
 version = "${projecte_version}"
 group = "moze_intel.projecte"
-project.base.archivesName = "projecte"
+project.base.archivesName = "projectef"
 
 sourceSets {
     api {
@@ -232,12 +232,12 @@ tasks.named('processResources', ProcessResources) {
 
 def getManifestAttributes() {
     return [
-            "Specification-Title"     : "ProjectE",
-            "Specification-Vendor"    : "ProjectE",
+            "Specification-Title"     : "ProjectEF",
+            "Specification-Vendor"    : "ProjectEF",
             "Specification-Version"   : "${project.projecte_version}",
-            "Implementation-Title"    : "ProjectE",
+            "Implementation-Title"    : "ProjectEF",
             "Implementation-Version"  : "${project.projecte_version}",
-            "Implementation-Vendor"   : "ProjectE",
+            "Implementation-Vendor"   : "ProjectEF",
             "Automatic-Module-Name"   : "projecte"
     ]
 }
@@ -289,17 +289,17 @@ publishing {
             publication.from((SoftwareComponent) components.java)
             publication.groupId = project.group
             publication.version = project.version
-            publication.artifactId = 'ProjectE'
+            publication.artifactId = 'ProjectEF'
             publication.artifact(apiJar)
             publication.pom {
-                name.set('ProjectE')
+                name.set('ProjectEF')
                 packaging = 'jar'
                 scm {
-                    url.set('https://github.com/wchiway/ProjectE.git')
+                    url.set('https://github.com/wchiway/ProjectEF.git')
                 }
                 issueManagement {
                     system.set('github')
-                    url.set('https://github.com/wchiway/ProjectE/issues')
+                    url.set('https://github.com/wchiway/ProjectEF/issues')
                 }
                 licenses {
                     license {

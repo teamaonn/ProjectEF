@@ -27,7 +27,7 @@ public class ThreadCheckUpdate extends Thread {
 	private static volatile boolean hasSentMessage = false;
 
 	public ThreadCheckUpdate() {
-		this.setName("ProjectE Update Checker Notifier");
+		this.setName("ProjectEF Update Checker Notifier");
 	}
 
 	@Override

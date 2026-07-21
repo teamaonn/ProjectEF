@@ -27,7 +27,7 @@ public class ThreadCheckUUID extends Thread {
 
 	public ThreadCheckUUID(boolean isServer) {
 		this.isServerSide = isServer;
-		this.setName("ProjectE UUID Checker " + (isServer ? "Server" : "Client"));
+		this.setName("ProjectEF UUID Checker " + (isServer ? "Server" : "Client"));
 	}
 
 	@Override

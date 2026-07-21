@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapper around a {@link BlockApiLookup} representing a block capability exposed by ProjectE.
+ * Wrapper around a {@link BlockApiLookup} representing a block capability exposed by ProjectEF.
  *
  * @param <A> Type of the api this capability provides access to.
  * @param <C> Type of the additional context (for example the side being queried).

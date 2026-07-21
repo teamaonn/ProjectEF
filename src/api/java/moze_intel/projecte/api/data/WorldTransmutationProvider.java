@@ -25,7 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Base Data Generator Provider class for use in creating world transmutations json data files that ProjectE will read from the data pack.
+ * Base Data Generator Provider class for use in creating world transmutations json data files that ProjectEF will read from the data pack.
  */
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault

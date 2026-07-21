@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface for ProjectE block entities that want to work with vanilla hoppers and modded pipes.
+ * Interface for ProjectEF block entities that want to work with vanilla hoppers and modded pipes.
  * Implementations should delegate to their existing IItemHandler-based side inventory views.
  */
 public interface PEWorldlyContainer extends WorldlyContainer {

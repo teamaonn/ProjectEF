@@ -17,7 +17,7 @@ public interface IComponentProcessorHelper {
 	 * The helper for querying information as part of a {@link IDataComponentProcessor}.
 	 */
 	IComponentProcessorHelper INSTANCE = ServiceLoader.load(IComponentProcessorHelper.class).findFirst()
-			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IComponentProcessorHelper found, ProjectE may be absent, damaged, or outdated"));
+			.orElseThrow(() -> new IllegalStateException("No valid ServiceImpl for IComponentProcessorHelper found, ProjectEF may be absent, damaged, or outdated"));
 
 	/**
 	 * Gets an {@link ItemInfo} with the {@link net.minecraft.core.component.DataComponentPatch} reduced to what will be saved to knowledge/used for condensing.
