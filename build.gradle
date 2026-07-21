@@ -35,7 +35,11 @@ idea {
 
 version = "${projecte_version}"
 group = "moze_intel.projecte"
-project.base.archivesName = "projectef"
+project.base.archivesName = "ProjectEF-${minecraft_version}-PE${projecte_version}"
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    archiveVersion.set("")
+}
 
 sourceSets {
     api {
