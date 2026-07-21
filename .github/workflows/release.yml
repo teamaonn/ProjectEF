@@ -1,0 +1,210 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # 匹配语义化版本 tag(项目约定不带 v 前缀,如 1.1.0);同时兼容带 v 前缀写法
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '要发布的版本(例如 1.1.0,必须已存在同名 tag)'
+        required: true
+        type: string
+
+permissions:
+  # 创建 Release、上传构建产物所需
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    env:
+      # gradlew 仅在 GRADLE_USER_HOME 未设置时才回退到 .gradle-home;
+      # 这里显式对齐,便于 actions/cache 精确缓存依赖 / wrapper / loom 缓存
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-home
+
+    steps:
+      - name: Checkout(dispatch 时检出对应 tag)
+        uses: actions/checkout@v4
+        with:
+          # 需要完整历史与全部 tag 来计算上一个 tag 的提交区间
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', github.event.inputs.version) || github.ref }}
+
+      - name: 解析发布版本
+        id: rel
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            INPUT="${{ github.event.inputs.version }}"
+          else
+            INPUT="${GITHUB_REF_NAME}"
+          fi
+          # 去掉可能的 v 前缀得到纯版本号
+          VER="${INPUT#v}"
+          echo "tag=${INPUT}" >> "$GITHUB_OUTPUT"
+          echo "ver=${VER}" >> "$GITHUB_OUTPUT"
+          echo "解析结果: tag=${INPUT} ver=${VER}"
+
+      - name: 安装引导 JDK 21
+        # 仅用于运行 Gradle 本身;编译工具链要求 vendor=JetBrains,
+        # 由 settings.gradle 的 foojay-resolver 在构建时自动下载 JBR 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: 缓存 Gradle 依赖
+        uses: actions/cache@v4
+        with:
+          path: .gradle-home
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle.properties', 'build.gradle', 'settings.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: 校验 tag 与项目版本一致
+        run: |
+          PROP_VER="$(grep -E '^projecte_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
+          if [ "${{ steps.rel.outputs.ver }}" != "$PROP_VER" ]; then
+            echo "::error::版本不一致: tag=${{ steps.rel.outputs.ver }} 但 gradle.properties=$PROP_VER"
+            exit 1
+          fi
+          echo "版本校验通过: $PROP_VER"
+
+      - name: 构建
+        run: |
+          chmod +x gradlew
+          ./gradlew build -x test --no-daemon --stacktrace
+
+      - name: 列出构建产物
+        run: ls -lh build/libs
+
+      - name: 收集更新日志来源(git log)
+        id: changelog_input
+        run: |
+          TAG="${{ steps.rel.outputs.tag }}"
+          # 上一个 tag(不含当前 tag);首个版本时为空
+          PREV_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="$TAG"
+          fi
+          {
+            echo "# Changelog source"
+            echo
+            echo "当前 tag: $TAG"
+            if [ -n "$PREV_TAG" ]; then
+              echo "上一个 tag: $PREV_TAG"
+            fi
+            echo
+            echo "## Commits"
+            git log --no-merges -n 200 --pretty=format:'- %s (%h)' "$RANGE"
+          } > changelog-source.md
+          echo "previous_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          echo "---- changelog-source.md ----"
+          cat changelog-source.md
+
+      - name: 使用 DeepSeek 生成更新日志
+        id: ai_changelog
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          REL_TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # 未配置密钥时,回退到原始提交列表
+          if [ -z "${DEEPSEEK_API_KEY:-}" ]; then
+            echo "未配置 DEEPSEEK_API_KEY,回退到原始提交列表。"
+            cp changelog-source.md ai-summary.md
+          else
+            node <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('changelog-source.md', 'utf8');
+          const tag = process.env.REL_TAG;
+          const payload = {
+            model: 'deepseek-v4-flash',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  '你是一名发布工程助理。根据给定的 git 提交列表,为 Minecraft(Fabric)模组 ProjectEF 生成简洁、准确的中文发布更新日志。只输出 Markdown;用无序列表按「新增/变更」「修复」「其他」等类别分组,呈现面向用户的主要变更亮点与升级注意事项。不要编造输入中不存在的信息,不要输出安装说明或下载链接。',
+              },
+              {
+                role: 'user',
+                content: '为 ProjectEF ' + tag + ' 生成中文发布更新日志。\n\n' + source,
+              },
+            ],
+            stream: false,
+          };
+          fs.writeFileSync('deepseek-request.json', JSON.stringify(payload));
+          NODE
+
+            if ! curl -sS -X POST "https://api.deepseek.com/chat/completions" \
+              -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d @deepseek-request.json \
+              -o deepseek-response.json; then
+              echo "DeepSeek 请求失败,回退到原始提交列表。"
+              cp changelog-source.md ai-summary.md
+            elif ! node <<'NODE'
+          const fs = require('fs');
+          const response = JSON.parse(fs.readFileSync('deepseek-response.json', 'utf8'));
+          const content = response?.choices?.[0]?.message?.content;
+          if (!content) {
+            console.error(JSON.stringify(response, null, 2));
+            process.exit(1);
+          }
+          fs.writeFileSync('ai-summary.md', content.trim() + '\n');
+          NODE
+            then
+              echo "DeepSeek 响应异常,回退到原始提交列表。"
+              cp changelog-source.md ai-summary.md
+            fi
+          fi
+
+          # 组装最终 Release 正文:AI 摘要 + 结构化安装说明
+          MC_VER="$(grep -E '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
+          MAIN_JAR="ProjectEF-${MC_VER}-PE${{ steps.rel.outputs.ver }}.jar"
+          {
+            echo "## ProjectEF ${REL_TAG}"
+            echo
+            echo "适用于 Minecraft ${MC_VER} · Fabric"
+            echo
+            cat ai-summary.md
+            echo
+            echo "### 安装"
+            echo
+            echo "1. 安装 [Fabric Loader](https://fabricmc.net/use/) 与 [Fabric API](https://modrinth.com/mod/fabric-api)"
+            echo "2. 将 \`${MAIN_JAR}\` 放入 \`.minecraft/mods\` 目录"
+            echo
+            echo "> Forge Config API Port、fabric-permissions-api 等依赖已通过 jar-in-jar 内置,无需额外安装。"
+          } > release-body.md
+
+          echo "---- release-body.md ----"
+          cat release-body.md
+
+      - name: 上传更新日志构件(便于排查)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.rel.outputs.tag }}-changelog
+          path: |
+            changelog-source.md
+            release-body.md
+            ai-summary.md
+          if-no-files-found: ignore
+
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rel.outputs.tag }}
+          name: ProjectEF ${{ steps.rel.outputs.tag }}
+          body_path: release-body.md
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+            build/libs/ProjectEF-*.jar
