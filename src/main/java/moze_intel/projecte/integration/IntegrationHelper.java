@@ -1,6 +1,8 @@
 package moze_intel.projecte.integration;
 
 import moze_intel.projecte.api.item_handlers.IItemHandler;
+import moze_intel.projecte.integration.trinkets.TrinketsIntegration;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.Nullable;
@@ -12,11 +14,15 @@ public class IntegrationHelper {
 	public static final String JEI_MODID = "jei";
 	public static final String REI_MODID = "roughlyenoughitems";
 
+	private static final boolean TRINKETS_LOADED = FabricLoader.getInstance().isModLoaded(TRINKETS_MODID);
+
 	/**
 	 * Called during common mod init to hook up any loaded optional integrations.
+	 * <p>
+	 * The trinkets accessories are registered per-item via {@link #registerCuriosCapability(Item)} during item
+	 * registration, so there is nothing extra to wire up here.
 	 */
 	public static void init() {
-		//TODO - Fabric port: hook up the trinkets integration here once it is implemented (phase 6)
 	}
 
 	/**
@@ -24,7 +30,9 @@ public class IntegrationHelper {
 	 */
 	@Nullable
 	public static IItemHandler getCuriosInventory(Player player) {
-		//TODO - Fabric port: return the trinkets inventory once the integration is implemented (phase 6)
+		if (TRINKETS_LOADED) {
+			return TrinketsIntegration.getInventory(player);
+		}
 		return null;
 	}
 
@@ -32,6 +40,8 @@ public class IntegrationHelper {
 	 * Registers the accessory (trinkets) capability for the given item when the trinkets mod is loaded.
 	 */
 	public static void registerCuriosCapability(Item item) {
-		//TODO - Fabric port: register with the trinkets api once the integration is implemented (phase 6)
+		if (TRINKETS_LOADED) {
+			TrinketsIntegration.registerTrinket(item);
+		}
 	}
 }

@@ -49,11 +49,11 @@ public class PETags {
 		 */
 		public static final TagKey<Item> PLANTABLE_SEEDS = tag("plantable_seeds");
 
-		//Curios tags
-		public static final TagKey<Item> CURIOS_BELT = curiosTag("belt");
-		public static final TagKey<Item> CURIOS_KLEIN_STAR = curiosTag("klein_star");
-		public static final TagKey<Item> CURIOS_NECKLACE = curiosTag("necklace");
-		public static final TagKey<Item> CURIOS_RING = curiosTag("ring");
+		//Trinkets tags (paths must match Trinkets slot group/slot format)
+		public static final TagKey<Item> CURIOS_BELT = trinketsTag("legs/belt");
+		public static final TagKey<Item> CURIOS_KLEIN_STAR = trinketsTag("chest/necklace");
+		public static final TagKey<Item> CURIOS_NECKLACE = trinketsTag("chest/necklace");
+		public static final TagKey<Item> CURIOS_RING = trinketsTag("hand/ring");
 		//Forge tools/armor tags
 
 		public static final TagKey<Item> TOOLS_HAMMERS = commonTag("tools/hammers");
@@ -64,7 +64,7 @@ public class PETags {
 			return TagKey.create(net.minecraft.core.registries.Registries.ITEM, PECore.rl(name));
 		}
 
-		private static TagKey<Item> curiosTag(String name) {
+		private static TagKey<Item> trinketsTag(String name) {
 			return TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.fromNamespaceAndPath("trinkets", name));
 		}
 

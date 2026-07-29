@@ -35,6 +35,21 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+*.stackdump
 
 # Mac crap
 .DS_Store
+
+#docs and scripts
+docs/
+scripts/
+CLAUDE.md
+FABRIC_PORT_PLAN.md
+FABRIC_PORTING_CONTRACT.md
+*.log
+dev/
+trinkets-refmap.json
+trinkets.accesswidener
+trinkets.mixins.json
+LICENSE_trinkets
+AGENTS.md
