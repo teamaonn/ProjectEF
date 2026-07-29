@@ -28,6 +28,9 @@
     ],
     "client": [
       "moze_intel.projecte.client.PECoreClient"
+    ],
+    "rei_client": [
+      "moze_intel.projecte.integration.recipe_viewer.rei.PEReiPlugin"
     ]
   },
   "accessWidener": "projecte.accesswidener",
