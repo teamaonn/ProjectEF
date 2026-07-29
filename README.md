@@ -13,7 +13,7 @@ This repository contains the Fabric 1.21.1 port maintained by [Chiway Wang](http
 | Component | Status |
 | --- | --- |
 | Minecraft | 1.21.1 |
-| ProjectEF version | 1.1.0 |
+| ProjectEF version | 1.2.0 |
 | Mod loader | Fabric Loader 0.16.9 or newer |
 | Fabric API | 0.116.14+1.21.1 |
 | Java | 21 |
