@@ -4,6 +4,8 @@
 
 # ProjectEF for Fabric 1.21.1
 
+**中文名：[Fabric]等价交换:重置版**
+
 ProjectEF is a modern reimplementation of EE2 (Equivalent Exchange 2), centered on EMC-based transmutation, collectors, condensers, matter tools, flying rings, and other alchemical equipment.
 
 This repository contains the Fabric 1.21.1 port maintained by [Chiway Wang](https://github.com/wchiway). The `F` in ProjectEF means Fabric. Source code, releases, and issue tracking are hosted at [github.com/wchiway/ProjectEF](https://github.com/wchiway/ProjectEF).
