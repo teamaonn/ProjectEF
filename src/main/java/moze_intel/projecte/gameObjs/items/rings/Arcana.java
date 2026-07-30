@@ -1,7 +1,6 @@
 package moze_intel.projecte.gameObjs.items.rings;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Multimap;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
@@ -22,14 +21,12 @@ import moze_intel.projecte.gameObjs.items.rings.Arcana.ArcanaMode;
 import moze_intel.projecte.gameObjs.registries.PEDataComponentTypes;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
 import moze_intel.projecte.integration.IntegrationHelper;
-import moze_intel.projecte.integration.IExposesCurioAttributes;
 import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.WorldHelper;
 import moze_intel.projecte.utils.text.IHasTranslationKey;
 import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -45,9 +42,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlotGroup;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.Snowball;
@@ -60,7 +54,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.NotNull;
 
-public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtector, IExtraFunction, IProjectileShooter, ICapabilityAware, IExposesCurioAttributes {
+public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtector, IExtraFunction, IProjectileShooter, ICapabilityAware {
 
 	private final Supplier<ItemAttributeModifiers> defaultModifiers;
 
@@ -69,7 +63,8 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 				.component(PEDataComponentTypes.ARCANA_MODE.get(), ArcanaMode.ZERO)
 				.component(PEDataComponentTypes.STORED_EMC.get(), 0L)
 		);
-		//TODO Fabric 1.21.1: vanilla has no creative-flight attribute. Arcana's flight (all modes granted flight while worn) needs a mixin/tick approach.
+		//Vanilla has no creative-flight attribute. Arcana's flight is granted by InternalAbilities.shouldPlayerFly,
+		// which polls the hotbar, offhand, and Trinkets slots via PlayerHelper.checkHotbarCurios.
 		this.defaultModifiers = Suppliers.memoize(() -> ItemAttributeModifiers.builder().build());
 	}
 
@@ -78,11 +73,6 @@ public class Arcana extends ItemPE implements IItemMode<ArcanaMode>, IFireProtec
 	@Deprecated
 	public ItemAttributeModifiers getDefaultAttributeModifiers() {
 		return this.defaultModifiers.get();
-	}
-
-	@Override
-	public void addAttributes(Multimap<Holder<Attribute>, AttributeModifier> attributes) {
-		//TODO Fabric 1.21.1: creative flight via attributes is unavailable in vanilla; see the constructor note.
 	}
 
 	@NotNull

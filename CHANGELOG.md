@@ -2,6 +2,26 @@
 
 All notable changes to ProjectEF are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- Worn accessories no longer lose their passive abilities. Trinkets keeps equipped stacks in a Cardinal Components inventory rather than the player's, so vanilla never called `Item#inventoryTick` for them; `ProjectETrinket` now forwards the trinket tick to it. This also closes a free-flight exploit where a worn Swiftwolf's Rending Gale granted flight without ever draining EMC.
+- Accessory slot tags now actually restrict what fits where. The shipped `trinkets:all` tag made every ProjectE accessory equippable in *every* slot — including slots added by other mods — because Trinkets' `trinkets:tag` validator accepts an item in the slot tag **or** in `trinkets:all`.
+- Time Watch is registered as a Trinket. It was listed in the `chest/necklace` tag but never passed to `TrinketsApi.registerTrinket`.
+- Void Ring is listed in the `hand/ring` tag. It previously relied on `trinkets:all` and would otherwise have become unequippable.
+- Stacks mutated in place inside an accessory slot now sync to the client. Draining a worn Klein Star for EMC or repairing a worn item bypassed `insertItem`/`extractItem` and never signalled the Trinkets inventory, so the client kept showing stale values.
+- `.gitignore` no longer ignores the Trinkets integration sources and datapack. A `trinkets/` pattern without a leading slash matched those directories at any depth, so newly added files there would have been silently untracked.
+
+### Changed
+
+- `IItemHandler` gains `markSlotChanged(int)`, a default no-op for consumers that mutate a stack returned by `getStackInSlot` in place. `ItemStackHandler` bridges it onto its existing `protected onContentsChanged(int)` hook, which also covers the Repair Talisman's alchemical bag and chest paths.
+- Release notes now list every published artifact with its size and purpose, so it is clear which jar players should install and which are for addon development.
+
+### Removed
+
+- `IExposesCurioAttributes` and the `ProjectETrinket.getModifiers` override. The sole implementor contributed no modifiers, making the whole path equivalent to Trinkets' built-in default trinket.
+
 ## [1.2.0] - 2026-07-29
 
 ### Added
@@ -10,7 +30,7 @@ All notable changes to ProjectEF are documented here.
 - Trinkets accessory integration replacing the removed NeoForge Curios support.
   - 19 ProjectE items (rings, amulets, charms, Klein Stars) are registered as Trinkets and can be equipped in the `hand/ring` and `chest/necklace` slots.
   - Trinkets inventory is exposed as `IItemHandler` for ProjectE's polling-based systems (fuel consumption, Repair Talisman, hotbar-or-accessory ability checks).
-  - Arcana ring attributes apply while worn via `IExposesCurioAttributes` and `Trinket.getModifiers`.
+  - Arcana ring flight works while worn: `InternalAbilities.shouldPlayerFly` polls the Trinkets inventory through `PlayerHelper.checkHotbarCurios`.
   - Data-driven slot assignment: `data/trinkets/entities/projecte.json` grants `hand/ring` and `chest/necklace` slots to players.
   - Item tags: `trinkets:hand/ring`, `trinkets:chest/necklace`, and `trinkets:all` ensure items are accepted by Trinkets slot validators.
 - `rei_client` entrypoint in `fabric.mod.json` for the REI plugin.
