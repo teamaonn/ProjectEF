@@ -74,13 +74,28 @@ jobs:
           fi
           echo "版本校验通过: $PROP_VER"
 
+      - name: 解析 Minecraft 版本与主 jar 路径
+        id: jar
+        run: |
+          MC_VER="$(grep -E '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
+          MAIN_JAR="build/libs/ProjectEF-${MC_VER}-PE${{ steps.rel.outputs.ver }}.jar"
+          echo "mc_ver=${MC_VER}" >> "$GITHUB_OUTPUT"
+          echo "main_jar=${MAIN_JAR}" >> "$GITHUB_OUTPUT"
+          echo "解析结果: mc_ver=${MC_VER} main_jar=${MAIN_JAR}"
+
       - name: 构建
         run: |
           chmod +x gradlew
           ./gradlew build -x test --no-daemon --stacktrace
 
-      - name: 列出构建产物
-        run: ls -lh build/libs
+      - name: 列出构建产物并校验主 jar 存在
+        run: |
+          ls -lh build/libs
+          if [ ! -f "${{ steps.jar.outputs.main_jar }}" ]; then
+            echo "::error::主 jar 不存在: ${{ steps.jar.outputs.main_jar }}"
+            exit 1
+          fi
+          echo "主 jar 校验通过: ${{ steps.jar.outputs.main_jar }}"
 
       - name: 收集更新日志来源(git log)
         id: changelog_input
@@ -166,9 +181,21 @@ jobs:
             fi
           fi
 
-          # 组装最终 Release 正文:AI 摘要 + 结构化安装说明
-          MC_VER="$(grep -E '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
-          MAIN_JAR="ProjectEF-${MC_VER}-PE${{ steps.rel.outputs.ver }}.jar"
+          # 组装最终 Release 正文:AI 摘要 + 安装说明 + 各产物用途
+          MC_VER="${{ steps.jar.outputs.mc_ver }}"
+          MAIN_JAR_PATH="${{ steps.jar.outputs.main_jar }}"
+          MAIN_JAR="$(basename "${MAIN_JAR_PATH}")"
+
+          # 说明表由 build/libs 实际产物驱动,新增 classifier 会自动出现;
+          # 未知 classifier 落到兜底描述,便于及时发现需要补充说明
+          jar_desc() {
+            case "$1" in
+              *-api.jar)     echo "开发用 API,供附属 mod 编译时依赖。**玩家不要下载**" ;;
+              *-sources.jar) echo "源码,用于开发与调试。**玩家不要下载**" ;;
+              *)             echo "未分类产物,请补充说明" ;;
+            esac
+          }
+
           {
             echo "## ProjectEF ${REL_TAG}"
             echo
@@ -182,6 +209,18 @@ jobs:
             echo "2. 将 \`${MAIN_JAR}\` 放入 \`.minecraft/mods\` 目录"
             echo
             echo "> Forge Config API Port、fabric-permissions-api 等依赖已通过 jar-in-jar 内置,无需额外安装。"
+            echo
+            echo "### 下载文件说明"
+            echo
+            echo "| 文件 | 大小 | 用途 |"
+            echo "| --- | --- | --- |"
+            # 主 jar 单独置顶:glob 展开是字典序,'-' 排在 '.' 前面,直接循环会把主 jar 排到最后
+            echo "| \`${MAIN_JAR}\` | $(du -h "${MAIN_JAR_PATH}" | cut -f1) | **主文件 — 玩家安装这个** |"
+            for f in build/libs/ProjectEF-*.jar; do
+              [ -e "$f" ] || continue
+              [ "$f" = "${MAIN_JAR_PATH}" ] && continue
+              echo "| \`$(basename "$f")\` | $(du -h "$f" | cut -f1) | $(jar_desc "$f") |"
+            done
           } > release-body.md
 
           echo "---- release-body.md ----"
