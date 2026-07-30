@@ -36,7 +36,7 @@ ProjectEF is designed for **Minecraft 1.21.1 Fabric** while maintaining compatib
 | Component    | Version               |
 | ------------ | --------------------- |
 | Minecraft    | 1.21.1                |
-| ProjectEF    | 1.2.0                 |
+| ProjectEF    | 1.2.1                 |
 | Mod Loader   | Fabric Loader 0.16.9+ |
 | Fabric API   | 0.116.14+1.21.1       |
 | Java         | 21                    |

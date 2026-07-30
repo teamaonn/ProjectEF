@@ -2,7 +2,7 @@
 
 All notable changes to ProjectEF are documented here.
 
-## [Unreleased]
+## [1.2.1] - 2026-07-31
 
 ### Fixed
 
