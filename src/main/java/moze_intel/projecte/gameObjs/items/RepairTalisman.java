@@ -121,6 +121,8 @@ public class RepairTalisman extends ItemPE implements IAlchBagItem, IAlchChestIt
 			ItemStack invStack = inv.getStackInSlot(i);
 			if (canRepairStack.test(invStack, data)) {
 				invStack.setDamageValue(invStack.getDamageValue() - 1);
+				//Damage was changed on the live stack rather than through the handler
+				inv.markSlotChanged(i);
 				if (!hasAction) {
 					hasAction = true;
 				}

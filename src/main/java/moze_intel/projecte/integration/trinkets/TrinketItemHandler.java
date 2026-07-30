@@ -11,7 +11,8 @@ import org.jetbrains.annotations.NotNull;
  * Exposes a player's Trinkets inventories as a ProjectE {@link IItemHandlerModifiable} so the loader-neutral
  * curio-polling helpers (fuel consumption, the Repair Talisman, hotbar-or-accessory ability checks) can see worn
  * accessories. Slots map one-to-one onto the underlying {@link TrinketInventory} containers, so the stacks returned by
- * {@link #getStackInSlot(int)} are the live worn stacks and may be mutated in place, matching the previous Curios behavior.
+ * {@link #getStackInSlot(int)} are the live worn stacks. Callers that mutate one in place must call
+ * {@link #markSlotChanged(int)} afterwards, otherwise the change never reaches the client.
  */
 public class TrinketItemHandler implements IItemHandlerModifiable {
 
@@ -125,6 +126,14 @@ public class TrinketItemHandler implements IItemHandlerModifiable {
 	@Override
 	public boolean isItemValid(int slot, @NotNull ItemStack stack) {
 		return true;
+	}
+
+	@Override
+	public void markSlotChanged(int slot) {
+		validateSlotIndex(slot);
+		//markUpdate registers this inventory with the component's trackingUpdates set, which LivingEntity's tick
+		// drains into a sync packet. Container#setChanged is a no-op on TrinketInventory and will not sync.
+		slotInventory[slot].markUpdate();
 	}
 
 	private void validateSlotIndex(int slot) {

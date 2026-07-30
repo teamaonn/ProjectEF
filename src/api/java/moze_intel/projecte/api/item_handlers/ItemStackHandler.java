@@ -126,6 +126,17 @@ public class ItemStackHandler implements IItemHandlerModifiable {
 		return true;
 	}
 
+	/**
+	 * Bridges the public in-place mutation signal onto this class' existing {@link #onContentsChanged(int)} hook, so that
+	 * subclasses reacting to content changes (marking a block entity dirty, recalculating EMC, ...) also see mutations
+	 * that bypassed {@link #insertItem(int, ItemStack, boolean)} / {@link #extractItem(int, int, boolean)}.
+	 */
+	@Override
+	public void markSlotChanged(int slot) {
+		validateSlotIndex(slot);
+		onContentsChanged(slot);
+	}
+
 	public CompoundTag serializeNBT(HolderLookup.Provider provider) {
 		ListTag nbtTagList = new ListTag();
 		for (int slot = 0; slot < stacks.size(); slot++) {

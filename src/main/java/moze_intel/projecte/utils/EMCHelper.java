@@ -80,6 +80,9 @@ public final class EMCHelper {
 			for (int i = 0, slots = curios.getSlots(); i < slots; i++) {
 				long actualExtracted = tryExtract(curios.getStackInSlot(i), minFuel);
 				if (actualExtracted > 0) {
+					//tryExtract mutated the live worn stack; broadcastChanges only covers the vanilla menu, which
+					// does not include accessory slots
+					curios.markSlotChanged(i);
 					player.containerMenu.broadcastChanges();
 					return actualExtracted;
 				}

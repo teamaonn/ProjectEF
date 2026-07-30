@@ -6,7 +6,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A slot based item inventory abstraction, modeled after the item handler concept most modded inventories are built around.
  * <p>
- * Slots are referenced by index, stacks returned by this interface <strong>must not</strong> be modified by callers.
+ * Slots are referenced by index. Prefer {@link #insertItem(int, ItemStack, boolean)} / {@link #extractItem(int, int, boolean)}
+ * over mutating a stack returned by {@link #getStackInSlot(int)}; callers that do mutate one in place must call
+ * {@link #markSlotChanged(int)} afterwards, otherwise handlers whose backing store needs an explicit change signal will
+ * never sync.
  */
 public interface IItemHandler {
 
@@ -63,4 +66,21 @@ public interface IItemHandler {
 	 * @return Whether the given stack is generally valid for the given slot.
 	 */
 	boolean isItemValid(int slot, @NotNull ItemStack stack);
+
+	/**
+	 * Called by consumers that mutate a stack returned by {@link #getStackInSlot(int)} in place, rather than going
+	 * through {@link #insertItem(int, ItemStack, boolean)} or {@link #extractItem(int, int, boolean)}.
+	 * <p>
+	 * Defaults to a no-op, which is correct for handlers whose backing store is already kept in sync by other means
+	 * (a vanilla {@link net.minecraft.world.Container} broadcast, for example). Implementations backed by a store that
+	 * needs an explicit change signal must override this.
+	 *
+	 * @param slot Slot whose stack was mutated in place.
+	 *
+	 * @implNote This is deliberately not named {@code onContentsChanged}: {@link ItemStackHandler} already declares a
+	 * {@code protected} method by that name, so a same-signature interface method would narrow its access and fail to
+	 * compile. {@link ItemStackHandler} bridges this method onto that hook instead.
+	 */
+	default void markSlotChanged(int slot) {
+	}
 }
