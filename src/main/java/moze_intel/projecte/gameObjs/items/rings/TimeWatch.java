@@ -14,7 +14,9 @@ import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.PETags.BlockEntities;
 import moze_intel.projecte.gameObjs.PETags.Blocks;
 import moze_intel.projecte.gameObjs.items.IBarHelper;
+import moze_intel.projecte.gameObjs.items.ICapabilityAware;
 import moze_intel.projecte.gameObjs.registries.PEDataComponentTypes;
+import moze_intel.projecte.integration.IntegrationHelper;
 import moze_intel.projecte.utils.EMCHelper;
 import moze_intel.projecte.utils.RegistryUtils;
 import moze_intel.projecte.utils.WorldHelper;
@@ -49,7 +51,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
 
-public class TimeWatch extends PEToggleItem implements IPedestalItem, IItemCharge, IBarHelper {
+public class TimeWatch extends PEToggleItem implements IPedestalItem, IItemCharge, IBarHelper, ICapabilityAware {
 
 	private static final Predicate<BlockEntity> VALID_TARGET = be -> !be.isRemoved() && be.hasLevel() && !RegistryUtils.getBEHolder(be.getType()).is(BlockEntities.BLACKLIST_TIME_WATCH);
 
@@ -260,6 +262,11 @@ public class TimeWatch extends PEToggleItem implements IPedestalItem, IItemCharg
 	@Override
 	public int getBarColor(@NotNull ItemStack stack) {
 		return getColorForBar(stack);
+	}
+
+	@Override
+	public void attachCapabilities() {
+		IntegrationHelper.registerCuriosCapability(this);
 	}
 
 	public enum TimeWatchMode implements StringRepresentable {
