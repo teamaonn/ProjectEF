@@ -182,6 +182,8 @@
   "configuration.projecte.common.crafting.tooltip": "Settings for configuring crafting requirements of specific ProjectEF recipes.",
   "configuration.projecte.common.debug_logging": "Debug Logging",
   "configuration.projecte.common.debug_logging.tooltip": "Enable more verbose debug logging.",
+  "configuration.projecte.common.high_alchemists": "High Alchemist UUIDs",
+  "configuration.projecte.common.high_alchemists.tooltip": "UUIDs of players who receive the High Alchemist join announcement. Replaces the former remote UUID list; empty by default.",
   "configuration.projecte.mapping.dump_to_file": "Dump Everything To File",
   "configuration.projecte.mapping.dump_to_file.tooltip": "Want to take a look at the internals of EMC Calculation? Enable this to write all the conversions and setValue-Commands to config/ProjectE/mapping_dump.json",
   "configuration.projecte.mapping.log_exploits": "Log Known EMC Exploits",

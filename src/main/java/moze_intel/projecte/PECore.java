@@ -2,7 +2,6 @@ package moze_intel.projecte;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import moze_intel.projecte.api.ProjectEAPI;
@@ -36,7 +35,6 @@ import moze_intel.projecte.impl.capability.KnowledgeImpl;
 import moze_intel.projecte.integration.IntegrationHelper;
 import moze_intel.projecte.network.PENetwork;
 import moze_intel.projecte.network.PacketHandler;
-import moze_intel.projecte.network.ThreadCheckUUID;
 import moze_intel.projecte.network.ThreadCheckUpdate;
 import moze_intel.projecte.network.commands.EMCCMD;
 import moze_intel.projecte.network.commands.KnowledgeCMD;
@@ -111,7 +109,12 @@ public class PECore implements ModInitializer {
 	public static final GameProfile FAKEPLAYER_GAMEPROFILE = new GameProfile(UUID.fromString("590e39c7-9fb6-471b-a4c2-c0e539b2423d"), "[" + MODNAME + "]");
 	public static final Logger LOGGER = LogUtils.getLogger();
 
-	public static final List<String> uuids = new ArrayList<>();
+	/**
+	 * @deprecated No longer populated. The remote UUID list was removed; use
+	 * {@link moze_intel.projecte.config.CommonConfig#highAlchemistUUIDs} instead.
+	 */
+	@Deprecated
+	public static final List<String> uuids = List.of();
 
 	public static ModContainer MOD_CONTAINER;
 
@@ -347,9 +350,6 @@ public class PECore implements ModInitializer {
 
 	private void serverStarting(MinecraftServer server) {
 		currentServer = server;
-		if (!ThreadCheckUUID.hasRunServer()) {
-			new ThreadCheckUUID(true).start();
-		}
 	}
 
 	private void serverQuit(MinecraftServer server) {

@@ -23,6 +23,8 @@ public enum PEConfigTranslations implements IConfigTranslation {
 
 	//Common Config
 	COMMON_DEBUG_LOGGING("common.debug_logging", "Debug Logging", "Enable more verbose debug logging."),
+	COMMON_HIGH_ALCHEMISTS("common.high_alchemists", "High Alchemist UUIDs",
+			"UUIDs of players who receive the High Alchemist join announcement. Replaces the former remote UUID list; empty by default."),
 
 	COMMON_CRAFTING("common.crafting", "Crafting Settings", "Settings for configuring crafting requirements of specific ProjectEF recipes.", true),
 	COMMON_CRAFTING_TOME("common.crafting.tome", "Craftable Tome", "Enable crafting the Tome of Knowledge."),

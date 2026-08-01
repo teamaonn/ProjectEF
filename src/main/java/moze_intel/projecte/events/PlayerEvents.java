@@ -6,6 +6,7 @@ import moze_intel.projecte.api.capabilities.IKnowledgeProvider;
 import moze_intel.projecte.api.capabilities.PECapabilities;
 import moze_intel.projecte.api.item_handlers.IItemHandler;
 import moze_intel.projecte.api.item_handlers.ItemHandlerHelper;
+import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.items.AlchemicalBag;
 import moze_intel.projecte.gameObjs.items.armor.PEArmor;
 import moze_intel.projecte.gameObjs.items.armor.PEArmor.ReductionInfo;
@@ -66,7 +67,7 @@ public class PlayerEvents {
 
 		PECore.debugLog("Sent knowledge and bag data to {}", player.getName());
 
-		if (PECore.uuids.contains(player.getUUID().toString())) {
+		if (ProjectEConfig.common.highAlchemistUUIDs.get().contains(player.getUUID().toString())) {
 			Component joinMessage = PELang.HIGH_ALCHEMIST.translateColored(ChatFormatting.BLUE, ChatFormatting.GOLD, player.getDisplayName());
 			server.getPlayerList().broadcastSystemMessage(joinMessage, false);
 		}

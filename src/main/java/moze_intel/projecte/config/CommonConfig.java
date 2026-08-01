@@ -1,8 +1,10 @@
 package moze_intel.projecte.config;
 
+import java.util.List;
 import moze_intel.projecte.config.value.CachedBooleanValue;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
 
 /**
  * For config options that either the server or the client may care about but do not have to agree upon.
@@ -14,10 +16,14 @@ public class CommonConfig extends BasePEConfig {
 	public final CachedBooleanValue debugLogging;
 	public final CachedBooleanValue craftableTome;
 	public final CachedBooleanValue fullKleinStars;
+	public final ConfigValue<List<String>> highAlchemistUUIDs;
 
 	CommonConfig() {
 		ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 		debugLogging = CachedBooleanValue.wrap(this, PEConfigTranslations.COMMON_DEBUG_LOGGING.applyToBuilder(builder).define("debugLogging", false));
+
+		highAlchemistUUIDs = PEConfigTranslations.COMMON_HIGH_ALCHEMISTS.applyToBuilder(builder)
+				.define("highAlchemistUUIDs", List.<String>of(), o -> o instanceof String);
 
 		PEConfigTranslations.COMMON_CRAFTING.applyToBuilder(builder).push("crafting");
 		craftableTome = CachedBooleanValue.wrap(this, PEConfigTranslations.COMMON_CRAFTING_TOME.applyToBuilder(builder).define("craftableTome", false));
