@@ -137,11 +137,10 @@ Additional restored features:
 
 1. Install Minecraft 1.21.1 with Fabric Loader.
 2. Install a compatible Fabric API version.
-3. Install Forge Config API Port.
-4. Download the latest ProjectEF release.
-5. Place the JAR file into your Minecraft `mods` folder.
+3. Download the latest ProjectEF release.
+4. Place the JAR file into your Minecraft `mods` folder.
 
-The permissions API is included inside the ProjectEF JAR.
+Forge Config API Port and fabric-permissions-api are included inside the ProjectEF JAR.
 
 Optional integrations:
 
