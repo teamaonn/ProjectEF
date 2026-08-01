@@ -15,6 +15,7 @@ public enum PELang implements ILangEntry {
 	HIGH_ALCHEMIST("misc", "high_alchemist_joined"),
 	UPDATE_AVAILABLE("misc", "update.available"),
 	UPDATE_GET_IT("misc", "update.get_it"),
+	NOT_ENOUGH_EMC("misc", "not_enough_emc"),
 	BLACKLIST("misc", "blacklist"),
 	WHITELIST("misc", "whitelist"),
 	DENSITY_MODE_TARGET("misc", "mode_switch"),

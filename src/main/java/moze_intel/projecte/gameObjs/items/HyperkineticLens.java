@@ -6,6 +6,7 @@ import moze_intel.projecte.api.capabilities.item.IProjectileShooter;
 import moze_intel.projecte.gameObjs.entity.EntityLensProjectile;
 import moze_intel.projecte.gameObjs.registries.PEDataComponentTypes;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
+import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ByIdMap;
 import net.minecraft.world.InteractionHand;
@@ -37,6 +38,7 @@ public class HyperkineticLens extends ItemPE implements IProjectileShooter, IIte
 	public boolean shootProjectile(@NotNull Player player, @NotNull ItemStack stack, InteractionHand hand) {
 		ExplosiveLensCharge charge = ExplosiveLensCharge.BY_ID.apply(getCharge(stack));
 		if (!consumeFuel(player, stack, charge.emcCost(), true)) {
+			player.sendSystemMessage(PELang.NOT_ENOUGH_EMC.translate());
 			return false;
 		}
 		Level level = player.level();

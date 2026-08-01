@@ -554,6 +554,7 @@
   "misc.projecte.high_alchemist_joined": "High alchemist %1$s has joined the server",
   "misc.projecte.mod_name": "ProjectEF",
   "misc.projecte.mode_switch": "Set target to: %1$s",
+  "misc.projecte.not_enough_emc": "Not enough EMC!",
   "misc.projecte.pack_description": "Resources used for ProjectEF",
   "misc.projecte.seconds": "%1$s seconds",
   "misc.projecte.seconds.every_tick": "%1$s seconds (every tick)",

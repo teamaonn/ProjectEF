@@ -7,6 +7,7 @@ import moze_intel.projecte.gameObjs.registries.PEDataComponentTypes;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
 import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.WorldHelper;
+import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -54,6 +55,7 @@ public class DestructionCatalyst extends ItemPE implements IItemCharge, IBarHelp
 				continue;
 			}
 			if (!consumeFuel(player, stack, 8, true)) {
+				player.sendSystemMessage(PELang.NOT_ENOUGH_EMC.translate());
 				break;
 			}
 			hasAction = true;

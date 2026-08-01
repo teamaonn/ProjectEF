@@ -5,6 +5,7 @@ import moze_intel.projecte.gameObjs.registries.PEEntityTypes;
 import moze_intel.projecte.gameObjs.registries.PEItems;
 import moze_intel.projecte.utils.PlayerHelper;
 import moze_intel.projecte.utils.WorldHelper;
+import moze_intel.projecte.utils.text.PELang;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -71,8 +72,12 @@ public class EntityLavaProjectile extends NoGravityThrowableProjectile {
 		super.onHitBlock(result);
 		if (!level().isClientSide && getOwner() instanceof Player player) {
 			ItemStack found = PlayerHelper.findFirstItem(player, PEItems.VOLCANITE_AMULET);
-			if (!found.isEmpty() && ItemPE.consumeFuel(player, found, 32, true)) {
-				WorldHelper.placeFluid(player, level(), result.getBlockPos(), result.getDirection(), Fluids.LAVA, false);
+			if (!found.isEmpty()) {
+				if (ItemPE.consumeFuel(player, found, 32, true)) {
+					WorldHelper.placeFluid(player, level(), result.getBlockPos(), result.getDirection(), Fluids.LAVA, false);
+				} else {
+					player.sendSystemMessage(PELang.NOT_ENOUGH_EMC.translate());
+				}
 			}
 		}
 	}
@@ -82,10 +87,14 @@ public class EntityLavaProjectile extends NoGravityThrowableProjectile {
 		super.onHitEntity(result);
 		if (!level().isClientSide && getOwner() instanceof Player player) {
 			ItemStack found = PlayerHelper.findFirstItem(player, PEItems.VOLCANITE_AMULET);
-			if (!found.isEmpty() && ItemPE.consumeFuel(player, found, 32, true)) {
-				Entity ent = result.getEntity();
-				if (ent.hurt(level().damageSources().inFire(), 5)) {
-					ent.igniteForSeconds(5);
+			if (!found.isEmpty()) {
+				if (ItemPE.consumeFuel(player, found, 32, true)) {
+					Entity ent = result.getEntity();
+					if (ent.hurt(level().damageSources().inFire(), 5)) {
+						ent.igniteForSeconds(5);
+					}
+				} else {
+					player.sendSystemMessage(PELang.NOT_ENOUGH_EMC.translate());
 				}
 			}
 		}
