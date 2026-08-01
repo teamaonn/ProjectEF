@@ -5,7 +5,7 @@
 <p align="center">
   <b>Equivalent Exchange: Reborn for Fabric</b><br>
   中文名：[Fabric]等价交换:重置版<br>
-  Minecraft 1.21.1 Fabric Edition
+  Minecraft 1.21.1 · Fabric
 </p>
 <p align="center">
 <!-- <a href="https://modrinth.com/mod/projectef">
@@ -25,11 +25,16 @@
 
 ## Overview
 
-**ProjectEF** is a modern Fabric port inspired by the classic **Equivalent Exchange 2** and **ProjectE** systems.
+**ProjectEF** is a modern Fabric port of the classic **ProjectE** mod — the complete **Equivalent Exchange** experience on Minecraft 1.21.1.
 
-The project focuses on bringing the complete EMC-based transmutation experience to Minecraft Fabric, including item value systems, transmutation devices, collectors, condensers, powerful matter tools, and alchemical equipment.
+The **"F"** stands for **Fabric**. ProjectEF keeps the classic **EMC (Energy-Matter Covalence)** gameplay intact:
 
-ProjectEF is designed for **Minecraft 1.21.1 Fabric** while maintaining compatibility with the original ProjectE data structure where possible.
+* Convert items into EMC and permanently learn their value.
+* Recreate learned items anytime through the Transmutation Table or the portable Transmutation Tablet.
+* Automate EMC production with Collectors, Relays, and Condensers.
+* Progress from the Philosopher's Stone to Dark Matter / Red Matter tools and GEM armor.
+
+Existing ProjectE configuration files, resource paths, datapacks, and world data remain compatible wherever possible.
 
 ## Project Status
 
@@ -44,85 +49,37 @@ ProjectEF is designed for **Minecraft 1.21.1 Fabric** while maintaining compatib
 
 ## Features
 
-### EMC Transmutation System
+### EMC & Transmutation
 
-The core of ProjectEF is the EMC (Energy-Matter Covalence) system.
+* Item ↔ EMC conversion with permanent item knowledge.
+* Transmutation Table and portable Transmutation Tablet.
+* Configurable custom EMC values (`custom_emc.json` / in-game commands).
 
-Features include:
+### EMC Generation & Automation
 
-* Item EMC values
-* Learning and storing item knowledge
-* Item conversion
-* Energy collection
-* Matter condensation
+* Energy Collectors (MK1–MK3)
+* Anti-Matter Relays (MK1–MK3)
+* Energy Condensers (MK1/MK2)
+* Dark Matter Pedestal
 
-### Alchemical Machines
+### Equipment & Utility Items
 
-ProjectEF includes classic transmutation equipment:
+* Philosopher's Stone — block transmutation and world conversion.
+* Dark Matter and Red Matter tools with configurable area mining.
+* Dark Matter Furnace and Red Matter Furnace.
+* Alchemical Bags and Eternal Density gems.
+* Swiftwolf's Rending Gale.
+* Full GEM Armor abilities: night vision, step assist, flight, and combat effects.
 
-* Transmutation Table
-* Transmutation Tablet
-* Energy Collectors
-* Energy Condensers
-* Alchemical Bags
-* Eternal Density
+### Trinkets Integration
 
-### Matter Equipment
+Accessory slots are provided through [Trinkets](https://modrinth.com/mod/trinkets): equip rings, amulets, charms, and Klein Stars in the `hand/ring` and `chest/necklace` slots. ProjectEF works without Trinkets — accessories simply behave as regular inventory items.
 
-Powerful tools and equipment based on EMC technology:
+### Compatibility & Localization
 
-* Dark Matter Tools
-* Red Matter Tools
-* Dark Matter Furnace
-* Red Matter Furnace
-* GEM Armor
-* Swiftwolf's Rending Gale
-
-Supported abilities include:
-
-* Flight support
-* Night vision
-* Area mining modes
-* Movement enhancement
-
-### Philosopher's Stone
-
-The Philosopher's Stone allows players to manipulate the world through alchemical conversion.
-
-Features include:
-
-* Block transformation
-* Selection rendering
-* World transmutation recipes
-
-## Fabric Port Progress
-
-The Fabric migration has completed the main systems:
-
-* Public API
-* Registration system
-* Networking
-* Event handling
-* Configuration system
-* EMC data management
-* Items and blocks
-* Entities
-* Block entities
-* Recipes
-* Containers
-* Client rendering
-* Runtime hooks
-
-Additional restored features:
-
-* Creative and ring-based flight
-* GEM Armor abilities
-* Dark Matter and Red Matter tool modes
-* ProjectEF furnace fuel support
-* Fabric-compatible recipe conditions
-* Client rendering integrations
-* Built-in EMC values for classic Avaritia items
-* Expanded Simplified Chinese translations
+* Built-in EMC values for classic Avaritia items.
+* Full Simplified Chinese and English localization.
+* Compatible with original ProjectE configuration format and mod ID (`projecte`).
 
 ## Installation
 
@@ -130,8 +87,10 @@ Additional restored features:
 
 * Minecraft 1.21.1
 * Fabric Loader 0.16.9 or newer
-* Fabric API
+* Fabric API (1.21.1 compatible version)
 * Java 21
+
+> Forge Config API Port and fabric-permissions-api are bundled inside the ProjectEF JAR (jar-in-jar). **No extra downloads needed.**
 
 ### Steps
 
@@ -140,15 +99,13 @@ Additional restored features:
 3. Download the latest ProjectEF release.
 4. Place the JAR file into your Minecraft `mods` folder.
 
-Forge Config API Port and fabric-permissions-api are included inside the ProjectEF JAR.
+### Optional Integrations
 
-Optional integrations:
+These mods only enhance the experience and are never required:
 
-* JEI
-* EMI
-* REI
-* Jade
-* WTHIT
+* JEI / EMI / REI — recipe viewers
+* Jade / WTHIT — block information overlays
+* Trinkets — accessory slots
 
 ## Building from Source
 
@@ -207,11 +164,6 @@ This allows compatibility with:
 * Existing configuration files
 * Existing resource paths
 * Existing world data
-
-Accessory slots are provided through [Trinkets](https://modrinth.com/mod/trinkets).
-Install it to equip rings, amulets, charms, and Klein Stars in the `hand/ring` and
-`chest/necklace` slots. ProjectEF works without it; the accessories simply stay
-regular inventory items.
 
 The following integrations from the NeoForge version are not included:
 
