@@ -49,6 +49,7 @@ import moze_intel.projecte.network.packets.to_client.SyncFuelMapperPKT;
 import moze_intel.projecte.network.packets.to_client.SyncWorldTransmutations;
 import moze_intel.projecte.utils.WorldHelper;
 import moze_intel.projecte.world_transmutation.WorldTransmutationManager;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -218,7 +219,9 @@ public class PECore implements ModInitializer {
 
 	private void commonSetup() {
 		registerFurnaceFuels();
-		new ThreadCheckUpdate().start();
+		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+			new ThreadCheckUpdate().start();
+		}
 		EMCMappingHandler.loadMappers();
 
 		//Dispenser Behavior

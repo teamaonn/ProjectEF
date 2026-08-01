@@ -17,7 +17,8 @@
   "contact": {
     "homepage": "https://github.com/wchiway/ProjectEF",
     "issues": "https://github.com/wchiway/ProjectEF/issues",
-    "sources": "https://github.com/wchiway/ProjectEF"
+    "sources": "https://github.com/wchiway/ProjectEF",
+    "updateJsonURL": "https://raw.githubusercontent.com/wchiway/ProjectEF/mc1.21.1/update.json"
   },
   "license": "MIT",
   "icon": "assets/projecte/icon.png",

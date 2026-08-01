@@ -25,6 +25,7 @@ import moze_intel.projecte.events.ToolTipEvent;
 import moze_intel.projecte.gameObjs.sound.MovingSoundSWRG;
 import moze_intel.projecte.network.PacketHandler;
 import moze_intel.projecte.network.PacketHandler.ClientboundRegistration;
+import moze_intel.projecte.network.ThreadCheckUpdate;
 import moze_intel.projecte.network.commands.client.DumpMissingEmc;
 import moze_intel.projecte.rendering.ChestRenderer;
 import moze_intel.projecte.rendering.EntitySpriteRenderer;
@@ -61,6 +62,7 @@ public class PECoreClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		ThreadCheckUpdate.registerClient();
 		registerClientPacketReceivers();
 		registerScreens();
 		registerKeybindings();

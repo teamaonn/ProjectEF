@@ -14,14 +14,16 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.VersionParsingException;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.util.TimeUtil;
 
 public class ThreadCheckUpdate extends Thread {
 
-	// Fallback update JSON URL; was originally specified in the deleted NeoForge mods.toml.
-	private static final String DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/sinkillerj/ProjectE/mc1.21.x/update.json";
+	// Fallback update JSON URL; mirrors the updateJsonURL declared in fabric.mod.json.
+	private static final String DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/wchiway/ProjectEF/mc1.21.1/update.json";
 	private static final String curseURL = "https://www.curseforge.com/minecraft/mc-mods/projecte/files";
 	private static volatile String targetVersion = null;
 	private static volatile boolean hasSentMessage = false;
@@ -32,6 +34,10 @@ public class ThreadCheckUpdate extends Thread {
 
 	@Override
 	public void run() {
+		//Update notifications are client-only; do not burn a network request on a dedicated server.
+		if (FabricLoader.getInstance().getEnvironmentType() != EnvType.CLIENT) {
+			return;
+		}
 		ModMetadata metadata = PECore.MOD_CONTAINER.getMetadata();
 		String currentVersion = metadata.getVersion().getFriendlyString();
 		String updateUrl = metadata.getContact().get("updateJsonURL").orElse(null);
@@ -72,8 +78,7 @@ public class ThreadCheckUpdate extends Thread {
 			try (InputStreamReader reader = new InputStreamReader(url.openStream())) {
 				JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
 				String latest = json.get("latest").getAsString();
-				//Version comparison using simple lexicographic for semver (exact compare is not needed, the JSON just carries the latest release tag)
-				if (currentVersion.compareTo(latest) < 0) {
+				if (isNewer(latest, currentVersion)) {
 					return latest;
 				}
 			}
@@ -81,6 +86,15 @@ public class ThreadCheckUpdate extends Thread {
 			PECore.LOGGER.debug("Failed to check for updates: {}", e.getMessage());
 		}
 		return null;
+	}
+
+	private static boolean isNewer(String latest, String current) {
+		try {
+			return SemanticVersion.parse(latest).compareTo(SemanticVersion.parse(current)) > 0;
+		} catch (VersionParsingException e) {
+			PECore.LOGGER.warn("Failed to compare versions '{}' and '{}': {}", current, latest, e.getMessage());
+			return false;
+		}
 	}
 
 	/**
