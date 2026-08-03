@@ -60,6 +60,9 @@ public class PhilosophersStone extends ItemMode<PhilosophersStoneMode> implement
 
 	public PhilosophersStone(Properties props) {
 		super(props.component(PEDataComponentTypes.PHILOSOPHERS_STONE_MODE.get(), PhilosophersStoneMode.CUBE), 4);
+		// 贤者之石是合成催化剂，不应在合成中被消耗
+		// Item#getCraftingRemainingItem 是 final 方法，通过 access widener 设置此字段实现自引用
+		this.craftingRemainingItem = this;
 	}
 
 	@NotNull
