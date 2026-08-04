@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="src/main/resources/assets/projecte/logo.png" alt="ProjectEF Logo" width="220">
+  <img src="src/main/resources/assets/projecte/logo.png" alt="ProjectEF Neo Logo" width="220">
 </p>
-<h1 align="center">ProjectEF</h1>
+<h1 align="center">ProjectEF Neo</h1>
 <p align="center">
   <b>Equivalent Exchange: Reborn for Fabric</b><br>
-  中文名：[Fabric]等价交换:重置版<br>
+  中文名：[Fabric]等价交换Neo<br>
   Minecraft 1.21.1 · Fabric
 </p>
 <p align="center">
@@ -25,9 +25,9 @@
 
 ## Overview
 
-**ProjectEF** is a modern Fabric port of the classic **ProjectE** mod — the complete **Equivalent Exchange** experience on Minecraft 1.21.1.
+**ProjectEF Neo** is a modern Fabric port of the classic **ProjectE** mod — the complete **Equivalent Exchange** experience on Minecraft 1.21.1.
 
-The **"F"** stands for **Fabric**. ProjectEF keeps the classic **EMC (Energy-Matter Covalence)** gameplay intact:
+The **"F"** stands for **Fabric**. ProjectEF Neo keeps the classic **EMC (Energy-Matter Covalence)** gameplay intact:
 
 * Convert items into EMC and permanently learn their value.
 * Recreate learned items anytime through the Transmutation Table or the portable Transmutation Tablet.
@@ -41,7 +41,7 @@ Existing ProjectE configuration files, resource paths, datapacks, and world data
 | Component    | Version               |
 | ------------ | --------------------- |
 | Minecraft    | 1.21.1                |
-| ProjectEF    | 1.2.1                 |
+| ProjectEF Neo | 1.2.2                |
 | Mod Loader   | Fabric Loader 0.16.9+ |
 | Fabric API   | 0.116.14+1.21.1       |
 | Java         | 21                    |
@@ -73,7 +73,7 @@ Existing ProjectE configuration files, resource paths, datapacks, and world data
 
 ### Trinkets Integration
 
-Accessory slots are provided through [Trinkets](https://modrinth.com/mod/trinkets): equip rings, amulets, charms, and Klein Stars in the `hand/ring` and `chest/necklace` slots. ProjectEF works without Trinkets — accessories simply behave as regular inventory items.
+Accessory slots are provided through [Trinkets](https://modrinth.com/mod/trinkets): equip rings, amulets, charms, and Klein Stars in the `hand/ring` and `chest/necklace` slots. ProjectEF Neo works without Trinkets — accessories simply behave as regular inventory items.
 
 ### Compatibility & Localization
 
@@ -90,13 +90,13 @@ Accessory slots are provided through [Trinkets](https://modrinth.com/mod/trinket
 * Fabric API (1.21.1 compatible version)
 * Java 21
 
-> Forge Config API Port and fabric-permissions-api are bundled inside the ProjectEF JAR (jar-in-jar). **No extra downloads needed.**
+> Forge Config API Port and fabric-permissions-api are bundled inside the ProjectEF Neo JAR (jar-in-jar). **No extra downloads needed.**
 
 ### Steps
 
 1. Install Minecraft 1.21.1 with Fabric Loader.
 2. Install a compatible Fabric API version.
-3. Download the latest ProjectEF release.
+3. Download the latest ProjectEF Neo release.
 4. Place the JAR file into your Minecraft `mods` folder.
 
 ### Optional Integrations
@@ -153,7 +153,7 @@ To use EMI or REI:
 
 ## Compatibility Notes
 
-ProjectEF keeps the original ProjectE mod identifier:
+ProjectEF Neo keeps the original ProjectE mod identifier:
 
 ```
 projecte
@@ -175,7 +175,7 @@ The following integrations from the NeoForge version are not included:
 
 When reporting a bug, please include:
 
-* ProjectEF version
+* ProjectEF Neo version
 * Minecraft version
 * Fabric Loader version
 * Fabric API version
@@ -192,7 +192,7 @@ Fabric port developer and maintainer.
 
 ## Credits
 
-ProjectEF is based on the original **ProjectE** project.
+ProjectEF Neo is based on the original **ProjectE** project.
 
 Special thanks to:
 
@@ -217,4 +217,4 @@ Additional credits:
 
 ## License
 
-ProjectEF is released under the MIT License.
+ProjectEF Neo is released under the MIT License.
