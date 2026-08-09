@@ -41,7 +41,7 @@ Existing ProjectE configuration files, resource paths, datapacks, and world data
 | Component    | Version               |
 | ------------ | --------------------- |
 | Minecraft    | 1.21.1                |
-| ProjectEF Neo | 1.2.2                |
+| ProjectEF Neo | 1.2.3                |
 | Mod Loader   | Fabric Loader 0.16.9+ |
 | Fabric API   | 0.116.14+1.21.1       |
 | Java         | 21                    |

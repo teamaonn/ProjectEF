@@ -1,6 +1,26 @@
 # Changelog
 
-All notable changes to ProjectEF are documented here.
+All notable changes to ProjectEF Neo are documented here.
+
+## [1.2.3] - 2026-08-10
+
+### Fixed
+
+- Nova Catalyst and Nova Cataclysm no longer turn into vanilla TNT when ignited. Fabric has no `TntBlock.onCaughtFire` hook (the NeoForge version routes every ignition path through it), so any path not explicitly overridden fell through to the static `TntBlock.explode` and spawned a plain `PrimedTnt`. `ProjectETNT` now overrides all six ignition-related `TntBlock` methods, and two mixins cover the paths that call the static method directly:
+  - `TntBlockMixin` intercepts `TntBlock.explode` and covers every caller that still has the block in place — most notably the vanilla flint and steel dispenser behavior, which ignites *before* removing the block.
+  - `FireBlockMixin` redirects the call in `FireBlock.checkBurnOut`. That path removes the block *before* igniting, so the `BlockState` has to be cached beforehand.
+- Fire spread can now ignite the Nova blocks at all. They were never registered as flammable, so `FireBlock.checkBurnOut` never reached them.
+
+## [1.2.2] - 2026-08-04
+
+### Fixed
+
+- The Philosopher's Stone is no longer consumed when used as a crafting ingredient, and its EMC is no longer added to the result. `Item#getCraftingRemainingItem` is `final` in 1.21.1, so the stone is now registered as its own crafting remainder via an access widener. This also zeroes out its net contribution in `BaseRecipeTypeMapper`, which subtracts the remainder's EMC from the ingredient cost.
+- Downgraded Cardinal Components API to 6.1.2. Version 6.1.3 is listed in the Ladysnake Maven metadata but its artifacts are not actually resolvable, which broke CI builds.
+
+### Changed
+
+- Renamed to **ProjectEF Neo** (Chinese: 等价交换Neo).
 
 ## [1.2.1] - 2026-07-31
 
