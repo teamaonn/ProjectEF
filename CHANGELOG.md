@@ -6,6 +6,7 @@ All notable changes to ProjectEF Neo are documented here.
 
 ### Fixed
 
+- Nova Catalyst and Nova Cataclysm explode with their proper power again (16 and 48) instead of a vanilla TNT blast (4.0). `PrimedTnt#explode` is `protected` in NeoForge but `private` in vanilla, so the port replaced the `explode()` override with a `tick()` override that never actually took over the detonation — `super.tick()` had already run the vanilla explosion, leaving `getExplosionPower()` and the whole `NovaExplosion` path as dead code. The method is now widened via the access widener and overridden as before.
 - Nova Catalyst and Nova Cataclysm no longer turn into vanilla TNT when ignited. Fabric has no `TntBlock.onCaughtFire` hook (the NeoForge version routes every ignition path through it), so any path not explicitly overridden fell through to the static `TntBlock.explode` and spawned a plain `PrimedTnt`. `ProjectETNT` now overrides all six ignition-related `TntBlock` methods, and two mixins cover the paths that call the static method directly:
   - `TntBlockMixin` intercepts `TntBlock.explode` and covers every caller that still has the block in place — most notably the vanilla flint and steel dispenser behavior, which ignites *before* removing the block.
   - `FireBlockMixin` redirects the call in `FireBlock.checkBurnOut`. That path removes the block *before* igniting, so the `BlockState` has to be cached beforehand.

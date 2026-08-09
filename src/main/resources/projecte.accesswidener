@@ -60,3 +60,8 @@ accessible method net/minecraft/world/level/block/state/BlockBehaviour propertie
 # Philosopher's Stone: allow self-referencing as its own craftingRemainingItem (field is private final in Item)
 accessible field net/minecraft/world/item/Item craftingRemainingItem Lnet/minecraft/world/item/Item;
 mutable field net/minecraft/world/item/Item craftingRemainingItem Lnet/minecraft/world/item/Item;
+
+# Nova Catalyst / Nova Cataclysm: EntityNovaPrimed overrides explode() to run the custom Nova
+# explosion instead of the vanilla 4.0F one (NeoForge patches this method to protected).
+# PrimedTnt#tick already invokes it virtually, so widening it is enough for the override to dispatch.
+extendable method net/minecraft/world/entity/item/PrimedTnt explode ()V

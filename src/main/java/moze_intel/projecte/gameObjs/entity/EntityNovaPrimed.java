@@ -40,11 +40,10 @@ public abstract class EntityNovaPrimed extends PrimedTnt {
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
-		if (getFuse() == 0 && !level().isClientSide) {
-			discard();
-		}
+	protected void explode() {
+		//Run the Nova explosion instead of vanilla's 4.0F one. PrimedTnt#tick has already discarded
+		//us and checked for the logical server by the time this runs.
+		WorldHelper.createNovaExplosion(level(), this, getX(), getY(), getZ(), getExplosionPower());
 	}
 
 	public ItemStack asItemStack() {
