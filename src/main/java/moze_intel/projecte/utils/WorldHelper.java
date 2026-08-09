@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 import moze_intel.projecte.PECore;
 import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.gameObjs.PETags;
+import moze_intel.projecte.gameObjs.blocks.ProjectETNT;
 import moze_intel.projecte.gameObjs.registries.PESoundEvents;
 import moze_intel.projecte.network.packets.to_client.NovaExplosionSyncPKT;
 import net.minecraft.core.BlockPos;
@@ -730,7 +731,11 @@ public final class WorldHelper {
 			} else if (state.getBlock() instanceof TntBlock) {
 				if (!level.isClientSide && PlayerHelper.hasBreakPermission((ServerPlayer) player, level, pos)) {
 					// Ignite the tnt
-					TntBlock.explode(level, pos);
+					if (state.getBlock() instanceof ProjectETNT petnt) {
+						petnt.createAndAddEntity(level, pos, player);
+					} else {
+						TntBlock.explode(level, pos);
+					}
 					level.removeBlock(pos, false);
 					level.playSound(null, player.getX(), player.getY(), player.getZ(), PESoundEvents.POWER.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
 				}

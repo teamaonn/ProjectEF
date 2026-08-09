@@ -13,6 +13,7 @@ import moze_intel.projecte.config.ProjectEConfig;
 import moze_intel.projecte.emc.EMCMappingHandler;
 import moze_intel.projecte.emc.FuelMapper;
 import moze_intel.projecte.events.PlayerEvents;
+import moze_intel.projecte.gameObjs.blocks.ProjectETNT;
 import moze_intel.projecte.gameObjs.items.PhilosophersStone;
 import moze_intel.projecte.gameObjs.items.rings.Arcana.ArcanaMode;
 import moze_intel.projecte.gameObjs.registries.PEArmorMaterials;
@@ -54,6 +55,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
@@ -227,6 +229,12 @@ public class PECore implements ModInitializer {
 		}
 		EMCMappingHandler.loadMappers();
 
+		//Match vanilla TNT's flammability so fire spread can ignite the Nova blocks
+		//(the redirect in FireBlockMixin then spawns the custom ProjectEF entity instead of a plain PrimedTnt)
+		//Note: Fabric's (burn, spread) maps to vanilla's (igniteOdds, burnOdds) - vanilla TNT is setFlammable(TNT, 15, 100)
+		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATALYST.getBlock(), 15, 100);
+		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATACLYSM.getBlock(), 15, 100);
+
 		//Dispenser Behavior
 		registerDispenseBehavior(new ShearsDispenseItemBehavior(), PEItems.DARK_MATTER_SHEARS, PEItems.RED_MATTER_SHEARS, PEItems.RED_MATTER_KATAR);
 		DispenserBlock.registerBehavior(PEBlocks.NOVA_CATALYST, PEBlocks.NOVA_CATALYST.getBlock().createDispenseItemBehavior());
@@ -254,7 +262,12 @@ public class PECore implements ModInitializer {
 					level.setBlockAndUpdate(pos, state.setValue(BlockStateProperties.LIT, true));
 					level.gameEvent(null, GameEvent.BLOCK_CHANGE, pos);
 				} else if (state.getBlock() instanceof TntBlock) {
-					TntBlock.explode(level, pos);
+					//Ignite the tnt, spawning the custom ProjectEF entity when it is a Nova block
+					if (state.getBlock() instanceof ProjectETNT petnt) {
+						petnt.createAndAddEntity(level, pos, null);
+					} else {
+						TntBlock.explode(level, pos);
+					}
 					level.removeBlock(pos, false);
 				} else {
 					setSuccess(false);

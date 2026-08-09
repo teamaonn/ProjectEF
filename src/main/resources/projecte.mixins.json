@@ -8,10 +8,12 @@
   ],
   "mixins": [
     "EntityMixin",
+    "FireBlockMixin",
     "ItemEntityMixin",
     "ItemStackMixin",
     "LivingEntityMixin",
-    "PlayerMixin"
+    "PlayerMixin",
+    "TntBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

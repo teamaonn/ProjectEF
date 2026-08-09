@@ -6,18 +6,41 @@ import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Custom TNT block for the Nova Catalyst / Nova Cataclysm.
+ *
+ * <p>The NeoForge version of this class relies on the NeoForge added {@code TntBlock.onCaughtFire}
+ * hook, which routes every ignition path (flint and steel, fire spread, fire charges, burning
+ * projectiles, ...) through one method. Fabric has no such hook, so every vanilla ignition path that
+ * is not overridden here falls through to the static {@link TntBlock#explode} and spawns a plain
+ * vanilla {@link PrimedTnt} instead of the custom ProjectEF entity. The overrides below replicate
+ * the vanilla priming behavior while spawning the custom entity. The fire spread path is
+ * hard-coded in {@code FireBlock.checkBurnOut} and is handled separately by
+ * {@code moze_intel.projecte.mixin.FireBlockMixin}; {@code WorldHelper#igniteBlock} and the
+ * dispenser behavior already create the custom entity via {@link #createAndAddEntity}.
+ */
 public class ProjectETNT extends TntBlock {
 
 	private final TNTEntityCreator tntEntityCreator;
@@ -26,12 +49,6 @@ public class ProjectETNT extends TntBlock {
 		super(properties);
 		this.tntEntityCreator = tntEntityCreator;
 	}
-
-	/**
-	 * Fabric: fire-spread-triggered priming falls through to vanilla TntBlock.explode, which spawns
-	 * a plain PrimedTnt (not the custom ProjectEF entity). {@link WorldHelper#igniteBlock} and
-	 * dispenser logic still create the custom entity. Flammability is registered in the block registry.
-	 */
 
 	public void createAndAddEntity(@NotNull Level level, @NotNull BlockPos pos, @Nullable LivingEntity igniter) {
 		PrimedTnt tnt = tntEntityCreator.create(level, pos.getX() + 0.5F, pos.getY(), pos.getZ() + 0.5F, igniter);
@@ -52,6 +69,76 @@ public class ProjectETNT extends TntBlock {
 				return stack;
 			}
 		};
+	}
+
+	@NotNull
+	@Override
+	protected ItemInteractionResult useItemOn(@NotNull ItemStack stack, @NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+			@NotNull Player player, @NotNull InteractionHand hand, @NotNull BlockHitResult hitResult) {
+		if (!stack.is(Items.FLINT_AND_STEEL) && !stack.is(Items.FIRE_CHARGE)) {
+			return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
+		} else {
+			//[VanillaCopy] TntBlock.useItemOn, except we spawn the custom ProjectEF entity
+			if (!level.isClientSide) {
+				createAndAddEntity(level, pos, player);
+			}
+			level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL_IMMEDIATE);
+			if (stack.is(Items.FLINT_AND_STEEL)) {
+				stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+			} else {
+				stack.consume(1, player);
+			}
+			player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
+			return ItemInteractionResult.sidedSuccess(level.isClientSide);
+		}
+	}
+
+	@Override
+	protected void onProjectileHit(@NotNull Level level, @NotNull BlockState state, @NotNull BlockHitResult hit, @NotNull Projectile projectile) {
+		//[VanillaCopy] TntBlock.onProjectileHit, except we spawn the custom ProjectEF entity
+		if (!level.isClientSide) {
+			BlockPos pos = hit.getBlockPos();
+			Entity owner = projectile.getOwner();
+			if (projectile.isOnFire() && projectile.mayInteract(level, pos)) {
+				createAndAddEntity(level, pos, owner instanceof LivingEntity livingentity ? livingentity : null);
+				level.removeBlock(pos, false);
+			}
+		}
+	}
+
+	@Override
+	protected void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Block neighborBlock,
+			@NotNull BlockPos neighborPos, boolean movedByPiston) {
+		//[VanillaCopy] TntBlock.neighborChanged, except we spawn the custom ProjectEF entity
+		if (level.hasNeighborSignal(pos)) {
+			if (!level.isClientSide) {
+				createAndAddEntity(level, pos, null);
+			}
+			level.removeBlock(pos, false);
+		}
+	}
+
+	@Override
+	protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean movedByPiston) {
+		//[VanillaCopy] TntBlock.onPlace, except we spawn the custom ProjectEF entity
+		if (!oldState.is(state.getBlock())) {
+			if (level.hasNeighborSignal(pos)) {
+				if (!level.isClientSide) {
+					createAndAddEntity(level, pos, null);
+				}
+				level.removeBlock(pos, false);
+			}
+		}
+	}
+
+	@NotNull
+	@Override
+	public BlockState playerWillDestroy(@NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull Player player) {
+		//[VanillaCopy] TntBlock.playerWillDestroy, except we spawn the custom ProjectEF entity
+		if (!level.isClientSide() && !player.isCreative() && state.getValue(UNSTABLE)) {
+			createAndAddEntity(level, pos, null);
+		}
+		return super.playerWillDestroy(level, pos, state, player);
 	}
 
 	@Override
