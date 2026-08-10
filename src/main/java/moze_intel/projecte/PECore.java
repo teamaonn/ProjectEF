@@ -229,11 +229,11 @@ public class PECore implements ModInitializer {
 		}
 		EMCMappingHandler.loadMappers();
 
-		//Match vanilla TNT's flammability so fire spread can ignite the Nova blocks
-		//(the redirect in FireBlockMixin then spawns the custom ProjectEF entity instead of a plain PrimedTnt)
-		//Note: Fabric's (burn, spread) maps to vanilla's (igniteOdds, burnOdds) - vanilla TNT is setFlammable(TNT, 15, 100)
-		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATALYST.getBlock(), 15, 100);
-		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATACLYSM.getBlock(), 15, 100);
+		//Match the NeoForge version, which only overrides getFlammability (= vanilla burnOdds) with 100
+		//and leaves getFireSpreadSpeed (= vanilla igniteOdds) at its default of 0 for these blocks.
+		//burnOdds is what FireBlock#checkBurnOut rolls against, so fire next to a Nova block still ignites it.
+		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATALYST.getBlock(), 0, 100);
+		FlammableBlockRegistry.getDefaultInstance().add(PEBlocks.NOVA_CATACLYSM.getBlock(), 0, 100);
 
 		//Dispenser Behavior
 		registerDispenseBehavior(new ShearsDispenseItemBehavior(), PEItems.DARK_MATTER_SHEARS, PEItems.RED_MATTER_SHEARS, PEItems.RED_MATTER_KATAR);
