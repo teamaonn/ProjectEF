@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "projecte",
   "version": "${version}",
-  "name": "ProjectE",
-  "description": "A Fabric 26.2 porting workspace based on the ProjectE 1.21.1 source.",
+  "name": "EMC Transmutation Table",
+  "description": "A focused Fabric 26.2 EMC shop with a ProjectE-style Transmutation Table and Tablet. Sell valued items, learn them, and spend EMC to recreate them.",
   "authors": [
     "SinKillerJ",
     "MaPePeR",
@@ -12,12 +12,11 @@
     "pupnewfster"
   ],
   "contact": {
-    "homepage": "https://github.com/sinkillerj/ProjectE",
-    "sources": "https://github.com/sinkillerj/ProjectE",
-    "issues": "https://github.com/sinkillerj/ProjectE/issues"
+    "homepage": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
+    "sources": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
+    "issues": "https://github.com/teamaonn/ProjectEF/issues"
   },
   "license": "MIT",
-  "icon": "logo.png",
   "environment": "*",
   "entrypoints": {
     "main": [
