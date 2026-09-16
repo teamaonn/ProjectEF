@@ -83,8 +83,14 @@ public class TransmutationScreen extends Screen {
                 if (!stack.isEmpty()) {
                     graphics.item(stack, x, y);
                     graphics.itemDecorations(font, stack, x, y);
-                    if (inside(mouseX, mouseY, x, y, 18))
-                        graphics.setTooltipForNextFrame(font, stack.getHoverName(), mouseX, mouseY);
+                    if (inside(mouseX, mouseY, x, y, 18)) {
+                        String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                        long amount = PETransmutationState.value(id);
+                        graphics.setTooltipForNextFrame(font, Component.literal(
+                                stack.getHoverName().getString() + " · " +
+                                        (amount > 0 ? amount + " EMC each (click to sell)" : "No EMC value")),
+                                mouseX, mouseY);
+                    }
                 }
             }
         }

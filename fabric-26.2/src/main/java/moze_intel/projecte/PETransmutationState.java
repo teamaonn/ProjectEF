@@ -2,6 +2,10 @@ package moze_intel.projecte;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.google.gson.JsonParser;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,12 +25,18 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 public final class PETransmutationState extends SavedData {
     private static final Map<Identifier, Long> VALUES = new LinkedHashMap<>();
     static {
-        price("minecraft:cobblestone",1); price("minecraft:dirt",1); price("minecraft:sand",1);
-        price("minecraft:gravel",4); price("minecraft:oak_log",32); price("minecraft:birch_log",32);
-        price("minecraft:spruce_log",32); price("minecraft:coal",128); price("minecraft:charcoal",32);
-        price("minecraft:iron_ingot",256); price("minecraft:gold_ingot",2048);
-        price("minecraft:redstone",64); price("minecraft:lapis_lazuli",864);
-        price("minecraft:diamond",8192); price("minecraft:emerald",16384);
+        try (InputStream stream = PETransmutationState.class.getClassLoader()
+                .getResourceAsStream("data/projecte/emc_values.json")) {
+            if (stream == null) throw new IllegalStateException("Missing projecte EMC values");
+            var entries = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            entries.entrySet().forEach(entry -> {
+                long amount = entry.getValue().getAsLong();
+                if (amount > 0) price(entry.getKey(), amount);
+            });
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Unable to read projecte EMC values", exception);
+        }
     }
 
     private record Account(long balance, List<String> learned) {
