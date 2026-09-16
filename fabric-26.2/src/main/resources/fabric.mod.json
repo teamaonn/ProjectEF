@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "projecte",
+  "version": "${version}",
+  "name": "ProjectE",
+  "description": "A Fabric 26.2 porting workspace based on the ProjectE 1.21.1 source.",
+  "authors": [
+    "SinKillerJ",
+    "MaPePeR",
+    "williewillus",
+    "Lilylicious",
+    "pupnewfster"
+  ],
+  "contact": {
+    "homepage": "https://github.com/sinkillerj/ProjectE",
+    "sources": "https://github.com/sinkillerj/ProjectE",
+    "issues": "https://github.com/sinkillerj/ProjectE/issues"
+  },
+  "license": "MIT",
+  "icon": "logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "moze_intel.projecte.PECore"
+    ],
+    "client": [
+      "moze_intel.projecte.client.PEClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "minecraft": "26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
