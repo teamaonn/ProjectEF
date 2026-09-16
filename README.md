@@ -1,3 +1,5 @@
+> **This fork also hosts a focused Minecraft 26.2 EMC Transmutation Table prototype.** Its source and build instructions are on the [`fabric-26.2-emc-table` branch](https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2). The original ProjectEF 1.21.1 project described below remains on this branch.
+
 <p align="center">
   <img src="src/main/resources/assets/projecte/logo.png" alt="ProjectEF Neo Logo" width="220">
 </p>
