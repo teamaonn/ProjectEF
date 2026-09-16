@@ -25,6 +25,7 @@ public class PECore implements ModInitializer {
     public void onInitialize() {
         PERegistries.register();
         PEPackets.register();
+        PESetEmcCommand.register();
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(
                 PEPackets.Action.TYPE, (packet, context) ->
                         context.server().execute(() -> {

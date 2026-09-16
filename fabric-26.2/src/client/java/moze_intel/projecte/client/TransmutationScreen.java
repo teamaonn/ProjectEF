@@ -3,6 +3,7 @@ package moze_intel.projecte.client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import moze_intel.projecte.PEPackets;
 import moze_intel.projecte.PETransmutationState;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -30,6 +31,7 @@ public class TransmutationScreen extends Screen {
     private final long position;
     private final long balance;
     private final List<String> learned;
+    private final Map<String, Long> prices;
     private List<String> filtered = List.of();
     private EditBox search;
     private int page, left, top;
@@ -40,8 +42,10 @@ public class TransmutationScreen extends Screen {
         position = snapshot.position();
         balance = snapshot.balance();
         learned = snapshot.learned();
+        prices = snapshot.prices();
         page = rememberedPage;
     }
+    private long value(String id) { return prices.getOrDefault(id, PETransmutationState.value(id)); }
 
     @Override protected void init() {
         left = (width - 228) / 2;
@@ -85,10 +89,12 @@ public class TransmutationScreen extends Screen {
                     graphics.itemDecorations(font, stack, x, y);
                     if (inside(mouseX, mouseY, x, y, 18)) {
                         String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-                        long amount = PETransmutationState.value(id);
+                        long amount = value(id);
                         graphics.setTooltipForNextFrame(font, Component.literal(
                                 stack.getHoverName().getString() + " · " +
-                                        (amount > 0 ? amount + " EMC each (click to sell)" : "No EMC value")),
+                                        (amount == 0 ? "No EMC value" :
+                                                !PETransmutationState.plain(stack) ? "Modified item: cannot sell" :
+                                                        amount + " EMC each (click to sell)")),
                                 mouseX, mouseY);
                     }
                 }
@@ -102,7 +108,7 @@ public class TransmutationScreen extends Screen {
             graphics.item(stack, x, y);
             if (inside(mouseX, mouseY, x, y, 17))
                 graphics.setTooltipForNextFrame(font,
-                        Component.literal(stack.getHoverName().getString() + " · " + PETransmutationState.value(id) + " EMC"),
+                        Component.literal(stack.getHoverName().getString() + " · " + value(id) + " EMC"),
                         mouseX, mouseY);
         }
     }
@@ -130,7 +136,7 @@ public class TransmutationScreen extends Screen {
                 ItemStack stack = inventory.getItem(slot);
                 if (inside(mouseX, mouseY, x, y, 18) && !stack.isEmpty()) {
                     String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-                    if (PETransmutationState.value(id) > 0)
+                    if (value(id) > 0 && PETransmutationState.plain(stack))
                         send("sell", slot, "", button == 1 ? 1 : stack.getCount());
                     return true;
                 }

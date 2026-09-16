@@ -32,10 +32,8 @@ SEEDS = {
 
 def excluded(item):
     name = item.split(":")[-1]
-    return name.endswith(("_pickaxe", "_axe", "_shovel", "_hoe", "_sword", "_helmet",
-                            "_chestplate", "_leggings", "_boots", "_horse_armor")) or name in {
-        "bow", "crossbow", "shield", "elytra", "fishing_rod", "shears", "flint_and_steel",
-        "brush", "trident", "mace", "bundle", "shulker_box", "enchanted_book",
+    return name.endswith(("_shulker_box",)) or name in {
+        "bundle", "shulker_box", "enchanted_book", "written_book",
         "filled_map", "firework_rocket", "firework_star", "goat_horn", "player_head",
         "decorated_pot", "ominous_bottle",
     }
@@ -48,12 +46,15 @@ def main():
     with zipfile.ZipFile(sys.argv[1]) as archive:
         tags = {}
         recipes = []
+        ore_loot = {}
         for path in archive.namelist():
             if path.startswith("data/minecraft/tags/item/") and path.endswith(".json"):
                 tags["minecraft:" + path[len("data/minecraft/tags/item/"):-5]] = (
                     json.loads(archive.read(path)).get("values", []))
             elif path.startswith("data/minecraft/recipe/") and path.endswith(".json"):
                 recipes.append(json.loads(archive.read(path)))
+            elif path.startswith("data/minecraft/loot_table/blocks/") and path.endswith("_ore.json"):
+                ore_loot["minecraft:" + path.split("/")[-1][:-5]] = json.loads(archive.read(path))
 
     def ingredient_price(ingredient, seen=frozenset()):
         if isinstance(ingredient, list):
@@ -89,6 +90,8 @@ def main():
             elif kind in ("minecraft:smelting", "minecraft:blasting", "minecraft:smoking",
                           "minecraft:campfire_cooking", "minecraft:stonecutting"):
                 parts = [recipe.get("ingredient")]
+            elif kind == "minecraft:smithing_transform":
+                parts = [recipe.get("template"), recipe.get("base"), recipe.get("addition")]
             else:
                 continue
             costs = [ingredient_price(part) for part in parts]
@@ -100,6 +103,27 @@ def main():
                 changes += 1
         if not changes:
             break
+    # Base yield of a mined ore, ignoring Silk Touch, Fortune, and explosion loss.
+    # Floor fractional EMC to keep the price an integer (e.g. redstone: 4.5 * 64 = 288).
+    for ore, loot in ore_loot.items():
+        for pool in loot.get("pools", []):
+            for entry in pool.get("entries", []):
+                children = entry.get("children", [])
+                normal = next((child for child in children if child.get("name") != ore), None)
+                if normal is None:
+                    continue
+                drop_price = values.get(normal.get("name"), 0)
+                if not drop_price:
+                    continue
+                yield_count = 1
+                for function in normal.get("functions", []):
+                    if function.get("function") == "minecraft:set_count":
+                        amount = function.get("count", {})
+                        if amount.get("type") == "minecraft:uniform":
+                            yield_count = (amount["min"] + amount["max"]) / 2
+                        elif isinstance(amount, (int, float)):
+                            yield_count = amount
+                values[ore] = max(1, int(yield_count * drop_price))
     values = {item: amount for item, amount in values.items() if amount > 0 and not excluded(item)}
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(dict(sorted(values.items())), indent=2) + "\n")

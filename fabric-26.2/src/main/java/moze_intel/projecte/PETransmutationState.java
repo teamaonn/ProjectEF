@@ -58,6 +58,10 @@ public final class PETransmutationState extends SavedData {
         try { return VALUES.getOrDefault(Identifier.parse(id), 0L); }
         catch (IllegalArgumentException exception) { return 0; }
     }
+    /** This catalog recreates a plain item by ID; selling a modified item would lose its data. */
+    public static boolean plain(ItemStack stack) {
+        return !stack.isEmpty() && stack.isComponentsPatchEmpty();
+    }
     private static PETransmutationState state(ServerPlayer player) {
         return player.level().getServer().overworld().getDataStorage().computeIfAbsent(TYPE);
     }
@@ -88,24 +92,26 @@ public final class PETransmutationState extends SavedData {
             if (slot < 0 || slot >= player.getInventory().getContainerSize()) return;
             ItemStack stack = player.getInventory().getItem(slot);
             String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            long unit = value(id);
+            long unit = PEEmcOverrides.forPlayer(player).value(id);
             int quantity = Math.min(stack.getCount(), Math.max(1, Math.min(request.count(), 64)));
-            if (unit > 0 && quantity > 0 && unit <= (Long.MAX_VALUE - current.balance()) / quantity) {
+            if (unit > 0 && quantity > 0 && plain(stack)
+                    && unit <= (Long.MAX_VALUE - current.balance()) / quantity) {
                 Set<String> known = new LinkedHashSet<>(current.learned()); known.add(id);
                 state.update(player, new Account(current.balance() + unit * quantity, List.copyOf(known)));
                 stack.shrink(quantity);
             }
         } else if ("buy".equals(request.command())) {
             String id = request.item();
-            long unit = value(id);
-            int quantity = Math.max(1, Math.min(request.count(), 64));
-            if (unit > 0 && current.learned().contains(id) && unit <= current.balance() / quantity) {
+            long unit = PEEmcOverrides.forPlayer(player).value(id);
+            int requested = Math.max(1, Math.min(request.count(), 64));
+            if (unit > 0 && current.learned().contains(id)) {
                 Item item;
                 try { item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id)); }
                 catch (IllegalArgumentException exception) { return; }
                 if (item == Items.AIR) return;
-                ItemStack stack = new ItemStack(item, Math.min(quantity, item.getDefaultMaxStackSize()));
-                if (stack.getCount() != quantity) return;
+                int quantity = Math.min(requested, item.getDefaultMaxStackSize());
+                if (unit > current.balance() / quantity) return;
+                ItemStack stack = new ItemStack(item, quantity);
                 state.update(player, new Account(current.balance() - unit * quantity, current.learned()));
                 if (!player.getInventory().add(stack)) player.drop(stack, false);
             }
@@ -115,6 +121,7 @@ public final class PETransmutationState extends SavedData {
     private static void sync(ServerPlayer player, boolean tablet, long position) {
         Account account = state(player).account(player);
         if (ServerPlayNetworking.canSend(player, PEPackets.Snapshot.TYPE))
-            ServerPlayNetworking.send(player, new PEPackets.Snapshot(tablet, position, account.balance(), account.learned()));
+            ServerPlayNetworking.send(player, new PEPackets.Snapshot(tablet, position, account.balance(), account.learned(),
+                    PEEmcOverrides.forPlayer(player).snapshot()));
     }
 }
