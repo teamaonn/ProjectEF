@@ -1,5 +1,7 @@
 # Transmutation shop prototype (Fabric 26.2)
 
+Survival recipes: Transmutation Table uses obsidian at four corners, stone at four sides, and a diamond in the center. Transmutation Tablet uses redstone at four corners, gold ingots at four sides, and a Transmutation Table in the center. Both recipes unlock from their center ingredients and use the 26.2 shaped crafting format.
+
 This project keeps the ProjectE-style table/tablet assets and side-mountable table. The table and tablet open one shop screen. EMC is a server-owned player account saved in the overworld's `transmutation_accounts` saved data. Clicking a valued stack in the screen's inventory grid sells it, teaches its item ID, and credits its fixed EMC value. Clicking a learned item in the right transmutation circle buys it. The screen has search and learned-item pages.
 
 This is a focused EMC shop prototype. `data/projecte/emc_values.json` contains 838 vanilla prices from ProjectEF defaults, seed values, 26.2 recipes, and the base average drops in 26.2 ore loot tables. Run `tools/generate_emc_values.py` with a 26.2 server jar to regenerate the registry. Full-durability, unmodified craftable equipment can be sold for the total price of its ingredients; worn, renamed, enchanted, or otherwise modified stacks cannot be sold because the shop recreates plain items by ID. The server checks prices, quantities, and the player's balance before completing transactions. One purchased piece of nonstackable equipment costs its full price.

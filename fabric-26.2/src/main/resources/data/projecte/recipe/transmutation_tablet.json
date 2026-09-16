@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": "minecraft:redstone",
+    "G": "minecraft:gold_ingot",
+    "T": "projecte:transmutation_table"
+  },
+  "pattern": [
+    "RGR",
+    "GTG",
+    "RGR"
+  ],
+  "result": {
+    "id": "projecte:transmutation_tablet"
+  }
+}
