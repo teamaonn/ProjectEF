@@ -60,7 +60,7 @@ public final class PETransmutationState extends SavedData {
     }
     /** This catalog recreates a plain item by ID; selling a modified item would lose its data. */
     public static boolean plain(ItemStack stack) {
-        return !stack.isEmpty() && stack.isComponentsPatchEmpty();
+        return !stack.isEmpty() && stack.getComponentsPatch().isEmpty();
     }
     private static PETransmutationState state(ServerPlayer player) {
         return player.level().getServer().overworld().getDataStorage().computeIfAbsent(TYPE);
