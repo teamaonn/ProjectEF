@@ -3,7 +3,7 @@
   "id": "projecte",
   "version": "${version}",
   "name": "EMC Transmutation Table",
-  "description": "A focused Fabric 26.2 EMC shop with a ProjectE-style Transmutation Table and Tablet. Sell valued items, learn them, and spend EMC to recreate them.",
+  "description": "A focused Fabric 26.3 EMC shop with a ProjectE-style Transmutation Table and Tablet. Sell valued items, learn them, and spend EMC to recreate them.",
   "authors": [
     "SinKillerJ",
     "MaPePeR",
@@ -12,8 +12,8 @@
     "pupnewfster"
   ],
   "contact": {
-    "homepage": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
-    "sources": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
+    "homepage": "https://github.com/teamaonn/ProjectEF/tree/port/minecraft-26.3/fabric-26.2",
+    "sources": "https://github.com/teamaonn/ProjectEF/tree/port/minecraft-26.3/fabric-26.2",
     "issues": "https://github.com/teamaonn/ProjectEF/issues"
   },
   "license": "MIT",
@@ -27,8 +27,8 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.17.2",
-    "minecraft": "26.2",
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.3",
     "java": ">=25",
     "fabric-api": "*"
   }

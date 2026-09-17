@@ -1,15 +1,23 @@
-# Transmutation shop prototype (Fabric 26.2)
+# ProjectE Fabric 26.3 EMC Shop
 
-Survival recipes: Transmutation Table uses obsidian at four corners, stone at four sides, and a diamond in the center. Transmutation Tablet uses redstone at four corners, gold ingots at four sides, and a Transmutation Table in the center. Both recipes unlock from their center ingredients and use the 26.2 shaped crafting format.
+This is a focused Fabric 26.3 implementation of the ProjectE-style EMC table and tablet.
 
-This project keeps the ProjectE-style table/tablet assets and side-mountable table. The table and tablet open one shop screen. EMC is a server-owned player account saved in the overworld's `transmutation_accounts` saved data. Clicking a valued stack in the screen's inventory grid sells it, teaches its item ID, and credits its fixed EMC value. Clicking a learned item in the right transmutation circle buys it. The screen has search and learned-item pages.
+## Included
 
-This is a focused EMC shop prototype. `data/projecte/emc_values.json` contains 838 vanilla prices from ProjectEF defaults, seed values, 26.2 recipes, and the base average drops in 26.2 ore loot tables. Run `tools/generate_emc_values.py` with a 26.2 server jar to regenerate the registry. Full-durability, unmodified craftable equipment can be sold for the total price of its ingredients; worn, renamed, enchanted, or otherwise modified stacks cannot be sold because the shop recreates plain items by ID. The server checks prices, quantities, and the player's balance before completing transactions. One purchased piece of nonstackable equipment costs its full price.
+- Transmutation Table
+- Transmutation Tablet
+- Persistent per-player EMC
+- Learning items into the table
+- Selling items for EMC
+- Spending EMC to recreate learned items
+- `/setemc` command for assigning or inspecting EMC values
 
-Operators can set a world-specific price with `/projecte setemc <emc>` while holding an item, or `/projecte setemc <emc> <namespace:item_id>` (for example `/projecte setemc 24584 minecraft:diamond_pickaxe`). Set a price to `0` to prevent selling and buying. Overrides persist in the world and sync to the screen on opening; reopen an already-open table after changing a value. Ore prices use ordinary drops without Fortune (lapis 6.5, redstone 4.5, copper 3.5); the integer EMC price is rounded down.
+## Build
 
-The screen now renders the original table texture with right-circle learned outputs and a 36-slot inventory grid. It is still a prototype: the left input circle is decorative, and selling uses clicks in the lower inventory grid rather than cursor-slot interactions. Search and page behavior, tablet behavior, persistence across relogs, and multiplayer accounts still need in-game checks before publishing a jar.
+Use Java 25 and run:
 
-Build on a machine with Java 25 and access to Fabric Maven: `./gradlew build` (PowerShell: `./gradlew.bat build`). Then test a new and existing world: side-place the table, sell and buy cobblestone, relog and confirm EMC/knowledge remain, try the tablet, and have two players confirm accounts remain separate.
+```powershell
+C:\Gradle\bin\gradle.bat build
+```
 
-Source references: Universal Shops 1.15.1 (26.2 Fabric shop API patterns), ProjectEF 1.21.1 (Transmutation behavior and explicit vanilla EMC defaults), and the supplied 26.2 ProjectE shell/assets. Refer to bundled LICENSE and original project attribution for retained assets.
+The result is written to `build\libs`.
