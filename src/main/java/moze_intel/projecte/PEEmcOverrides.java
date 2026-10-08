@@ -27,10 +27,12 @@ public final class PEEmcOverrides extends SavedData {
         return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
     public long value(String item) {
+        if (PEEmcBlacklist.contains(item)) return 0;
         return prices.getOrDefault(item, PETransmutationState.value(item));
     }
     public long value(ItemStack stack) {
         String item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        if (PEEmcBlacklist.contains(item)) return 0;
         // Filled/explorer maps use the ordinary map item plus map data. They sell at
         // the normal map value, but PETransmutationState keeps them out of learned items.
         if (PETransmutationState.sellOnlyMap(stack)) item = "minecraft:map";
@@ -38,6 +40,7 @@ public final class PEEmcOverrides extends SavedData {
     }
     public Map<String, Long> snapshot() { return Map.copyOf(prices); }
     public void set(String item, long amount) {
+        if (PEEmcBlacklist.contains(item)) return;
         prices.put(item, amount);
         setDirty();
     }

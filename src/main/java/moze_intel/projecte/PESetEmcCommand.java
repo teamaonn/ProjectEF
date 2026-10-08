@@ -48,6 +48,10 @@ public final class PESetEmcCommand {
             source.sendFailure(Component.literal("Unknown item: " + id));
             return 0;
         }
+        if (PEEmcBlacklist.contains(key.toString())) {
+            source.sendFailure(Component.literal("That item is blocked from the EMC table because it is not normally obtainable in survival."));
+            return 0;
+        }
         PEEmcOverrides.forServer(source.getServer()).set(key.toString(), emc);
         source.sendSuccess(() -> Component.literal("Set " + key + " to " + emc + " EMC. Reopen the table to refresh its prices."), false);
         return 1;

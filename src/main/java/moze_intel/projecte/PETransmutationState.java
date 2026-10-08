@@ -40,7 +40,7 @@ public final class PETransmutationState extends SavedData {
                 entries.entrySet().forEach(entry -> {
                     try {
                         long amount = entry.getValue().getAsLong();
-                        if (amount > 0) price(entry.getKey(), amount);
+                        if (amount > 0 && !PEEmcBlacklist.contains(entry.getKey())) price(entry.getKey(), amount);
                     } catch (RuntimeException exception) {
                         PECore.LOGGER.warn("Skipping invalid ProjectEF EMC entry '{}'", entry.getKey(), exception);
                     }
@@ -67,6 +67,7 @@ public final class PETransmutationState extends SavedData {
 
     private static void price(String id, long value) { VALUES.put(Identifier.parse(id), value); }
     public static long value(String id) {
+        if (PEEmcBlacklist.contains(id)) return 0;
         try { return VALUES.getOrDefault(Identifier.parse(id), 0L); }
         catch (IllegalArgumentException exception) { return 0; }
     }
@@ -100,7 +101,9 @@ public final class PETransmutationState extends SavedData {
         return player.level().getServer().overworld().getDataStorage().computeIfAbsent(TYPE);
     }
     private Account account(ServerPlayer player) {
-        return accounts.getOrDefault(player.getUUID().toString(), new Account(0, List.of()));
+        Account current = accounts.getOrDefault(player.getUUID().toString(), new Account(0, List.of()));
+        List<String> allowed = current.learned().stream().filter(id -> !PEEmcBlacklist.contains(id)).toList();
+        return allowed.size() == current.learned().size() ? current : new Account(current.balance(), allowed);
     }
     public static boolean deposit(MinecraftServer server, UUID owner, long unit, int quantity) {
         if (unit <= 0 || quantity <= 0 || unit > (Long.MAX_VALUE / quantity)) return false;
@@ -136,6 +139,7 @@ public final class PETransmutationState extends SavedData {
             if (slot < 0 || slot >= player.getInventory().getContainerSize()) return;
             ItemStack stack = player.getInventory().getItem(slot);
             String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            if (PEEmcBlacklist.contains(id)) return;
             long unit = PEEmcOverrides.forPlayer(player).value(stack);
             int quantity = Math.min(stack.getCount(), Math.max(1, Math.min(request.count(), 64)));
             if (unit > 0 && quantity > 0 && plain(stack)
@@ -147,6 +151,7 @@ public final class PETransmutationState extends SavedData {
             }
         } else if ("buy".equals(request.command())) {
             String id = request.item();
+            if (PEEmcBlacklist.contains(id)) return;
             long unit = PEEmcOverrides.forPlayer(player).value(id);
             int requested = Math.max(1, Math.min(request.count(), 64));
             if (unit > 0 && current.learned().contains(id)) {
