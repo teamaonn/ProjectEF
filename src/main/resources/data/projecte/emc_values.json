@@ -1423,5 +1423,6 @@
   "minecraft:lava_bucket": 832,
   "minecraft:mushroom_stem": 32,
   "minecraft:red_mushroom_block": 32,
-  "minecraft:experience_bottle": 384
+  "minecraft:experience_bottle": 384,
+  "minecraft:brown_mushroom_block": 32
 }
