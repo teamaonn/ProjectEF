@@ -1,1 +1,6 @@
-{"parent":"minecraft:block/orientable","textures":{"front":"projecte:block/red_matter_block","side":"projecte:block/red_matter_block","top":"projecte:block/red_matter_block"}}
+{
+  "parent": "projecte:block/rm_furnace",
+  "textures": {
+    "front": "projecte:block/matter_furnace/rm_on"
+  }
+}
