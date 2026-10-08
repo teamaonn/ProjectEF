@@ -24,7 +24,7 @@ public final class MatterFurnaceBlock extends FurnaceBlock {
 
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new MatterFurnaceBlockEntity(pos, state);
+        return new MatterFurnaceBlockEntity(pos, state, redMatter);
     }
 
     @Override
