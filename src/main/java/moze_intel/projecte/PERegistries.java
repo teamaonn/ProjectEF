@@ -21,6 +21,8 @@ public final class PERegistries {
     private static Block transmutationTable;
     private static Item transmutationTablet;
     private static Block energyCondenser;
+    private static Block darkMatterFurnace;
+    private static Block redMatterFurnace;
     public static BlockEntityType<EnergyCondenserBlockEntity> ENERGY_CONDENSER_ENTITY;
 
     private PERegistries() {
@@ -73,6 +75,8 @@ public final class PERegistries {
         block("aeternalis_fuel_block", fuelBlock(MapColor.COLOR_LIGHT_GRAY));
         block("dark_matter_block", matterBlock(MapColor.COLOR_BLACK), fireResistant());
         block("red_matter_block", matterBlock(MapColor.COLOR_RED), fireResistant());
+        darkMatterFurnace = matterFurnace("dm_furnace", MapColor.COLOR_BLACK);
+        redMatterFurnace = matterFurnace("rm_furnace", MapColor.COLOR_RED);
         // The table should always drop itself when broken; requiring a particular
         // tool would make it appear to vanish when harvested by hand or with the
         // wrong tier of pickaxe.
@@ -98,6 +102,19 @@ public final class PERegistries {
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
         Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey)));
         energyCondenser = block;
+        BLOCKS.put(name, block);
+        return block;
+    }
+
+    private static Block matterFurnace(String name, MapColor color) {
+        ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, PECore.id(name));
+        ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, PECore.id(name));
+        Block block = new MatterFurnaceBlock(BlockBehaviour.Properties.of().mapColor(color)
+                .requiresCorrectToolForDrops().strength(1_000_000.0F, 3_000_000.0F)
+                .lightLevel(state -> state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) ? 14 : 0)
+                .setId(blockKey));
+        Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey).fireResistant()));
         BLOCKS.put(name, block);
         return block;
     }
