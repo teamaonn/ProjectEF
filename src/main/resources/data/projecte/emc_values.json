@@ -1426,5 +1426,10 @@
   "minecraft:experience_bottle": 384,
   "minecraft:brown_mushroom_block": 32,
   "minecraft:glowstone_dust": 64,
-  "minecraft:glowstone": 256
+  "minecraft:glowstone": 256,
+  "minecraft:spectral_arrow": 60,
+  "minecraft:ancient_debris": 12288,
+  "minecraft:cactus_flower": 8,
+  "minecraft:buried_treasure_map": 1328,
+  "minecraft:wither_skeleton_skull": 1024
 }
