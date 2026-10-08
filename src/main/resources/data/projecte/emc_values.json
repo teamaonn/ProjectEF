@@ -1390,5 +1390,18 @@
   "projecte:transmutation_table": 8452,
   "projecte:transmutation_tablet": 16880,
   "projecte:energy_condenser": 100000,
-  "sulfur_bricks": 256
+  "sulfur_bricks": 256,
+  "minecraft:spruce_leaves": 1,
+  "minecraft:birch_leaves": 1,
+  "minecraft:jungle_leaves": 1,
+  "minecraft:acacia_leaves": 1,
+  "minecraft:dark_oak_leaves": 1,
+  "minecraft:mangrove_leaves": 1,
+  "minecraft:cherry_leaves": 1,
+  "minecraft:azalea_leaves": 1,
+  "minecraft:flowering_azalea_leaves": 1,
+  "minecraft:sculk": 16,
+  "minecraft:sculk_sensor": 144,
+  "minecraft:calibrated_sculk_sensor": 192,
+  "minecraft:sculk_shrieker": 32160
 }
