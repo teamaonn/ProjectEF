@@ -2,12 +2,13 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    " R ",
-    "RFR"
+    "NNN",
+    "NDN",
+    "NNN"
   ],
   "key": {
-    "R": "projecte:red_matter_block",
-    "F": "projecte:dm_furnace"
+    "N": "minecraft:netherite_block",
+    "D": "projecte:dm_furnace"
   },
   "result": {
     "count": 1,

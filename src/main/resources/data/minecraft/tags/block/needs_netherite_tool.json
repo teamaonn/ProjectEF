@@ -1,8 +1,6 @@
 {
   "replace": false,
   "values": [
-    "projecte:transmutation_table",
-    "projecte:energy_condenser",
     "projecte:dm_furnace",
     "projecte:rm_furnace"
   ]
