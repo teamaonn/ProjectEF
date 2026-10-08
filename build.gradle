@@ -16,9 +16,6 @@ plugins {
 }
 
 tasks.named('wrapper', Wrapper) {
-    //Define wrapper values here so as to not have to always do so when updating gradlew.properties
-    //Note: Gradle distribution is downloaded from the Tencent mirror for better speeds in China;
-    // setting distributionUrl directly (instead of gradleVersion) keeps the mirror after './gradlew wrapper' regenerations
     distributionUrl = 'https://mirrors.cloud.tencent.com/gradle/gradle-8.12.1-all.zip'
 }
 
@@ -26,7 +23,6 @@ defaultTasks 'build'
 
 idea {
     module {
-        //Exclude directories from being managed
         for (String excludeDirName in ["run", "out", "logs", "gradle"]) {
             excludeDirs.add(new File(projectDir, excludeDirName))
         }
@@ -43,31 +39,23 @@ tasks.withType(AbstractArchiveTask).configureEach {
 
 sourceSets {
     api {
-        //The API has no resources
         resources.srcDirs = []
     }
     main {
         resources {
-            //Add the generated main module resources
             srcDirs += 'src/datagen/generated'
-            //But exclude the cache of the generated data from what gets built
             exclude '.cache'
         }
         compileClasspath += api.output
         runtimeClasspath += api.output
     }
-    //Note: The datagen source set is not compiled during the Fabric port; its generated output above is
-    // shipped as-is. Porting datagen to Fabric Data Generation API is tracked in FABRIC_PORT_PLAN.md
     test {
-        //The test source set is disabled during the Fabric port (depended on the NeoForge test framework)
         java.srcDirs = []
         resources.srcDirs = []
     }
 }
 
 configurations { configContainer ->
-    //Make sure all our sub source set stuff extends the proper base configurations so that
-    // they can see all the dependencies we have in dependencies, including Minecraft
     extendConfigurations(implementation, apiImplementation)
     extendConfigurations(compileOnly, apiCompileOnly)
     extendConfigurations(runtimeOnly, apiRuntimeOnly)
@@ -82,7 +70,6 @@ static void extendConfigurations(Configuration base, Configuration... configurat
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
-        vendor.set(JvmVendorSpec.JETBRAINS)
     }
     withSourcesJar()
 }
@@ -100,13 +87,9 @@ loom {
     runs {
         configureEach {
             if (project.hasProperty('forge_force_ansi')) {
-                //Force ansi if declared as a gradle variable, as the auto detection doesn't detect IntelliJ properly
-                // or eclipse's plugin that adds support for ansi escape in console
                 property('terminal.ansi', (String) project.property('forge_force_ansi'))
             }
             property('projecte.skip_top', 'true')
-
-            //if the selected toolchain is a JBR, enable DCEVM
             if (javaToolchains.launcherFor(java.toolchain).map { it.metadata.vendor }.getOrElse('').contains('JetBrains')) {
                 vmArgs('-XX:+IgnoreUnrecognizedVMOptions', '-XX:+AllowEnhancedClassRedefinition')
             }
@@ -118,7 +101,6 @@ loom {
         clientAlt {
             client()
             configName = 'Fabric Client Alt'
-            // Force a different username for testing multiplayer interactions
             programArgs('--username', 'AltDev')
         }
         server {
@@ -129,9 +111,6 @@ loom {
     }
 }
 
-//Give the api source set access to the Minecraft/Fabric/mod dependencies of the main compile classpath.
-//Note: We use the configuration (dependencies only) instead of sourceSets.main.compileClasspath, as the latter
-// also contains api.output (added above), which would create a circular task dependency compileApiJava -> apiClasses
 sourceSets.api.compileClasspath += configurations.compileClasspath
 
 static void exclusiveRepo(RepositoryHandler handler, String url, String... groups) {
@@ -163,8 +142,8 @@ repositories { RepositoryHandler handler ->
     exclusiveRepo(handler, 'https://maven.ladysnake.org/releases', filter -> {
         filter.includeGroupAndSubgroups('org.ladysnake')
     })
-    exclusiveRepo(handler, 'https://maven2.bai.lol', 'lol.bai', 'mcp.mobius.waila')//WTHIT
-    exclusiveRepo(handler, 'https://api.modrinth.com/maven', 'maven.modrinth')//Jade, Trinkets
+    exclusiveRepo(handler, 'https://maven2.bai.lol', 'lol.bai', 'mcp.mobius.waila')
+    exclusiveRepo(handler, 'https://api.modrinth.com/maven', 'maven.modrinth')
     exclusiveRepo(handler, 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/', filter -> {
         filter.includeGroupAndSubgroups('fuzs.forgeconfigapiport')
     })
@@ -179,14 +158,9 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${loader_version}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
 
-    //Java 21 no longer bundles JSR305 annotations
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-
-    //Forge Config API Port keeps the NeoForge ModConfigSpec API available on Fabric; shipped via jar-in-jar
     include(modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcap_version}"))
-    //Permission node support (falls back to vanilla op levels when no permission mod is present); shipped via jar-in-jar
     include(modImplementation("me.lucko:fabric-permissions-api:${permissions_api_version}"))
-    //Math library used by the EMC solver; nested jar instead of shading (Fabric loads nested libraries fine)
     include(implementation("org.apache.commons:commons-math3:3.6.1"))
 
     modCompileOnly("mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}")
@@ -211,22 +185,19 @@ dependencies {
     modCompileOnly("maven.modrinth:trinkets:${trinkets_version}")
     modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
     modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
-    //Load Trinkets (and its jar-in-jar'd Cardinal Components) at dev runtime so the accessory integration can be exercised
     modLocalRuntime("maven.modrinth:trinkets:${trinkets_version}")
 }
 
-//Set the various variables/settings for the different process resources tasks
 tasks.named('processResources', ProcessResources) {
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    def versionProperties = ["version"             : projecte_version,
-                             "minecraft_version"   : minecraft_version_range,
+    def versionProperties = ["version": projecte_version,
+                             "minecraft_version": minecraft_version_range,
                              "loader_version_range": loader_version_range,
-                             "fcap_version_range"  : fcap_version_range]
+                             "fcap_version_range": fcap_version_range]
     inputs.properties(versionProperties)
     filesMatching('fabric.mod.json') {
         expand versionProperties
     }
-    //Reference file kept from the NeoForge branch until the access widener conversion is fully validated
     exclude('META-INF/accesstransformer.cfg')
     def files = fileTree(dir: outputs.files.asPath, includes: ['**/*.json', '**/*.mcmeta'])
     doLast {
@@ -238,13 +209,13 @@ tasks.named('processResources', ProcessResources) {
 
 def getManifestAttributes() {
     return [
-            "Specification-Title"     : "ProjectEF",
-            "Specification-Vendor"    : "ProjectEF",
-            "Specification-Version"   : "${project.projecte_version}",
-            "Implementation-Title"    : "ProjectEF",
-            "Implementation-Version"  : "${project.projecte_version}",
-            "Implementation-Vendor"   : "ProjectEF",
-            "Automatic-Module-Name"   : "projecte"
+            "Specification-Title": "ProjectEF",
+            "Specification-Vendor": "ProjectEF",
+            "Specification-Version": "${project.projecte_version}",
+            "Implementation-Title": "ProjectEF",
+            "Implementation-Version": "${project.projecte_version}",
+            "Implementation-Vendor": "ProjectEF",
+            "Automatic-Module-Name": "projecte"
     ]
 }
 
@@ -257,7 +228,6 @@ tasks.named('jar', Jar) {
 tasks.named('sourcesJar', Jar) {
     dependsOn(classes, apiClasses)
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    //Note: Already contains main source set's sources by default
     from(sourceSets.api.allJava)
     manifest.attributes(getManifestAttributes())
 }
