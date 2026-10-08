@@ -1403,5 +1403,6 @@
   "minecraft:sculk": 16,
   "minecraft:sculk_sensor": 144,
   "minecraft:calibrated_sculk_sensor": 192,
-  "minecraft:sculk_shrieker": 32160
+  "minecraft:sculk_shrieker": 32160,
+  "minecraft:golden_horse_armor": 14301
 }
