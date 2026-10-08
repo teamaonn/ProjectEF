@@ -1,1 +1,16 @@
-{"type":"minecraft:crafting_shaped","category":"misc","pattern":[" R ","RFR"],"key":{"R":{"item":"projecte:red_matter_block"},"F":{"item":"projecte:dm_furnace"}},"result":{"count":1,"id":"projecte:rm_furnace"}}
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " R ",
+    "RFR"
+  ],
+  "key": {
+    "R": "projecte:red_matter_block",
+    "F": "projecte:dm_furnace"
+  },
+  "result": {
+    "count": 1,
+    "id": "projecte:rm_furnace"
+  }
+}

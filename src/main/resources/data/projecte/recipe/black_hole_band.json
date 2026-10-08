@@ -1,1 +1,18 @@
-{"type":"minecraft:crafting_shaped","category":"equipment","pattern":["SSS","DID","SSS"],"key":{"S":{"tag":"c:strings"},"D":{"item":"projecte:dark_matter"},"I":{"item":"projecte:iron_band"}},"result":{"count":1,"id":"projecte:black_hole_band"}}
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SSS",
+    "DID",
+    "SSS"
+  ],
+  "key": {
+    "S": "#c:strings",
+    "D": "projecte:dark_matter",
+    "I": "projecte:iron_band"
+  },
+  "result": {
+    "count": 1,
+    "id": "projecte:black_hole_band"
+  }
+}
