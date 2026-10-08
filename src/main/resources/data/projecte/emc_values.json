@@ -1424,5 +1424,7 @@
   "minecraft:mushroom_stem": 32,
   "minecraft:red_mushroom_block": 32,
   "minecraft:experience_bottle": 384,
-  "minecraft:brown_mushroom_block": 32
+  "minecraft:brown_mushroom_block": 32,
+  "minecraft:glowstone_dust": 64,
+  "minecraft:glowstone": 256
 }
