@@ -1,7 +1,0 @@
-{
-  "projecte:plugin": {
-    "initializer": "moze_intel.projecte.integration.wthit.PEWTHITPlugin",
-    "side": "*",
-    "required": []
-  }
-}

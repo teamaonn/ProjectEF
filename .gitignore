@@ -1,56 +1,9 @@
-# IntelliJ
-/*.iml
-.idea/
-*.ipr
-*.iws
-.idea_modules/
-out/
-
-# Gradle
-.gradle
-.gradle-home/
+.gradle/
 build/
+check-classes/
 run/
-logs/
-
-# Eclipse + other common
-*.pydevproject
-.project
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.classpath
-.settings/
-*.launch
-eclipse/
-libs/
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.stackdump
-
-# Mac crap
-.DS_Store
-
-#docs and scripts
-docs/
-scripts/
-CLAUDE.md
-FABRIC_PORT_PLAN.md
-FABRIC_PORTING_CONTRACT.md
+out/
+*.class
 *.log
-dev/
-trinkets-refmap.json
-trinkets.accesswidener
-trinkets.mixins.json
-LICENSE_trinkets
-/trinkets/
-AGENTS.md
+.idea/
+*.iml

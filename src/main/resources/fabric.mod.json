@@ -2,12 +2,9 @@
   "schemaVersion": 1,
   "id": "projecte",
   "version": "${version}",
-  "name": "ProjectEF Neo",
-  "description": "ProjectEF Neo is the Fabric edition of ProjectE, a complete rewrite of EE2 for modern Minecraft versions.",
+  "name": "EMC Transmutation Table",
+  "description": "A focused Fabric 26.3 EMC shop with a ProjectE-style Transmutation Table and Tablet. Sell valued items, learn them, and spend EMC to recreate them.",
   "authors": [
-    "Chiway Wang"
-  ],
-  "contributors": [
     "SinKillerJ",
     "MaPePeR",
     "williewillus",
@@ -15,76 +12,24 @@
     "pupnewfster"
   ],
   "contact": {
-    "homepage": "https://github.com/wchiway/ProjectEF",
-    "issues": "https://github.com/wchiway/ProjectEF/issues",
-    "sources": "https://github.com/wchiway/ProjectEF",
-    "updateJsonURL": "https://raw.githubusercontent.com/wchiway/ProjectEF/mc1.21.1/update.json"
+    "homepage": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
+    "sources": "https://github.com/teamaonn/ProjectEF/tree/fabric-26.2-emc-table/fabric-26.2",
+    "issues": "https://github.com/teamaonn/ProjectEF/issues"
   },
   "license": "MIT",
-  "icon": "assets/projecte/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
       "moze_intel.projecte.PECore"
     ],
     "client": [
-      "moze_intel.projecte.client.PECoreClient"
-    ],
-    "rei_client": [
-      "moze_intel.projecte.integration.recipe_viewer.rei.PEReiPlugin"
+      "moze_intel.projecte.client.PEClient"
     ]
   },
-  "accessWidener": "projecte.accesswidener",
-  "mixins": [
-    "projecte.mixins.json"
-  ],
   "depends": {
-    "fabricloader": "${loader_version_range}",
-    "fabric-api": "*",
-    "minecraft": "${minecraft_version}",
-    "java": ">=21",
-    "forgeconfigapiport": "${fcap_version_range}"
-  },
-  "breaks": {
-    "mekanism": "<=10.7.8"
-  },
-  "custom": {
-    "projecte:credits": "EE2 creator - x3n0ph0b3, EE2 GUI Textures - MidnightLightning, Former Texture Artist - Magic Banana",
-    "projecte:emc_mappers": [
-      "moze_intel.projecte.emc.mappers.BrewingMapper",
-      "moze_intel.projecte.emc.mappers.CustomEMCMapper",
-      "moze_intel.projecte.emc.mappers.OreBlacklistMapper",
-      "moze_intel.projecte.emc.mappers.OxidizationMapper",
-      "moze_intel.projecte.emc.mappers.RawMaterialsBlacklistMapper",
-      "moze_intel.projecte.emc.mappers.WaxableMapper",
-      "moze_intel.projecte.emc.mappers.customConversions.CustomConversionMapper",
-      "moze_intel.projecte.emc.mappers.recipe.CraftingMapper"
-    ],
-    "projecte:recipe_type_mappers": [
-      "moze_intel.projecte.emc.mappers.recipe.FallbackRecipeTypeMapper",
-      "moze_intel.projecte.emc.mappers.recipe.SmithingRecipeMapper",
-      "moze_intel.projecte.emc.mappers.recipe.VanillaRecipeTypeMapper",
-      "moze_intel.projecte.emc.mappers.recipe.special.ShulkerRecoloringMapper",
-      "moze_intel.projecte.emc.mappers.recipe.special.SpecialRecipeMarkHandledMapper",
-      "moze_intel.projecte.emc.mappers.recipe.special.SuspiciousStewMapper",
-      "moze_intel.projecte.emc.mappers.recipe.special.TippedArrowMapper"
-    ],
-    "projecte:data_component_processors": [
-      "moze_intel.projecte.emc.components.processor.ArmorTrimProcessor",
-      "moze_intel.projecte.emc.components.processor.BannerProcessor",
-      "moze_intel.projecte.emc.components.processor.BundleProcessor",
-      "moze_intel.projecte.emc.components.processor.ContainerProcessor",
-      "moze_intel.projecte.emc.components.processor.DamageProcessor",
-      "moze_intel.projecte.emc.components.processor.DecoratedPotProcessor",
-      "moze_intel.projecte.emc.components.processor.DecoratedShieldProcessor",
-      "moze_intel.projecte.emc.components.processor.EnchantmentProcessor",
-      "moze_intel.projecte.emc.components.processor.FireworkProcessor",
-      "moze_intel.projecte.emc.components.processor.FireworkStarProcessor",
-      "moze_intel.projecte.emc.components.processor.MapScaleProcessor",
-      "moze_intel.projecte.emc.components.processor.MercurialEyeProcessor",
-      "moze_intel.projecte.emc.components.processor.StoredEMCProcessor",
-      "moze_intel.projecte.emc.components.processor.WritableBookProcessor",
-      "moze_intel.projecte.emc.components.processor.WrittenBookProcessor"
-    ]
+    "fabricloader": ">=0.17.2",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": "*"
   }
 }

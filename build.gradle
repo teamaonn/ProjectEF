@@ -1,289 +1,46 @@
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
-import moze_intel.projecte.UpdateJson
-
-import java.util.function.Consumer
-
 plugins {
-    id('java')
-    id('eclipse')
-    id('idea')
-    id('maven-publish')
-    // https://fabricmc.net/develop/
-    // Note: Loom 1.10.x is published under the legacy 'fabric-loom' plugin id
-    // (the 'net.fabricmc.fabric-loom' id only exists for newer Loom versions that require Gradle 8.13+)
-    id('fabric-loom') version("${loom_version}")
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
+    id "maven-publish"
 }
 
-tasks.named('wrapper', Wrapper) {
-    distributionUrl = 'https://mirrors.cloud.tencent.com/gradle/gradle-8.12.1-all.zip'
-}
+version = project.mod_version
+group = project.mod_group
 
-defaultTasks 'build'
-
-idea {
-    module {
-        for (String excludeDirName in ["run", "out", "logs", "gradle"]) {
-            excludeDirs.add(new File(projectDir, excludeDirName))
-        }
-    }
-}
-
-version = "${projecte_version}"
-group = "moze_intel.projecte"
-project.base.archivesName = "ProjectEF-${minecraft_version}-PE${projecte_version}"
-
-tasks.withType(AbstractArchiveTask).configureEach {
-    archiveVersion.set("")
-}
-
-sourceSets {
-    api {
-        resources.srcDirs = []
-    }
-    main {
-        resources {
-            srcDirs += 'src/datagen/generated'
-            exclude '.cache'
-        }
-        compileClasspath += api.output
-        runtimeClasspath += api.output
-    }
-    test {
-        java.srcDirs = []
-        resources.srcDirs = []
-    }
-}
-
-configurations { configContainer ->
-    extendConfigurations(implementation, apiImplementation)
-    extendConfigurations(compileOnly, apiCompileOnly)
-    extendConfigurations(runtimeOnly, apiRuntimeOnly)
-}
-
-static void extendConfigurations(Configuration base, Configuration... configurations) {
-    for (def configuration : configurations) {
-        configuration.extendsFrom(base)
-    }
+base {
+    archivesName = "projecte-fabric-26.3"
 }
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
     withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 loom {
-    accessWidenerPath = file('src/main/resources/projecte.accesswidener')
+    splitEnvironmentSourceSets()
 
     mods {
         projecte {
-            sourceSet(sourceSets.main)
-            sourceSet(sourceSets.api)
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
         }
     }
-
-    runs {
-        configureEach {
-            if (project.hasProperty('forge_force_ansi')) {
-                property('terminal.ansi', (String) project.property('forge_force_ansi'))
-            }
-            property('projecte.skip_top', 'true')
-            if (javaToolchains.launcherFor(java.toolchain).map { it.metadata.vendor }.getOrElse('').contains('JetBrains')) {
-                vmArgs('-XX:+IgnoreUnrecognizedVMOptions', '-XX:+AllowEnhancedClassRedefinition')
-            }
-        }
-        client {
-            client()
-            configName = 'Fabric Client'
-        }
-        clientAlt {
-            client()
-            configName = 'Fabric Client Alt'
-            programArgs('--username', 'AltDev')
-        }
-        server {
-            server()
-            configName = 'Fabric Server'
-            programArg('--nogui')
-        }
-    }
-}
-
-sourceSets.api.compileClasspath += configurations.compileClasspath
-
-static void exclusiveRepo(RepositoryHandler handler, String url, String... groups) {
-    exclusiveRepo(handler, url, filter -> {
-        for (def group : groups) {
-            filter.includeGroup(group)
-        }
-    })
-}
-
-static void exclusiveRepo(RepositoryHandler handler, String url, Consumer<InclusiveRepositoryContentDescriptor> filterSetup) {
-    handler.exclusiveContent {
-        it.forRepositories(handler.maven {
-            setUrl(url)
-        })
-        it.filter { f -> filterSetup.accept(f) }
-    }
-}
-
-repositories { RepositoryHandler handler ->
-    mavenCentral()
-    exclusiveRepo(handler, 'https://maven.parchmentmc.org', filter -> {
-        filter.includeGroupAndSubgroups('org.parchmentmc')
-    })
-    exclusiveRepo(handler, 'https://maven.blamejared.com', 'mezz.jei')
-    exclusiveRepo(handler, 'https://maven.terraformersmc.com/', 'dev.emi')
-    exclusiveRepo(handler, 'https://maven.shedaniel.me/', 'me.shedaniel', 'me.shedaniel.cloth')
-    exclusiveRepo(handler, 'https://maven.architectury.dev/', 'dev.architectury')
-    exclusiveRepo(handler, 'https://maven.ladysnake.org/releases', filter -> {
-        filter.includeGroupAndSubgroups('org.ladysnake')
-    })
-    exclusiveRepo(handler, 'https://maven2.bai.lol', 'lol.bai', 'mcp.mobius.waila')
-    exclusiveRepo(handler, 'https://api.modrinth.com/maven', 'maven.modrinth')
-    exclusiveRepo(handler, 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/', filter -> {
-        filter.includeGroupAndSubgroups('fuzs.forgeconfigapiport')
-    })
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:${minecraft_version}")
-    mappings(loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_version}@zip")
-    })
-    modImplementation("net.fabricmc:fabric-loader:${loader_version}")
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
-
-    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    include(modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcap_version}"))
-    include(modImplementation("me.lucko:fabric-permissions-api:${permissions_api_version}"))
-    include(implementation("org.apache.commons:commons-math3:3.6.1"))
-
-    modCompileOnly("mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}")
-    if (recipe_viewer == 'jei' || recipe_viewer == 'hybrid') {
-        modLocalRuntime("mezz.jei:jei-${minecraft_version}-fabric:${jei_version}")
-    }
-
-    modCompileOnly("dev.emi:emi-fabric:${emi_version}+${minecraft_version}:api")
-    if (recipe_viewer == 'emi' || recipe_viewer == 'hybrid') {
-        modLocalRuntime("dev.emi:emi-fabric:${emi_version}+${minecraft_version}")
-    }
-
-    modCompileOnly("me.shedaniel:RoughlyEnoughItems-api-fabric:${rei_version}")
-    modCompileOnly("me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:${rei_version}")
-    if (recipe_viewer == 'rei') {
-        modLocalRuntime("me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}")
-    }
-
-    modCompileOnly("maven.modrinth:jade:${jade_version}")
-    modCompileOnly("mcp.mobius.waila:wthit-api:fabric-${wthit_version}")
-
-    modCompileOnly("maven.modrinth:trinkets:${trinkets_version}")
-    modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
-    modCompileOnly("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
-    modLocalRuntime("maven.modrinth:trinkets:${trinkets_version}")
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
-tasks.named('processResources', ProcessResources) {
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    def versionProperties = ["version": projecte_version,
-                             "minecraft_version": minecraft_version_range,
-                             "loader_version_range": loader_version_range,
-                             "fcap_version_range": fcap_version_range]
-    inputs.properties(versionProperties)
-    filesMatching('fabric.mod.json') {
-        expand versionProperties
-    }
-    exclude('META-INF/accesstransformer.cfg')
-    def files = fileTree(dir: outputs.files.asPath, includes: ['**/*.json', '**/*.mcmeta'])
-    doLast {
-        for (def file : files) {
-            file.text = JsonOutput.toJson(new JsonSlurper().parse(file))
-        }
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
     }
 }
 
-def getManifestAttributes() {
-    return [
-            "Specification-Title": "ProjectEF",
-            "Specification-Vendor": "ProjectEF",
-            "Specification-Version": "${project.projecte_version}",
-            "Implementation-Title": "ProjectEF",
-            "Implementation-Version": "${project.projecte_version}",
-            "Implementation-Vendor": "ProjectEF",
-            "Automatic-Module-Name": "projecte"
-    ]
-}
-
-tasks.named('jar', Jar) {
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    from(sourceSets.api.output)
-    manifest.attributes(getManifestAttributes())
-}
-
-tasks.named('sourcesJar', Jar) {
-    dependsOn(classes, apiClasses)
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    from(sourceSets.api.allJava)
-    manifest.attributes(getManifestAttributes())
-}
-
-def apiJar = tasks.register('apiJar', Jar) {
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    archiveClassifier.set("api")
-    from(sourceSets.api.output)
-    manifest.attributes(getManifestAttributes())
-}
-
-tasks.register('updateJSON', UpdateJson)
-
-tasks.withType(JavaCompile).configureEach({
-    options.encoding = 'UTF-8'
-    options.compilerArgs.addAll(['-Xmaxerrs', '100000'])
-})
-
-tasks.withType(Javadoc).configureEach({
-    options.encoding = 'UTF-8'
-    options.tags = [
-            'apiNote:a:<em>API Note:</em>',
-            'implSpec:a:<em>Implementation Requirements:</em>',
-            'implNote:a:<em>Implementation Note:</em>'
-    ]
-})
-
-artifacts {
-    archives(apiJar)
-}
-
-publishing {
-    publications { PublicationContainer publicationContainer ->
-        mavenJava(MavenPublication) { MavenPublication publication ->
-            publication.from((SoftwareComponent) components.java)
-            publication.groupId = project.group
-            publication.version = project.version
-            publication.artifactId = 'ProjectEF'
-            publication.artifact(apiJar)
-            publication.pom {
-                name.set('ProjectEF')
-                packaging = 'jar'
-                scm {
-                    url.set('https://github.com/wchiway/ProjectEF.git')
-                }
-                issueManagement {
-                    system.set('github')
-                    url.set('https://github.com/wchiway/ProjectEF/issues')
-                }
-                licenses {
-                    license {
-                        name.set('MIT')
-                        distribution.set('repo')
-                    }
-                }
-            }
-        }
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = "UTF-8"
 }
