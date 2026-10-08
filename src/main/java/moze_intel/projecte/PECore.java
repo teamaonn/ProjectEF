@@ -53,7 +53,8 @@ public class PECore implements ModInitializer {
     }
 
     private static boolean hasBlackHoleBand(ServerPlayer player) {
-        for (ItemStack stack : player.getInventory().items) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
             if (!stack.isEmpty() && PERegistries.isBlackHoleBand(stack.getItem())) return true;
         }
         return false;
