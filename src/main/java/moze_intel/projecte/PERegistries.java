@@ -88,7 +88,8 @@ public final class PERegistries {
                 new BlockEntityType<>(EnergyCondenserBlockEntity::new, java.util.Set.of(energyCondenser)));
         MATTER_FURNACE_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
                 ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, PECore.id("matter_furnace")),
-                new BlockEntityType<>(MatterFurnaceBlockEntity::new, java.util.Set.of(darkMatterFurnace, redMatterFurnace)));
+                new BlockEntityType<>((pos, state) -> new MatterFurnaceBlockEntity(pos, state, state.getBlock() == redMatterFurnace),
+                        java.util.Set.of(darkMatterFurnace, redMatterFurnace)));
     }
 
     public static boolean isTransmutationTable(Block block) {
