@@ -2,20 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "D": {
-      "item": "projecte:dark_matter_block"
-    },
-    "F": {
-      "item": "minecraft:furnace"
-    }
+    "N": { "item": "minecraft:netherite_block" },
+    "T": { "item": "projecte:transmutation_tablet" },
+    "F": { "item": "minecraft:furnace" }
   },
-  "pattern": [
-    "DDD",
-    "DFD",
-    "DDD"
-  ],
-  "result": {
-    "count": 1,
-    "id": "projecte:dm_furnace"
-  }
+  "pattern": ["NTN", "NFN", "NNN"],
+  "result": { "count": 1, "id": "projecte:dm_furnace" }
 }
