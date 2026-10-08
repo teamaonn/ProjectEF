@@ -83,7 +83,7 @@ public class TransmutationScreen extends Screen {
             for (int i = 0; i < 36; i++) {
                 int slot = i < 27 ? i + 9 : i - 27;
                 ItemStack stack = inventory.getItem(slot);
-                int x = left + 35 + (i % 9) * 18, y = top + 116 + (i / 9) * 20;
+                int x = left + 35 + (i % 9) * 18, y = top + 117 + (i / 9) * 18;
                 if (!stack.isEmpty()) {
                     graphics.item(stack, x, y);
                     graphics.itemDecorations(font, stack, x, y);
@@ -132,7 +132,7 @@ public class TransmutationScreen extends Screen {
             var inventory = Minecraft.getInstance().player.getInventory();
             for (int i = 0; i < 36; i++) {
                 int slot = i < 27 ? i + 9 : i - 27;
-                int x = left + 35 + (i % 9) * 18, y = top + 116 + (i / 9) * 20;
+                int x = left + 35 + (i % 9) * 18, y = top + 117 + (i / 9) * 18;
                 ItemStack stack = inventory.getItem(slot);
                 if (inside(mouseX, mouseY, x, y, 18) && !stack.isEmpty()) {
                     String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();

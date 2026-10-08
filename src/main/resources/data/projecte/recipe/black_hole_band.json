@@ -2,14 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "SSS",
-    "DID",
-    "SSS"
+    "PGP",
+    "GIG",
+    "PGP"
   ],
   "key": {
-    "S": "#c:strings",
-    "D": "projecte:dark_matter",
-    "I": "projecte:iron_band"
+    "P": "minecraft:ender_pearl",
+    "G": "minecraft:gold_ingot",
+    "I": "minecraft:iron_block"
   },
   "result": {
     "count": 1,

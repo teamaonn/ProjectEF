@@ -5,6 +5,10 @@ import com.mojang.logging.LogUtils;
 import java.util.UUID;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.ItemEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
@@ -25,6 +29,18 @@ public class PECore implements ModInitializer {
     public void onInitialize() {
         PERegistries.register();
         PEPackets.register();
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (!hasBlackHoleBand(player)) continue;
+                for (ItemEntity entity : player.level().getEntitiesOfClass(ItemEntity.class,
+                        player.getBoundingBox().inflate(8.0D), item -> item.isAlive() && !item.hasPickUpDelay())) {
+                    ItemStack remainder = entity.getItem().copy();
+                    player.getInventory().add(remainder);
+                    if (remainder.isEmpty()) entity.discard();
+                    else entity.setItem(remainder);
+                }
+            }
+        });
         PESetEmcCommand.register();
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(
                 PEPackets.Action.TYPE, (packet, context) ->
@@ -34,5 +50,12 @@ public class PECore implements ModInitializer {
                             else PETransmutationState.action(context.player(), packet);
                         }));
         LOGGER.info("{} Fabric port shell initialized", MODNAME);
+    }
+
+    private static boolean hasBlackHoleBand(ServerPlayer player) {
+        for (ItemStack stack : player.getInventory().items) {
+            if (!stack.isEmpty() && PERegistries.isBlackHoleBand(stack.getItem())) return true;
+        }
+        return false;
     }
 }

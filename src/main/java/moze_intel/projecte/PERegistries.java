@@ -24,6 +24,7 @@ public final class PERegistries {
     private static Block darkMatterFurnace;
     private static Block redMatterFurnace;
     public static BlockEntityType<EnergyCondenserBlockEntity> ENERGY_CONDENSER_ENTITY;
+    public static BlockEntityType<MatterFurnaceBlockEntity> MATTER_FURNACE_ENTITY;
 
     private PERegistries() {
     }
@@ -85,6 +86,9 @@ public final class PERegistries {
         ENERGY_CONDENSER_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
                 ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, PECore.id("energy_condenser")),
                 new BlockEntityType<>(EnergyCondenserBlockEntity::new, java.util.Set.of(energyCondenser)));
+        MATTER_FURNACE_ENTITY = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, PECore.id("matter_furnace")),
+                new BlockEntityType<>(MatterFurnaceBlockEntity::new, java.util.Set.of(darkMatterFurnace, redMatterFurnace)));
     }
 
     public static boolean isTransmutationTable(Block block) {
@@ -93,6 +97,10 @@ public final class PERegistries {
 
     public static boolean isTransmutationTablet(Item item) {
         return item == transmutationTablet;
+    }
+
+    public static boolean isBlackHoleBand(Item item) {
+        return item == ITEMS.get("black_hole_band");
     }
 
     private static Block energyCondenser(String name, BlockBehaviour.Properties properties) {
@@ -109,7 +117,7 @@ public final class PERegistries {
     private static Block matterFurnace(String name, MapColor color) {
         ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, PECore.id(name));
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, PECore.id(name));
-        Block block = new MatterFurnaceBlock(BlockBehaviour.Properties.of().mapColor(color)
+        Block block = new MatterFurnaceBlock(name.equals("rm_furnace"), BlockBehaviour.Properties.of().mapColor(color)
                 .requiresCorrectToolForDrops().strength(1_000_000.0F, 3_000_000.0F)
                 .lightLevel(state -> state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) ? 14 : 0)
                 .setId(blockKey));
