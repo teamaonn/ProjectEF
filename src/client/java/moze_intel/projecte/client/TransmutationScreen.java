@@ -47,6 +47,11 @@ public class TransmutationScreen extends Screen {
     }
     private long value(String id) { return prices.getOrDefault(id, PETransmutationState.value(id)); }
 
+    private int inventoryY(int index) {
+        int row = index / 9;
+        return top + 117 + row * 18 + (row == 3 ? 4 : 0);
+    }
+
     @Override protected void init() {
         left = (width - 228) / 2;
         top = (height - 196) / 2;
@@ -83,7 +88,7 @@ public class TransmutationScreen extends Screen {
             for (int i = 0; i < 36; i++) {
                 int slot = i < 27 ? i + 9 : i - 27;
                 ItemStack stack = inventory.getItem(slot);
-                int x = left + 35 + (i % 9) * 18, y = top + 117 + (i / 9) * 18;
+                int x = left + 35 + (i % 9) * 18, y = inventoryY(i);
                 if (!stack.isEmpty()) {
                     graphics.item(stack, x, y);
                     graphics.itemDecorations(font, stack, x, y);
