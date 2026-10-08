@@ -32,15 +32,22 @@ public final class PETransmutationState extends SavedData {
     static {
         try (InputStream stream = PETransmutationState.class.getClassLoader()
                 .getResourceAsStream("data/projecte/emc_values.json")) {
-            if (stream == null) throw new IllegalStateException("Missing projecte EMC values");
-            var entries = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
-                    .getAsJsonObject();
-            entries.entrySet().forEach(entry -> {
-                long amount = entry.getValue().getAsLong();
-                if (amount > 0) price(entry.getKey(), amount);
-            });
-        } catch (java.io.IOException exception) {
-            throw new IllegalStateException("Unable to read projecte EMC values", exception);
+            if (stream == null) {
+                PECore.LOGGER.error("Missing ProjectEF EMC values; continuing with an empty table");
+            } else {
+                var entries = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                        .getAsJsonObject();
+                entries.entrySet().forEach(entry -> {
+                    try {
+                        long amount = entry.getValue().getAsLong();
+                        if (amount > 0) price(entry.getKey(), amount);
+                    } catch (RuntimeException exception) {
+                        PECore.LOGGER.warn("Skipping invalid ProjectEF EMC entry '{}'", entry.getKey(), exception);
+                    }
+                });
+            }
+        } catch (java.io.IOException | RuntimeException exception) {
+            PECore.LOGGER.error("Unable to load ProjectEF EMC values; continuing with the valid entries", exception);
         }
     }
 
