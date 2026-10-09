@@ -1539,5 +1539,6 @@
   "projecte:energy_condenser": 100000,
   "projecte:transmutation_table": 8452,
   "projecte:transmutation_tablet": 16880,
-  "sulfur_bricks": 256
+  "sulfur_bricks": 256,
+  "projecte:black_hole_band": 14536
 }
