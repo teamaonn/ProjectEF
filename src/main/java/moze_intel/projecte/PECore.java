@@ -27,6 +27,7 @@ public class PECore implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        PEPreservationConfig.load();
         PERegistries.register();
         PEPackets.register();
         ServerTickEvents.END_SERVER_TICK.register(server -> {

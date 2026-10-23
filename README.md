@@ -6,13 +6,20 @@ It is designed for **Minecraft 26.3** with **Fabric**. The goal is to make EMC u
 
 ## Current version
 
-**1.1.30-fabric.26.3**
+**1.1.33-fabric.26.3-preservation.1**
+
+[Download the current Minecraft 26.3 JAR](downloads/projecte-fabric-26.3-1.1.33-fabric.26.3-preservation.1.jar?raw=true)
+
+Install Fabric Loader and Fabric API for Minecraft 26.3. Close Minecraft, remove
+any previous ProjectEF JAR, and place the downloaded JAR in `mods/`. Install the
+same ProjectEF version on clients and servers. Java 25 is required.
 
 ## Included
 
 - Transmutation Table
 - Transmutation Tablet
 - Server-side EMC accounts and learned-item data
+- Configurable preservation of named, enchanted, potion and other item variants
 - Vanilla EMC values tuned for this project
 - EMC support for registered mod items
 - World-specific EMC overrides
@@ -28,11 +35,44 @@ The table and tablet use the same shop system:
 1. Sell a valued item to receive EMC.
 2. Selling an item teaches it to that player.
 3. Spend stored EMC to buy learned items.
-4. Purchases create a normal, unmodified item stack.
+4. Purchases recreate the learned item, including its saved properties when preservation is enabled.
 
 The system is server-authoritative, so prices, balances, learning, selling, and buying are checked on the server.
 
 Modded items are supported as long as they have a registered item ID and an EMC value. Items from namespaces other than `minecraft:` are not automatically blocked.
+
+## Item-data preservation
+
+ProjectEF creates `config/projecte-preservation.properties`:
+
+```properties
+preserve_item_data=true
+preserve_custom_names=true
+preserve_enchantments=true
+preserve_potion_effects=true
+preserve_custom_data=true
+```
+
+With preservation enabled, each distinct item configuration must be learned
+separately. Learning an enchanted sword does not unlock its ordinary version.
+Custom names, enchantments, potion effects, model identity and other data
+components survive learning, purchasing and world restarts. Matching variants
+are deduplicated. Cosmetic variants such as ItemBound equipment keep their
+underlying item's EMC value; existing enchantment adjustments still apply.
+
+The individual switches remove their named properties when learning or
+retrieving variants. Set `preserve_item_data=false` to use base-item learning;
+already saved variants stay stored and become available again when re-enabled.
+Earlier configuration files are respected, so check the master switch after
+upgrading from an early preservation build.
+
+Existing EMC balances and ordinary learned-item records remain supported.
+Filled containers and items carrying block-entity data can be sold but are not
+learned with their contents. The survival blacklist applies to variant purchases
+as well as ordinary items.
+
+ProjectEF does not require ItemBound. A compatible variant addon can supply its
+own names and models; ProjectEF preserves those components.
 
 ## Black Hole Band
 
@@ -87,7 +127,7 @@ Set an item to `0` to disable its EMC value. Changes are world-specific and pers
 
 ## Building
 
-Use the included Gradle wrapper with Java 21:
+Use the included Gradle wrapper with Java 25:
 
 ```
 ./gradlew build

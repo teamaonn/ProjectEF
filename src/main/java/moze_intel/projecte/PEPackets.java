@@ -24,7 +24,7 @@ public final class PEPackets {
         @Override public Type<Action> type() { return TYPE; }
     }
 
-    public record Snapshot(boolean tablet, long position, long balance, List<String> learned, Map<String, Long> prices) implements CustomPacketPayload {
+    public record Snapshot(boolean tablet, long position, long balance, List<String> learned, Map<String, Long> prices, List<net.minecraft.world.item.ItemStack> variants) implements CustomPacketPayload {
         public static final Type<Snapshot> TYPE = new Type<>(PECore.id("snapshot"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Snapshot> CODEC = CustomPacketPayload.codec(
                 (packet, buf) -> {
@@ -33,6 +33,8 @@ public final class PEPackets {
                     packet.learned.forEach(value -> buf.writeUtf(value, 256));
                     buf.writeVarInt(packet.prices.size());
                     packet.prices.forEach((id, value) -> { buf.writeUtf(id); buf.writeLong(value); });
+                    buf.writeVarInt(packet.variants.size());
+                    packet.variants.forEach(stack -> net.minecraft.world.item.ItemStack.STREAM_CODEC.encode(buf, stack));
                 }, buf -> {
                     boolean tablet = buf.readBoolean(); long position = buf.readLong(); long balance = buf.readLong();
                     int learnedSize = buf.readVarInt();
@@ -43,7 +45,11 @@ public final class PEPackets {
                     int size = buf.readVarInt();
                     if (size < 0 || size > 4096) throw new IllegalArgumentException("Too many EMC overrides");
                     for (int i = 0; i < size; i++) prices.put(buf.readUtf(256), buf.readLong());
-                    return new Snapshot(tablet, position, balance, learned, prices);
+                    int variantSize = buf.readVarInt();
+                    if (variantSize < 0 || variantSize > 4096) throw new IllegalArgumentException("Too many variants");
+                    List<net.minecraft.world.item.ItemStack> variants = new java.util.ArrayList<>(variantSize);
+                    for (int i = 0; i < variantSize; i++) variants.add(net.minecraft.world.item.ItemStack.STREAM_CODEC.decode(buf));
+                    return new Snapshot(tablet, position, balance, learned, prices, variants);
                 });
         @Override public Type<Snapshot> type() { return TYPE; }
     }

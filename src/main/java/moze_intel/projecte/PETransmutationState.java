@@ -51,10 +51,12 @@ public final class PETransmutationState extends SavedData {
         }
     }
 
-    private record Account(long balance, List<String> learned) {
+    private record Account(long balance, List<String> learned, List<ItemStack> variants) {
+        Account(long balance, List<String> learned) { this(balance, learned, List.of()); }
         static final Codec<Account> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.LONG.fieldOf("balance").forGetter(Account::balance),
-                Codec.STRING.listOf().fieldOf("learned").forGetter(Account::learned)
+                Codec.STRING.listOf().fieldOf("learned").forGetter(Account::learned),
+                ItemStack.CODEC.listOf().optionalFieldOf("variants", List.of()).forGetter(Account::variants)
         ).apply(instance, Account::new));
     }
     private static final Codec<PETransmutationState> CODEC = Codec.unboundedMap(Codec.STRING, Account.CODEC)
@@ -89,9 +91,17 @@ public final class PETransmutationState extends SavedData {
         long adjusted = base + (base * 5L * modifier) / 100L;
         return Math.max(1L, adjusted);
     }
-    /** Modified/NBT items use the registered base-item EMC; their extra data is not recreated on purchase. */
+    /** Whether an item is eligible for EMC processing. */
     public static boolean plain(ItemStack stack) {
         return !stack.isEmpty();
+    }
+    /** Never learn copies of portable inventories: buying them would duplicate their contents. */
+    private static boolean containsStoredItems(ItemStack stack) {
+        var container = stack.get(DataComponents.CONTAINER);
+        var bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
+        return (container != null && container.nonEmptyItems().iterator().hasNext())
+                || (bundle != null && !bundle.isEmpty())
+                || stack.has(DataComponents.BLOCK_ENTITY_DATA);
     }
     /** Filled/explorer maps may be sold for map EMC, but only blank maps are learnable and purchasable. */
     public static boolean sellOnlyMap(ItemStack stack) {
@@ -103,7 +113,7 @@ public final class PETransmutationState extends SavedData {
     private Account account(ServerPlayer player) {
         Account current = accounts.getOrDefault(player.getUUID().toString(), new Account(0, List.of()));
         List<String> allowed = current.learned().stream().filter(id -> !PEEmcBlacklist.contains(id)).toList();
-        return allowed.size() == current.learned().size() ? current : new Account(current.balance(), allowed);
+        return allowed.size() == current.learned().size() ? current : new Account(current.balance(), allowed, current.variants());
     }
     public static boolean deposit(MinecraftServer server, UUID owner, long unit, int quantity) {
         if (unit <= 0 || quantity <= 0 || unit > (Long.MAX_VALUE / quantity)) return false;
@@ -111,7 +121,7 @@ public final class PETransmutationState extends SavedData {
         String id = owner.toString();
         Account current = state.accounts.getOrDefault(id, new Account(0, List.of()));
         if (current.balance() > Long.MAX_VALUE - unit * quantity) return false;
-        state.accounts.put(id, new Account(current.balance() + unit * quantity, current.learned()));
+        state.accounts.put(id, new Account(current.balance() + unit * quantity, current.learned(), current.variants()));
         state.setDirty();
         return true;
     }
@@ -145,28 +155,46 @@ public final class PETransmutationState extends SavedData {
             if (unit > 0 && quantity > 0 && plain(stack)
                     && unit <= (Long.MAX_VALUE - current.balance()) / quantity) {
                 Set<String> known = new LinkedHashSet<>(current.learned());
-                if (!sellOnlyMap(stack)) known.add(id);
-                state.update(player, new Account(current.balance() + unit * quantity, List.copyOf(known)));
+                List<ItemStack> variants = new java.util.ArrayList<>(current.variants());
+                if (!sellOnlyMap(stack) && !containsStoredItems(stack)) {
+                    ItemStack exemplar = PEPreservationConfig.exemplar(stack);
+                    boolean distinct = PEPreservationConfig.enabled() && !ItemStack.isSameItemSameComponents(exemplar, new ItemStack(exemplar.getItem()));
+                    if (distinct) {
+                        // Do not grant the plain item merely by learning a modified version.
+                        boolean alreadyKnown = variants.stream().anyMatch(saved -> ItemStack.isSameItemSameComponents(PEPreservationConfig.exemplar(saved), exemplar));
+                        if (!alreadyKnown && variants.size() < 4096) variants.add(exemplar);
+                    } else known.add(id);
+                }
+                state.update(player, new Account(current.balance() + unit * quantity, List.copyOf(known), List.copyOf(variants)));
                 stack.shrink(quantity);
             }
         } else if ("buy".equals(request.command())) {
-            String id = request.item();
-            if (PEEmcBlacklist.contains(id)) return;
-            long unit = PEEmcOverrides.forPlayer(player).value(id);
-            int requested = Math.max(1, Math.min(request.count(), 64));
-            if (unit > 0 && current.learned().contains(id)) {
+            ItemStack exemplar;
+            if (request.item().startsWith("variant:")) {
+                if (!PEPreservationConfig.enabled()) return;
+                int index;
+                try { index = Integer.parseInt(request.item().substring(8)); }
+                catch (NumberFormatException exception) { return; }
+                if (index < 0 || index >= current.variants().size()) return;
+                exemplar = PEPreservationConfig.exemplar(current.variants().get(index));
+                if (containsStoredItems(exemplar) || sellOnlyMap(exemplar)) return;
+            } else {
+                if (!current.learned().contains(request.item())) return;
                 Item item;
-                try { item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id)); }
+                try { item = BuiltInRegistries.ITEM.getValue(Identifier.parse(request.item())); }
                 catch (IllegalArgumentException exception) { return; }
                 if (item == Items.AIR) return;
-                int quantity = Math.min(requested, item.getDefaultMaxStackSize());
-                if (unit > current.balance() / quantity) return;
-                ItemStack stack = new ItemStack(item, quantity);
-                state.update(player, new Account(current.balance() - unit * quantity, current.learned()));
-                if (!player.getInventory().add(stack)) {
-                    player.level().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
-                            player.level(), player.getX(), player.getY(), player.getZ(), stack));
-                }
+                exemplar = new ItemStack(item);
+            }
+            if (PEEmcBlacklist.contains(exemplar)) return;
+            long unit = PEEmcOverrides.forPlayer(player).value(exemplar);
+            int quantity = Math.min(Math.max(1, Math.min(request.count(), 64)), exemplar.getMaxStackSize());
+            if (unit <= 0 || quantity <= 0 || unit > current.balance() / quantity) return;
+            ItemStack stack = exemplar.copyWithCount(quantity);
+            state.update(player, new Account(current.balance() - unit * quantity, current.learned(), current.variants()));
+            if (!player.getInventory().add(stack)) {
+                player.level().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
+                        player.level(), player.getX(), player.getY(), player.getZ(), stack));
             }
         }
         sync(player, request.tablet(), request.position());
@@ -175,6 +203,7 @@ public final class PETransmutationState extends SavedData {
         Account account = state(player).account(player);
         if (ServerPlayNetworking.canSend(player, PEPackets.Snapshot.TYPE))
             ServerPlayNetworking.send(player, new PEPackets.Snapshot(tablet, position, account.balance(), account.learned(),
-                    PEEmcOverrides.forPlayer(player).snapshot()));
+                    PEEmcOverrides.forPlayer(player).snapshot(),
+                    PEPreservationConfig.enabled() ? account.variants().stream().map(PEPreservationConfig::exemplar).toList() : List.of()));
     }
 }

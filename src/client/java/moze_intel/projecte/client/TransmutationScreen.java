@@ -32,6 +32,7 @@ public class TransmutationScreen extends Screen {
     private final long balance;
     private final List<String> learned;
     private final Map<String, Long> prices;
+    private final List<ItemStack> variants;
     private List<String> filtered = List.of();
     private EditBox search;
     private int page, left, top;
@@ -43,13 +44,34 @@ public class TransmutationScreen extends Screen {
         balance = snapshot.balance();
         learned = snapshot.learned();
         prices = snapshot.prices();
+        variants = snapshot.variants();
         page = rememberedPage;
     }
-    private long value(String id) { return prices.getOrDefault(id, PETransmutationState.value(id)); }
+    private long value(String id) { return moze_intel.projecte.PEEmcBlacklist.contains(id) ? 0 : prices.getOrDefault(id, PETransmutationState.value(id)); }
 
     private int inventoryY(int index) {
         int row = index / 9;
         return top + 117 + row * 18 + (row == 3 ? 4 : 0);
+    }
+
+    private String label(ItemStack stack) {
+        StringBuilder text = new StringBuilder(stack.getHoverName().getString());
+        var enchantments = stack.getOrDefault(net.minecraft.core.component.DataComponents.ENCHANTMENTS,
+                net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        if (stack.is(net.minecraft.world.item.Items.ENCHANTED_BOOK))
+            enchantments = stack.getOrDefault(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS,
+                    net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        for (var entry : enchantments.entrySet())
+            text.append(" · ").append(entry.getKey().value().description().getString()).append(" ").append(entry.getIntValue());
+        return text.toString();
+    }
+    private ItemStack exemplar(String key) {
+        if (key.startsWith("variant:")) return variants.get(Integer.parseInt(key.substring(8)));
+        return new ItemStack(BuiltInRegistries.ITEM.getValue(Identifier.parse(key)));
+    }
+    private long price(ItemStack stack) {
+        return PETransmutationState.valueWithUpgrades(stack,
+                value(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()));
     }
 
     @Override protected void init() {
@@ -67,6 +89,10 @@ public class TransmutationScreen extends Screen {
         for (String id : learned) {
             Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id));
             if (item.getName(new ItemStack(item)).getString().toLowerCase(Locale.ROOT).contains(query)) matches.add(id);
+        }
+        for (int i = 0; i < variants.size(); i++) {
+            ItemStack stack = variants.get(i);
+            if (label(stack).toLowerCase(Locale.ROOT).contains(query)) matches.add("variant:" + i);
         }
         filtered = matches;
         page = Math.max(0, Math.min(page, Math.max(0, (matches.size() - 1) / ICONS.length)));
@@ -96,7 +122,7 @@ public class TransmutationScreen extends Screen {
                         String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                         long amount = PETransmutationState.valueWithUpgrades(stack, value(id));
                         graphics.setTooltipForNextFrame(font, Component.literal(
-                                stack.getHoverName().getString() + " · " +
+                                label(stack) + " · " +
                                         (amount == 0 ? "No EMC value" :
                                                 !PETransmutationState.plain(stack) ? "Modified item: cannot sell" :
                                                         amount + " EMC each (click to sell)")),
@@ -107,13 +133,12 @@ public class TransmutationScreen extends Screen {
         }
         for (int i = 0; i < ICONS.length && page * ICONS.length + i < filtered.size(); i++) {
             String id = filtered.get(page * ICONS.length + i);
-            Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id));
             int x = left + ICONS[i][0], y = top + ICONS[i][1];
-            ItemStack stack = new ItemStack(item);
+            ItemStack stack = exemplar(id);
             graphics.item(stack, x, y);
             if (inside(mouseX, mouseY, x, y, 17))
                 graphics.setTooltipForNextFrame(font,
-                        Component.literal(stack.getHoverName().getString() + " · " + value(id) + " EMC"),
+                        Component.literal(label(stack) + " · " + price(stack) + " EMC"),
                         mouseX, mouseY);
         }
     }
