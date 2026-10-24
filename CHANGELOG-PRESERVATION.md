@@ -1,3 +1,24 @@
+# 1.1.33-fabric.26.3-preservation.2
+
+Durability wear is no longer stored as part of learned item variants. Selling the
+same item at different damage levels learns one entry; purchases return its
+undamaged version. Enchantments, names, potion contents, model identity, and
+other saved components retain their existing preservation behavior.
+
+Existing accounts are upgraded on access: damaged ordinary items become ordinary
+learned items, and variants differing only by wear are merged. EMC balances and
+unrelated learned entries remain intact. Migration does not apply the optional
+preservation switches to saved records, so temporarily disabling those switches
+does not erase enchantments or cosmetic data. The upgraded account is persisted.
+
+The pricing logic, furnaces, and other features from preservation.1 are unchanged.
+Server and client compilation passed; all six required headless Minecraft tests passed.
+
+Regression coverage is in `src/gametest`; run `gradle runGameTest` with Java 25.
+It checks damage-independent identity, existing-account migration and balances,
+disabled-config preservation, serialization, and an actual damaged enchanted
+cosmetic sword sale/purchase round trip in a Minecraft server.
+
 # 1.1.33-fabric.26.3-preservation.1
 
 Adds configurable preservation of item data to the EMC shop. Named items,

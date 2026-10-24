@@ -6,9 +6,9 @@ It is designed for **Minecraft 26.3** with **Fabric**. The goal is to make EMC u
 
 ## Current version
 
-**1.1.33-fabric.26.3-preservation.1**
+**1.1.33-fabric.26.3-preservation.2**
 
-[Download the current Minecraft 26.3 JAR](downloads/projecte-fabric-26.3-1.1.33-fabric.26.3-preservation.1.jar?raw=true)
+[Download the current Minecraft 26.3 JAR](downloads/projecte-fabric-26.3-1.1.33-fabric.26.3-preservation.2.jar?raw=true)
 
 Install Fabric Loader and Fabric API for Minecraft 26.3. Close Minecraft, remove
 any previous ProjectEF JAR, and place the downloaded JAR in `mods/`. Install the
@@ -57,7 +57,12 @@ With preservation enabled, each distinct item configuration must be learned
 separately. Learning an enchanted sword does not unlock its ordinary version.
 Custom names, enchantments, potion effects, model identity and other data
 components survive learning, purchasing and world restarts. Matching variants
-are deduplicated. Cosmetic variants such as ItemBound equipment keep their
+are deduplicated. Durability wear is always ignored: different damage levels do
+not create different learned entries, and purchases return undamaged items.
+Existing wear-only duplicates are merged when the account is opened; ordinary
+tools become ordinary learned items while enchanted/named/cosmetic versions
+remain separate. This cleanup preserves balances and other saved components,
+even when preservation switches are temporarily disabled. Cosmetic variants such as ItemBound equipment keep their
 underlying item's EMC value; existing enchantment adjustments still apply.
 
 The individual switches remove their named properties when learning or

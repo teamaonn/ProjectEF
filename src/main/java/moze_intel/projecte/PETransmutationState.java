@@ -111,9 +111,40 @@ public final class PETransmutationState extends SavedData {
         return player.level().getServer().overworld().getDataStorage().computeIfAbsent(TYPE);
     }
     private Account account(ServerPlayer player) {
-        Account current = accounts.getOrDefault(player.getUUID().toString(), new Account(0, List.of()));
-        List<String> allowed = current.learned().stream().filter(id -> !PEEmcBlacklist.contains(id)).toList();
-        return allowed.size() == current.learned().size() ? current : new Account(current.balance(), allowed, current.variants());
+        String id = player.getUUID().toString();
+        Account current = accounts.getOrDefault(id, new Account(0, List.of()));
+        Account normalized = normalizeDurability(current);
+        if (normalized != current) {
+            accounts.put(id, normalized);
+            setDirty();
+        }
+        return normalized;
+    }
+
+    /** Upgrade old learned records without stripping data covered by disabled config switches. */
+    private static Account normalizeDurability(Account current) {
+        Set<String> known = new LinkedHashSet<>(current.learned());
+        Set<ItemStack> variants = net.minecraft.world.item.ItemStackLinkedSet.createTypeAndComponentsSet();
+        boolean changed = false;
+        for (ItemStack saved : current.variants()) {
+            if (saved.isEmpty()) {
+                changed = true;
+                continue;
+            }
+            ItemStack canonical = PEPreservationConfig.withoutDurability(saved);
+            if (!ItemStack.matches(saved, canonical)) changed = true;
+            if (ItemStack.isSameItemSameComponents(canonical, new ItemStack(canonical.getItem()))) {
+                // A durability-only variant is the ordinary item, not a separate learned entry.
+                known.add(BuiltInRegistries.ITEM.getKey(canonical.getItem()).toString());
+                changed = true;
+            } else if (!variants.add(canonical)) {
+                changed = true;
+            }
+        }
+        known.removeIf(PEEmcBlacklist::contains);
+        List<String> learned = List.copyOf(known);
+        if (!learned.equals(current.learned())) changed = true;
+        return changed ? new Account(current.balance(), learned, List.copyOf(variants)) : current;
     }
     public static boolean deposit(MinecraftServer server, UUID owner, long unit, int quantity) {
         if (unit <= 0 || quantity <= 0 || unit > (Long.MAX_VALUE / quantity)) return false;

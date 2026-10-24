@@ -51,9 +51,17 @@ public final class PEPreservationConfig {
         return result;
     }
 
-    /** Normalize only the configured properties; retain all other components. */
-    public static net.minecraft.world.item.ItemStack exemplar(net.minecraft.world.item.ItemStack source) {
+    /** Wear never identifies a learned item; purchases use its ordinary undamaged state. */
+    public static net.minecraft.world.item.ItemStack withoutDurability(net.minecraft.world.item.ItemStack source) {
         var stack = source.copyWithCount(1);
+        restore(stack, new net.minecraft.world.item.ItemStack(source.getItem()),
+                net.minecraft.core.component.DataComponents.DAMAGE);
+        return stack;
+    }
+
+    /** Normalize configured properties and always ignore durability wear. */
+    public static net.minecraft.world.item.ItemStack exemplar(net.minecraft.world.item.ItemStack source) {
+        var stack = withoutDurability(source);
         var defaults = new net.minecraft.world.item.ItemStack(source.getItem());
         if (!customNames()) restore(stack, defaults, net.minecraft.core.component.DataComponents.CUSTOM_NAME);
         if (!enchantments()) {
