@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "moze_intel.projecte.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "PhilosopherRemainderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

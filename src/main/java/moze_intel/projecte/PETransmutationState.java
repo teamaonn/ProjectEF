@@ -51,12 +51,13 @@ public final class PETransmutationState extends SavedData {
         }
     }
 
-    private record Account(long balance, List<String> learned, List<ItemStack> variants) {
-        Account(long balance, List<String> learned) { this(balance, learned, List.of()); }
+    private record Account(long balance, List<String> learned, List<ItemStack> variants, List<String> favorites) {
+        Account(long balance, List<String> learned) { this(balance, learned, List.of(), List.of()); }
         static final Codec<Account> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.LONG.fieldOf("balance").forGetter(Account::balance),
                 Codec.STRING.listOf().fieldOf("learned").forGetter(Account::learned),
-                ItemStack.CODEC.listOf().optionalFieldOf("variants", List.of()).forGetter(Account::variants)
+                ItemStack.CODEC.listOf().optionalFieldOf("variants", List.of()).forGetter(Account::variants),
+                Codec.STRING.listOf().optionalFieldOf("favorites", List.of()).forGetter(Account::favorites)
         ).apply(instance, Account::new));
     }
     private static final Codec<PETransmutationState> CODEC = Codec.unboundedMap(Codec.STRING, Account.CODEC)
@@ -144,7 +145,7 @@ public final class PETransmutationState extends SavedData {
         known.removeIf(PEEmcBlacklist::contains);
         List<String> learned = List.copyOf(known);
         if (!learned.equals(current.learned())) changed = true;
-        return changed ? new Account(current.balance(), learned, List.copyOf(variants)) : current;
+        return changed ? new Account(current.balance(), learned, List.copyOf(variants), remapFavorites(current, learned, List.copyOf(variants))) : current;
     }
     public static boolean deposit(MinecraftServer server, UUID owner, long unit, int quantity) {
         if (unit <= 0 || quantity <= 0 || unit > (Long.MAX_VALUE / quantity)) return false;
@@ -152,7 +153,7 @@ public final class PETransmutationState extends SavedData {
         String id = owner.toString();
         Account current = state.accounts.getOrDefault(id, new Account(0, List.of()));
         if (current.balance() > Long.MAX_VALUE - unit * quantity) return false;
-        state.accounts.put(id, new Account(current.balance() + unit * quantity, current.learned(), current.variants()));
+        state.accounts.put(id, new Account(current.balance() + unit * quantity, current.learned(), current.variants(), current.favorites()));
         state.setDirty();
         return true;
     }
@@ -169,36 +170,28 @@ public final class PETransmutationState extends SavedData {
                 && PERegistries.isTransmutationTable(player.level().getBlockState(pos).getBlock());
     }
     public static void open(ServerPlayer player, boolean tablet, long position) {
-        if (access(player, tablet, position)) sync(player, tablet, position);
+        if (!access(player, tablet, position)) return;
+        player.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inventory, owner) ->
+                new TransmutationMenu(id, inventory, tablet, position), net.minecraft.network.chat.Component.literal(tablet ? "Transmutation Tablet" : "Transmutation Table")));
+        sync(player, tablet, position);
     }
     public static void action(ServerPlayer player, PEPackets.Action request) {
         if (!access(player, request.tablet(), request.position())) return;
         PETransmutationState state = state(player);
         Account current = state.account(player);
-        if ("sell".equals(request.command())) {
+        if (!(player.containerMenu instanceof TransmutationMenu menu) || menu.tablet != request.tablet() || menu.position != request.position()) return;
+        if ("favorite".equals(request.command())) {
+            String key = request.item();
+            boolean known = current.learned().contains(key);
+            if (key.startsWith("variant:")) try { int i = Integer.parseInt(key.substring(8)); known = i >= 0 && i < current.variants().size(); } catch (NumberFormatException ignored) {}
+            if (!known) return;
+            List<String> favorites = new java.util.ArrayList<>(current.favorites());
+            if (!favorites.remove(key) && favorites.size() < 64) favorites.add(key);
+            state.update(player, new Account(current.balance(), current.learned(), current.variants(), List.copyOf(favorites)));
+        } else if ("sell".equals(request.command())) {
             int slot = request.slot();
-            if (slot < 0 || slot >= player.getInventory().getContainerSize()) return;
-            ItemStack stack = player.getInventory().getItem(slot);
-            String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            if (PEEmcBlacklist.contains(id)) return;
-            long unit = PEEmcOverrides.forPlayer(player).value(stack);
-            int quantity = Math.min(stack.getCount(), Math.max(1, Math.min(request.count(), 64)));
-            if (unit > 0 && quantity > 0 && plain(stack)
-                    && unit <= (Long.MAX_VALUE - current.balance()) / quantity) {
-                Set<String> known = new LinkedHashSet<>(current.learned());
-                List<ItemStack> variants = new java.util.ArrayList<>(current.variants());
-                if (!sellOnlyMap(stack) && !containsStoredItems(stack)) {
-                    ItemStack exemplar = PEPreservationConfig.exemplar(stack);
-                    boolean distinct = PEPreservationConfig.enabled() && !ItemStack.isSameItemSameComponents(exemplar, new ItemStack(exemplar.getItem()));
-                    if (distinct) {
-                        // Do not grant the plain item merely by learning a modified version.
-                        boolean alreadyKnown = variants.stream().anyMatch(saved -> ItemStack.isSameItemSameComponents(PEPreservationConfig.exemplar(saved), exemplar));
-                        if (!alreadyKnown && variants.size() < 4096) variants.add(exemplar);
-                    } else known.add(id);
-                }
-                state.update(player, new Account(current.balance() + unit * quantity, List.copyOf(known), List.copyOf(variants)));
-                stack.shrink(quantity);
-            }
+            if (slot < 0 || slot >= 36) return;
+            sellStack(player, player.getInventory().getItem(slot), request.count());
         } else if ("buy".equals(request.command())) {
             ItemStack exemplar;
             if (request.item().startsWith("variant:")) {
@@ -222,7 +215,7 @@ public final class PETransmutationState extends SavedData {
             int quantity = Math.min(Math.max(1, Math.min(request.count(), 64)), exemplar.getMaxStackSize());
             if (unit <= 0 || quantity <= 0 || unit > current.balance() / quantity) return;
             ItemStack stack = exemplar.copyWithCount(quantity);
-            state.update(player, new Account(current.balance() - unit * quantity, current.learned(), current.variants()));
+            state.update(player, new Account(current.balance() - unit * quantity, current.learned(), current.variants(), current.favorites()));
             if (!player.getInventory().add(stack)) {
                 player.level().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(
                         player.level(), player.getX(), player.getY(), player.getZ(), stack));
@@ -230,11 +223,50 @@ public final class PETransmutationState extends SavedData {
         }
         sync(player, request.tablet(), request.position());
     }
-    private static void sync(ServerPlayer player, boolean tablet, long position) {
+    public static void sellStack(ServerPlayer player, ItemStack stack, int count) {
+        PETransmutationState state = state(player);
+        Account current = state.account(player);
+            String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            if (PEEmcBlacklist.contains(id)) return;
+            long unit = PEEmcOverrides.forPlayer(player).value(stack);
+            int quantity = Math.min(stack.getCount(), Math.max(1, Math.min(count, 64)));
+            if (unit > 0 && quantity > 0 && plain(stack)
+                    && unit <= (Long.MAX_VALUE - current.balance()) / quantity) {
+                Set<String> known = new LinkedHashSet<>(current.learned());
+                List<ItemStack> variants = new java.util.ArrayList<>(current.variants());
+                if (!sellOnlyMap(stack) && !containsStoredItems(stack)) {
+                    ItemStack exemplar = PEPreservationConfig.exemplar(stack);
+                    boolean distinct = PEPreservationConfig.enabled() && !ItemStack.isSameItemSameComponents(exemplar, new ItemStack(exemplar.getItem()));
+                    if (distinct) {
+                        // Do not grant the plain item merely by learning a modified version.
+                        boolean alreadyKnown = variants.stream().anyMatch(saved -> ItemStack.isSameItemSameComponents(PEPreservationConfig.exemplar(saved), exemplar));
+                        if (!alreadyKnown && variants.size() < 4096) variants.add(exemplar);
+                    } else known.add(id);
+                }
+                state.update(player, new Account(current.balance() + unit * quantity, List.copyOf(known), List.copyOf(variants), current.favorites()));
+                stack.shrink(quantity);
+            }
+
+    }
+    private static List<String> remapFavorites(Account old, List<String> learned, List<ItemStack> variants) {
+        Set<String> result = new LinkedHashSet<>();
+        for (String key : old.favorites()) {
+            if (!key.startsWith("variant:")) { if (learned.contains(key)) result.add(key); continue; }
+            try {
+                int index = Integer.parseInt(key.substring(8));
+                if (index < 0 || index >= old.variants().size()) continue;
+                ItemStack canonical = PEPreservationConfig.withoutDurability(old.variants().get(index));
+                if (ItemStack.isSameItemSameComponents(canonical, new ItemStack(canonical.getItem()))) result.add(BuiltInRegistries.ITEM.getKey(canonical.getItem()).toString());
+                else for (int i = 0; i < variants.size(); i++) if (ItemStack.isSameItemSameComponents(canonical, variants.get(i))) { result.add("variant:" + i); break; }
+            } catch (NumberFormatException ignored) {}
+        }
+        return List.copyOf(result);
+    }
+    public static void sync(ServerPlayer player, boolean tablet, long position) {
         Account account = state(player).account(player);
         if (ServerPlayNetworking.canSend(player, PEPackets.Snapshot.TYPE))
             ServerPlayNetworking.send(player, new PEPackets.Snapshot(tablet, position, account.balance(), account.learned(),
                     PEEmcOverrides.forPlayer(player).snapshot(),
-                    PEPreservationConfig.enabled() ? account.variants().stream().map(PEPreservationConfig::exemplar).toList() : List.of()));
+                    PEPreservationConfig.enabled() ? account.variants().stream().map(PEPreservationConfig::exemplar).toList() : List.of(), account.favorites()));
     }
 }

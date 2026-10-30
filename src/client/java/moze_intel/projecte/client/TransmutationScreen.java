@@ -19,7 +19,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-public class TransmutationScreen extends Screen {
+public class TransmutationScreen extends net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<moze_intel.projecte.TransmutationMenu> {
     private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("projecte", "textures/gui/transmute.png");
     // ProjectE's sixteen output positions from TransmutationContainer (1.21.1).
     private static final int[][] ICONS = {{158,9},{176,13},{193,30},{199,50},
@@ -27,25 +27,28 @@ public class TransmutationScreen extends Screen {
             {123,30},{140,13},{158,31},{177,50},{158,69},{139,50}};
     private static String rememberedSearch = "";
     private static int rememberedPage;
-    private final boolean tablet;
-    private final long position;
-    private final long balance;
-    private final List<String> learned;
-    private final Map<String, Long> prices;
-    private final List<ItemStack> variants;
+    private boolean tablet;
+    private long position;
+    private long balance;
+    private List<String> learned = List.of();
+    private Map<String, Long> prices = Map.of();
+    private List<ItemStack> variants = List.of();
+    private List<String> favorites = List.of();
+    private boolean favoritesOnly;
+    private boolean sweeping;
+    private final java.util.Set<Integer> sweptSlots = new java.util.HashSet<>();
     private List<String> filtered = List.of();
     private EditBox search;
     private int page, left, top;
 
-    public TransmutationScreen(PEPackets.Snapshot snapshot) {
-        super(Component.literal(snapshot.tablet() ? "Transmutation Tablet" : "Transmutation Table"));
-        tablet = snapshot.tablet();
-        position = snapshot.position();
-        balance = snapshot.balance();
-        learned = snapshot.learned();
-        prices = snapshot.prices();
-        variants = snapshot.variants();
+    public TransmutationScreen(moze_intel.projecte.TransmutationMenu menu, net.minecraft.world.entity.player.Inventory inventory, Component title) {
+        super(menu, inventory, title, 228, 196);
         page = rememberedPage;
+    }
+    public void update(PEPackets.Snapshot snapshot) {
+        tablet = snapshot.tablet(); position = snapshot.position(); balance = snapshot.balance();
+        learned = snapshot.learned(); prices = snapshot.prices(); variants = snapshot.variants(); favorites = snapshot.favorites();
+        refreshList();
     }
     private long value(String id) { return moze_intel.projecte.PEEmcBlacklist.contains(id) ? 0 : prices.getOrDefault(id, PETransmutationState.value(id)); }
 
@@ -75,8 +78,9 @@ public class TransmutationScreen extends Screen {
     }
 
     @Override protected void init() {
-        left = (width - 228) / 2;
-        top = (height - 196) / 2;
+        super.init();
+        left = leftPos;
+        top = topPos;
         search = addRenderableWidget(new EditBox(font, left + 83, top + 8, 55, 12, Component.literal("Search")));
         search.setValue(rememberedSearch);
         search.setResponder(value -> { rememberedSearch = value; page = 0; refreshList(); });
@@ -94,51 +98,34 @@ public class TransmutationScreen extends Screen {
             ItemStack stack = variants.get(i);
             if (label(stack).toLowerCase(Locale.ROOT).contains(query)) matches.add("variant:" + i);
         }
+        if (favoritesOnly) matches.removeIf(key -> !favorites.contains(key));
+        matches.sort(java.util.Comparator.comparingInt(key -> favorites.contains(key) ? 0 : 1));
         filtered = matches;
         page = Math.max(0, Math.min(page, Math.max(0, (matches.size() - 1) / ICONS.length)));
         rememberedPage = page;
     }
 
-    @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    @Override protected void extractLabels(GuiGraphicsExtractor graphics, int x, int y) {}
+    @Override public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, left, top, 0, 0, 228, 196, 256, 256);
-        // Screen extracts its widgets before this textured panel. Extract search again above it.
-        search.extractWidgetRenderState(graphics, mouseX, mouseY, partialTick);
-        if (page > 0) graphics.text(font, "<", left + 129, top + 102, 0xFF404040, false);
-        if ((page + 1) * ICONS.length < filtered.size())
-            graphics.text(font, ">", left + 197, top + 102, 0xFF404040, false);
         graphics.text(font, tablet ? "Tablet" : "Transmutation", left + 6, top + 8, 0xFF404040, false);
         graphics.text(font, "EMC: " + balance, left + 6, top + 100, 0xFF404040, false);
-        if (Minecraft.getInstance().player != null) {
-            var inventory = Minecraft.getInstance().player.getInventory();
-            for (int i = 0; i < 36; i++) {
-                int slot = i < 27 ? i + 9 : i - 27;
-                ItemStack stack = inventory.getItem(slot);
-                int x = left + 35 + (i % 9) * 18, y = inventoryY(i);
-                if (!stack.isEmpty()) {
-                    graphics.item(stack, x, y);
-                    graphics.itemDecorations(font, stack, x, y);
-                    if (inside(mouseX, mouseY, x, y, 18)) {
-                        String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-                        long amount = PETransmutationState.valueWithUpgrades(stack, value(id));
-                        graphics.setTooltipForNextFrame(font, Component.literal(
-                                label(stack) + " · " +
-                                        (amount == 0 ? "No EMC value" :
-                                                !PETransmutationState.plain(stack) ? "Modified item: cannot sell" :
-                                                        amount + " EMC each (click to sell)")),
-                                mouseX, mouseY);
-                    }
-                }
-            }
-        }
+        graphics.fill(left + 41, top + 43, left + 59, top + 61, 0xFF777777);
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
+        // The real input item is extracted by AbstractContainerScreen after this background.
+        graphics.text(font, "Deposit", left + 8, top + 65, 0xFF404040, false);
+        graphics.text(font, favoritesOnly ? "[Favorites]" : "[All]", left + 6, top + 84, 0xFF404040, false);
+        if (page > 0) graphics.text(font, "<", left + 129, top + 102, 0xFF404040, false);
+        if ((page + 1) * ICONS.length < filtered.size()) graphics.text(font, ">", left + 197, top + 102, 0xFF404040, false);
         for (int i = 0; i < ICONS.length && page * ICONS.length + i < filtered.size(); i++) {
             String id = filtered.get(page * ICONS.length + i);
             int x = left + ICONS[i][0], y = top + ICONS[i][1];
             ItemStack stack = exemplar(id);
             graphics.item(stack, x, y);
+            if (favorites.contains(id)) graphics.text(font, "*", x + 11, y - 3, 0xFFFFAA00, false);
             if (inside(mouseX, mouseY, x, y, 17))
                 graphics.setTooltipForNextFrame(font,
-                        Component.literal(label(stack) + " · " + price(stack) + " EMC"),
+                        Component.literal(label(stack) + " · " + price(stack) + " EMC · Middle click: favorite"),
                         mouseX, mouseY);
         }
     }
@@ -148,7 +135,6 @@ public class TransmutationScreen extends Screen {
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (super.mouseClicked(event, doubleClick)) return true;
         double mouseX = event.x(), mouseY = event.y();
         int button = event.button();
         if (page > 0 && inside(mouseX, mouseY, left + 125, top + 100, 14)) {
@@ -158,28 +144,35 @@ public class TransmutationScreen extends Screen {
                 && inside(mouseX, mouseY, left + 193, top + 100, 14)) {
             page++; refreshList(); return true;
         }
-        if (Minecraft.getInstance().player != null) {
-            var inventory = Minecraft.getInstance().player.getInventory();
-            for (int i = 0; i < 36; i++) {
-                int slot = i < 27 ? i + 9 : i - 27;
-                int x = left + 35 + (i % 9) * 18, y = top + 117 + (i / 9) * 18;
-                ItemStack stack = inventory.getItem(slot);
-                if (inside(mouseX, mouseY, x, y, 18) && !stack.isEmpty()) {
-                    String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-                    if (PETransmutationState.valueWithUpgrades(stack, value(id)) > 0 && PETransmutationState.plain(stack))
-                        send("sell", slot, "", button == 1 ? 1 : stack.getCount());
-                    return true;
-                }
-            }
+        if (mouseX >= left + 5 && mouseX < left + 75 && mouseY >= top + 81 && mouseY < top + 95) {
+            favoritesOnly = !favoritesOnly; page = 0; refreshList(); return true;
+        }
+        // Shift-drag sells each visited inventory stack once. Ordinary dragging stays vanilla.
+        if ((event.modifiers() & 1) != 0 && button == 0 && mouseY >= top + 117) {
+            sweeping = true; sweptSlots.clear(); sweep(mouseX, mouseY); return true;
         }
         for (int i = 0; i < ICONS.length && page * ICONS.length + i < filtered.size(); i++) {
             int x = left + ICONS[i][0], y = top + ICONS[i][1];
             if (inside(mouseX, mouseY, x, y, 17)) {
-                send("buy", 0, filtered.get(page * ICONS.length + i), button == 1 ? 64 : 1);
+                send(button == 2 ? "favorite" : "buy", 0, filtered.get(page * ICONS.length + i), button == 1 || (event.modifiers() & 1) != 0 ? 64 : 1);
                 return true;
             }
         }
-        return false;
+        return super.mouseClicked(event, doubleClick);
+    }
+    private void sweep(double x, double y) {
+        for (int i = 0; i < 36; i++) {
+            int slot = i < 27 ? i + 9 : i - 27;
+            if (inside(x, y, left + 35 + i % 9 * 18, inventoryY(i), 18) && sweptSlots.add(slot)) send("sell", slot, "", 64);
+        }
+    }
+    @Override public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (sweeping) { sweep(event.x(), event.y()); return true; }
+        return super.mouseDragged(event, dx, dy);
+    }
+    @Override public boolean mouseReleased(MouseButtonEvent event) {
+        if (sweeping) { sweeping = false; sweptSlots.clear(); return true; }
+        return super.mouseReleased(event);
     }
 
     private void send(String command, int slot, String id, int count) {

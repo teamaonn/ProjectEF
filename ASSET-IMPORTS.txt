@@ -1,0 +1,2 @@
+Missing item textures, models, translations and crafting recipes restored from sinkillerj/ProjectE (mc1.21.1). Original MIT licensing and attribution apply. Recipes adapted to Minecraft 26.3 ingredient syntax. Existing port-specific recipes and visuals preserved.
+Upstream revision: f432b0c66837759fb0731c9144dc53176b949c5d

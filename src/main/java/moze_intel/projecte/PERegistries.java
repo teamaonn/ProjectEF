@@ -16,6 +16,7 @@ import net.minecraft.world.level.material.MapColor;
 
 public final class PERegistries {
 
+    public static net.minecraft.world.inventory.MenuType<TransmutationMenu> TRANSMUTATION_MENU;
     private static final Map<String, Item> ITEMS = new LinkedHashMap<>();
     private static final Map<String, Block> BLOCKS = new LinkedHashMap<>();
     private static Block transmutationTable;
@@ -30,8 +31,12 @@ public final class PERegistries {
     }
 
     public static void register() {
+        TRANSMUTATION_MENU = Registry.register(BuiltInRegistries.MENU, PECore.id("transmutation"), new net.minecraft.world.inventory.MenuType<>(TransmutationMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
         registerItems();
         registerBlocks();
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, PECore.id("projectef"), net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab.builder()
+                .title(net.minecraft.network.chat.Component.literal("ProjectEF")).icon(() -> new net.minecraft.world.item.ItemStack(transmutationTablet))
+                .displayItems((parameters, output) -> { ITEMS.values().forEach(output::accept); BLOCKS.values().forEach(output::accept); }).build());
     }
 
     private static void registerItems() {
@@ -134,7 +139,16 @@ public final class PERegistries {
 
     private static Item simpleItem(String name, Function<Item.Properties, Item.Properties> properties) {
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, PECore.id(name));
-        Item item = new Item(properties.apply(new Item.Properties().setId(key)));
+        Item.Properties settings = properties.apply(new Item.Properties().setId(key));
+        Item item;
+        if (name.equals("philosophers_stone")) item = new PhilosophersStoneItem(settings);
+        else if (name.matches("[dr]m_(pick|axe|shovel|sword|hoe|shears|hammer|katar|morning_star)")) item = new MatterToolItem(settings, name.substring(3), name.startsWith("rm_"));
+        else if (name.matches("(dm|rm|gem)_(helmet|chestplate|leggings|boots)")) {
+            var type = switch(name.substring(name.indexOf('_') + 1)) { case "helmet" -> net.minecraft.world.item.equipment.ArmorType.HELMET; case "chestplate" -> net.minecraft.world.item.equipment.ArmorType.CHESTPLATE; case "leggings" -> net.minecraft.world.item.equipment.ArmorType.LEGGINGS; default -> net.minecraft.world.item.equipment.ArmorType.BOOTS; };
+            var base = net.minecraft.world.item.equipment.ArmorMaterials.NETHERITE;
+            var material = new net.minecraft.world.item.equipment.ArmorMaterial(1000, java.util.Map.of(net.minecraft.world.item.equipment.ArmorType.HELMET, 3, net.minecraft.world.item.equipment.ArmorType.CHESTPLATE, 8, net.minecraft.world.item.equipment.ArmorType.LEGGINGS, 6, net.minecraft.world.item.equipment.ArmorType.BOOTS, 3), 10, base.equipSound(), name.startsWith("dm_") ? 3 : 5, .1f, base.repairIngredient(), ResourceKey.create(net.minecraft.world.item.equipment.EquipmentAssets.ROOT_ID, PECore.id(name.startsWith("dm_") ? "dark_matter" : name.startsWith("rm_") ? "red_matter" : "gem_armor")));
+            item = new Item(settings.humanoidArmor(material, type).component(net.minecraft.core.component.DataComponents.UNBREAKABLE, net.minecraft.util.Unit.INSTANCE));
+        } else item = new Item(settings);
         Registry.register(BuiltInRegistries.ITEM, key, item);
         ITEMS.put(name, item);
         return item;
