@@ -14,10 +14,17 @@ public final class StoneControls {
  public static void register(){
   var category=KeyMapping.Category.register(PECore.id("stone"));
   var charge=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_charge",InputConstants.KEY_V,category));
-  var lower=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_lower",-1,category));
+  var lower=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_lower",InputConstants.UNKNOWN.getValue(),category));
   var fire=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_fire",InputConstants.KEY_R,category));
   var craft=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_craft",InputConstants.KEY_C,category));
   var mode=KeyMappingHelper.registerKeyMapping(new KeyMapping("key.projecte.stone_mode",InputConstants.KEY_G,category));
+  // Options are loaded after mod client initializers. Repair the invalid sentinel saved by 1.2.2.
+  net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STARTED.register(client->{
+   var key=KeyMappingHelper.getBoundKeyOf(lower);
+   if(key.getType()==InputConstants.Type.KEYBOARD&&key.getValue()<0){
+    lower.setKey(InputConstants.UNKNOWN);KeyMapping.resetMapping();
+   }
+  });
   ClientTickEvents.END_CLIENT_TICK.register(client->{
    while(charge.consumeClick())send(client,client.player!=null&&client.player.isShiftKeyDown()?1:0);
    while(lower.consumeClick())send(client,1);

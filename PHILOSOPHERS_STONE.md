@@ -60,3 +60,6 @@ recipe remain available.
 This follows the EE2 Stone behavior described at:
 https://ftb.fandom.com/wiki/Philosopher%27s_Stone_(Equivalent_Exchange_2)
 Modern wood variants and cube/panel/line controls are adaptations for this port.
+
+Version 1.2.3 corrects the SDL unbound-key sentinel and repairs the invalid
+negative Lower Stone Charge binding saved by version 1.2.2 on client startup.
