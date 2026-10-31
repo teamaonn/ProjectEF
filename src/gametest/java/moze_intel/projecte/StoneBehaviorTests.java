@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 public final class StoneBehaviorTests {
  @GameTest
  public void alternateConversions(GameTestHelper h){
+  h.assertTrue(PhilosophersStoneItem.transform(Blocks.OBSIDIAN,false)==Blocks.LAVA,"obsidian to lava");
+  h.assertTrue(PhilosophersStoneItem.transform(Blocks.OBSIDIAN,true)==Blocks.LAVA,"sneaking obsidian to lava");
   h.assertTrue(PhilosophersStoneItem.transform(Blocks.STONE,true)==Blocks.GRASS_BLOCK,"sneaking stone to grass");
   h.assertTrue(PhilosophersStoneItem.transform(Blocks.COBBLESTONE,true)==Blocks.GRASS_BLOCK,"sneaking cobble to grass");
   h.assertTrue(PhilosophersStoneItem.transform(Blocks.GLASS,true)==Blocks.SAND,"sneaking glass to sand");

@@ -56,6 +56,7 @@ public final class PhilosophersStoneItem extends Item {
   if(block==Blocks.DANDELION)return Blocks.POPPY;if(block==Blocks.POPPY)return Blocks.DANDELION;
   if(block==Blocks.RED_MUSHROOM)return Blocks.BROWN_MUSHROOM;if(block==Blocks.BROWN_MUSHROOM)return Blocks.RED_MUSHROOM;
   if(block==Blocks.WATER)return Blocks.ICE;if(block==Blocks.LAVA)return Blocks.OBSIDIAN;
+  if(block==Blocks.OBSIDIAN)return Blocks.LAVA;
   for(var cycle:CYCLES){int i=cycle.indexOf(block);if(i>=0)return cycle.get(Math.floorMod(i+(reverse?-1:1),cycle.size()));}
   return null;
  }

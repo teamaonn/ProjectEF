@@ -38,6 +38,7 @@ are skipped. Log axes, leaf persistence and other shared block properties surviv
 | Red / brown mushroom | The other mushroom | The other mushroom |
 | Water source | Ice | Ice |
 | Lava source | Obsidian | Obsidian |
+| Obsidian | Lava source | Lava source |
 | Logs, wood, stripped logs/wood, leaves | Next wood family | Previous wood family |
 
 Wood cycles cover oak, birch, spruce, jungle, acacia, dark oak, mangrove, cherry
