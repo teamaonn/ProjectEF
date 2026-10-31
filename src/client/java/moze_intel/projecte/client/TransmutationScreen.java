@@ -1,6 +1,7 @@
 package moze_intel.projecte.client;
 
 import java.util.*;
+import com.mojang.blaze3d.platform.InputConstants;
 import moze_intel.projecte.*;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -57,6 +58,10 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         super.init();left=leftPos;top=topPos;
         search=addRenderableWidget(new EditBox(font,left+83,top+8,55,12,Component.literal("Search learned items")));
         search.setValue(rememberedSearch);search.setResponder(value->{rememberedSearch=value;page=0;refreshList();});refreshList();
+    }
+    @Override public boolean keyPressed(net.minecraft.client.input.KeyEvent event){
+        if(TransmutationInput.searchOwnsKey(search!=null&&search.isFocused(),event.key())){search.keyPressed(event);return true;}
+        return super.keyPressed(event);
     }
     private void refreshList(){
         String query=search==null?rememberedSearch:search.getValue();query=query.toLowerCase(Locale.ROOT);
@@ -117,16 +122,16 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         if(hit(x,y,8,84,8,8)&&favoritePage>0){favoritePage--;refreshList();return true;}
         if(hit(x,y,84,84,8,8)&&(favoritePage+1)*FAVORITES.length<favorites.size()){favoritePage++;refreshList();return true;}
         if(!menu.getCarried().isEmpty()&&favoriteCircle(x,y)){send("pin_carried",0,"",1);return true;}
-        if(menu.getCarried().isEmpty()&&button==0&&hit(x,y,89,97,16,16)&&menu.getSlot(1).getItem().isEmpty()&&selectedKey!=null){send("forget",0,selectedKey,knowledgeRevision);selectedKey=null;return true;}
+        if(menu.getCarried().isEmpty()&&button==InputConstants.MOUSE_BUTTON_LEFT&&hit(x,y,89,97,16,16)&&menu.getSlot(1).getItem().isEmpty()&&selectedKey!=null){send("forget",0,selectedKey,knowledgeRevision);selectedKey=null;return true;}
         String key=entry(x,y);
         if(key!=null&&menu.getCarried().isEmpty()){
             selectedKey=key;
-            if(button==2)send("favorite",0,key,1);
-            else if(button==1||(e.modifiers()&1)!=0)send("buy",0,key,64);
-            else if(button==0){dragKey=key;dragStartX=x;dragStartY=y;}
+            if(button==InputConstants.MOUSE_BUTTON_MIDDLE)send("favorite",0,key,1);
+            else if(TransmutationInput.purchaseCount(button,e.modifiers())==64)send("buy",0,key,64);
+            else if(button==InputConstants.MOUSE_BUTTON_LEFT){dragKey=key;dragStartX=x;dragStartY=y;}
             return true;
         }
-        if((e.modifiers()&1)!=0&&button==0&&inventorySlot(x,y)>=0){sweeping=true;sweptSlots.clear();sweep(x,y);return true;}
+        if((e.modifiers()&InputConstants.MOD_SHIFT)!=0&&button==InputConstants.MOUSE_BUTTON_LEFT&&inventorySlot(x,y)>=0){sweeping=true;sweptSlots.clear();sweep(x,y);return true;}
         return super.mouseClicked(e,twice);
     }
     private int inventorySlot(double x,double y){

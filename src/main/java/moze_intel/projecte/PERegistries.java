@@ -17,6 +17,8 @@ import net.minecraft.world.level.material.MapColor;
 public final class PERegistries {
 
     public static net.minecraft.world.inventory.MenuType<TransmutationMenu> TRANSMUTATION_MENU;
+    public static net.minecraft.world.inventory.MenuType<AlchemicalChestMenu> ALCHEMICAL_CHEST_MENU;
+    public static BlockEntityType<AlchemicalChestBlockEntity> ALCHEMICAL_CHEST_ENTITY;
     private static final Map<String, Item> ITEMS = new LinkedHashMap<>();
     private static final Map<String, Block> BLOCKS = new LinkedHashMap<>();
     private static Block transmutationTable;
@@ -32,6 +34,7 @@ public final class PERegistries {
 
     public static void register() {
         TRANSMUTATION_MENU = Registry.register(BuiltInRegistries.MENU, PECore.id("transmutation"), new net.minecraft.world.inventory.MenuType<>(TransmutationMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+        ALCHEMICAL_CHEST_MENU = Registry.register(BuiltInRegistries.MENU, PECore.id("alchemical_chest"), new net.minecraft.world.inventory.MenuType<>(AlchemicalChestMenu::new, net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
         registerItems();
         registerBlocks();
         Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, PECore.id("projectef"), net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab.builder()
@@ -76,6 +79,12 @@ public final class PERegistries {
     }
 
     private static void registerBlocks() {
+        var chestKey=ResourceKey.create(Registries.BLOCK,PECore.id("alchemical_chest"));
+        Block chest=new AlchemicalChestBlock(BlockBehaviour.Properties.of().setId(chestKey).strength(2.5f).sound(net.minecraft.world.level.block.SoundType.WOOD));
+        Registry.register(BuiltInRegistries.BLOCK,chestKey,chest);BLOCKS.put("alchemical_chest",chest);
+        var chestItemKey=ResourceKey.create(Registries.ITEM,PECore.id("alchemical_chest"));
+        Registry.register(BuiltInRegistries.ITEM,chestItemKey,new BlockItem(chest,new Item.Properties().setId(chestItemKey).useBlockDescriptionPrefix()));
+        ALCHEMICAL_CHEST_ENTITY=Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,PECore.id("alchemical_chest"),new BlockEntityType<>(AlchemicalChestBlockEntity::new,java.util.Set.of(chest)));
         block("alchemical_coal_block", fuelBlock(MapColor.COLOR_RED));
         block("mobius_fuel_block", fuelBlock(MapColor.COLOR_RED));
         block("aeternalis_fuel_block", fuelBlock(MapColor.COLOR_LIGHT_GRAY));
@@ -114,7 +123,7 @@ public final class PERegistries {
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, PECore.id(name));
         Block block = new EnergyCondenserBlock(properties.setId(blockKey));
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
-        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey)));
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey).useBlockDescriptionPrefix()));
         energyCondenser = block;
         BLOCKS.put(name, block);
         return block;
@@ -128,7 +137,7 @@ public final class PERegistries {
                 .lightLevel(state -> state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) ? 14 : 0)
                 .setId(blockKey));
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
-        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey).fireResistant()));
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey).useBlockDescriptionPrefix().fireResistant()));
         BLOCKS.put(name, block);
         return block;
     }
@@ -163,7 +172,7 @@ public final class PERegistries {
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, PECore.id(name));
         Block block = new Block(properties.setId(blockKey));
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
-        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties.apply(new Item.Properties().setId(itemKey))));
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties.apply(new Item.Properties().setId(itemKey).useBlockDescriptionPrefix())));
         BLOCKS.put(name, block);
         return block;
     }
@@ -173,7 +182,7 @@ public final class PERegistries {
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, PECore.id(name));
         Block block = new TransmutationTableBlock(properties.setId(blockKey));
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
-        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey)));
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey).useBlockDescriptionPrefix()));
         BLOCKS.put(name, block);
         return block;
     }

@@ -1,16 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
-  "pattern": [
-    "PGP",
-    "GIG",
-    "PGP"
-  ],
   "key": {
-    "P": "minecraft:ender_pearl",
-    "G": "minecraft:gold_ingot",
-    "I": "minecraft:iron_block"
+    "D": "projecte:dark_matter",
+    "I": "projecte:iron_band",
+    "S": "#c:strings"
   },
+  "pattern": [
+    "SSS",
+    "DID",
+    "SSS"
+  ],
   "result": {
     "count": 1,
     "id": "projecte:black_hole_band"

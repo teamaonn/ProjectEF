@@ -228,7 +228,9 @@ public final class PETransmutationState extends SavedData {
             if (PEEmcBlacklist.contains(exemplar)) return;
             long unit = PEEmcOverrides.forPlayer(player).value(exemplar);
             int quantity = Math.min(Math.max(1, Math.min(request.count(), 64)), exemplar.getMaxStackSize());
-            if (unit <= 0 || quantity <= 0 || unit > current.balance() / quantity) return;
+            if (unit <= 0) return;
+            quantity = (int)Math.min(quantity, current.balance() / unit);
+            if (quantity <= 0) return;
             ItemStack stack = exemplar.copyWithCount(quantity);
             state.update(player, new Account(current.balance() - unit * quantity, current.learned(), current.variants(), current.favorites()));
             if (!player.getInventory().add(stack)) {
