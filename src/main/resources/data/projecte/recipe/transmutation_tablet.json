@@ -2,16 +2,17 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "R": "minecraft:redstone",
-    "G": "minecraft:gold_ingot",
+    "D": "projecte:dark_matter_block",
+    "S": "#c:stones",
     "T": "projecte:transmutation_table"
   },
   "pattern": [
-    "RGR",
-    "GTG",
-    "RGR"
+    "DSD",
+    "STS",
+    "DSD"
   ],
   "result": {
+    "count": 1,
     "id": "projecte:transmutation_tablet"
   }
 }

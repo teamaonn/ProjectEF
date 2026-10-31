@@ -1,0 +1,4 @@
+Missing item textures, models, translations and crafting recipes restored from sinkillerj/ProjectE (mc1.21.1). Original MIT licensing and attribution apply. Recipes adapted to Minecraft 26.3 ingredient syntax. Existing port-specific recipes and visuals preserved.
+Upstream revision: f432b0c66837759fb0731c9144dc53176b949c5d
+
+1.2.5: Restored original ingredient patterns for the Black Hole Band, Iron Band, matter furnaces, table/tablet and condenser (retaining this port's energy_condenser ID). Added the original Alchemical Chest dependency with 104-slot storage, GUI texture and chest texture from the same upstream revision. EMC follows the restored ingredient costs, excluding reusable catalysts and returned buckets.

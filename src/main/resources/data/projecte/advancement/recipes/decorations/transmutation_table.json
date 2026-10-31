@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_ingredient": {
+    "has_philo_stone": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:diamond"
+            "items": "projecte:philosophers_stone"
           }
         ]
       },
@@ -13,15 +13,17 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": ["projecte:transmutation_table"]
+        "recipes": [
+          "projecte:transmutation_table"
+        ]
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_ingredient",
-      "has_the_recipe"
+      "has_the_recipe",
+      "has_philo_stone"
     ]
   ],
   "rewards": {

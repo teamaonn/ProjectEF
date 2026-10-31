@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_ingredient": {
+    "has_table": {
       "conditions": {
         "items": [
           {
@@ -13,15 +13,17 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": ["projecte:transmutation_tablet"]
+        "recipes": [
+          "projecte:transmutation_tablet"
+        ]
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_ingredient",
-      "has_the_recipe"
+      "has_the_recipe",
+      "has_table"
     ]
   ],
   "rewards": {

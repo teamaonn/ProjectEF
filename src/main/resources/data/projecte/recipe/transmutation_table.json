@@ -2,16 +2,17 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "O": "minecraft:obsidian",
-    "S": "minecraft:stone",
-    "D": "minecraft:diamond"
+    "O": "#c:obsidians/normal",
+    "P": "projecte:philosophers_stone",
+    "S": "#c:stones"
   },
   "pattern": [
     "OSO",
-    "SDS",
+    "SPS",
     "OSO"
   ],
   "result": {
+    "count": 1,
     "id": "projecte:transmutation_table"
   }
 }

@@ -10,9 +10,12 @@ import net.minecraft.world.InteractionResult;
 
 public class PEClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        StoneControls.register();
+        net.minecraft.client.gui.screens.MenuScreens.register(PERegistries.ALCHEMICAL_CHEST_MENU, AlchemicalChestScreen::new);
+        net.minecraft.client.gui.screens.MenuScreens.register(PERegistries.TRANSMUTATION_MENU, TransmutationScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(PEPackets.Snapshot.TYPE, (packet, context) ->
                 context.client().execute(() ->
-                        context.client().gui.setScreen(new TransmutationScreen(packet))));
+                        { if (context.client().gui.screen() instanceof TransmutationScreen screen) screen.update(packet); }));
         UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
             if (!level.isClientSide() || !PERegistries.isTransmutationTable(
                     level.getBlockState(hit.getBlockPos()).getBlock())) return InteractionResult.PASS;
