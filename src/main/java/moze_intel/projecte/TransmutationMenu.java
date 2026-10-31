@@ -12,10 +12,13 @@ public final class TransmutationMenu extends AbstractContainerMenu {
  public final long position;
  private final Player owner;
  private final SimpleContainer input=new SimpleContainer(1);
+ private final SimpleContainer forget=new SimpleContainer(1);
+ private ItemStack lastForget=ItemStack.EMPTY;
  public TransmutationMenu(int id,Inventory inventory){this(id,inventory,false,0);}
  public TransmutationMenu(int id,Inventory inventory,boolean tablet,long position){
   super(PERegistries.TRANSMUTATION_MENU,id);owner=inventory.player;this.tablet=tablet;this.position=position;
-  addSlot(new Slot(input,0,42,44));
+  addSlot(new Slot(input,0,107,97));
+  addSlot(new Slot(forget,0,89,97));
   for(int row=0;row<3;row++)for(int col=0;col<9;col++)addSlot(new Slot(inventory,col+row*9+9,35+col*18,117+row*18));
   for(int col=0;col<9;col++)addSlot(new Slot(inventory,col,35+col*18,175));
  }
@@ -25,13 +28,20 @@ public final class TransmutationMenu extends AbstractContainerMenu {
    ItemStack stack=input.getItem(0);int before=stack.getCount();PETransmutationState.sellStack(server,stack,before);
    if(stack.getCount()!=before){input.setChanged();PETransmutationState.sync(server,tablet,position);}
   }
+  if(owner instanceof ServerPlayer server && stillValid(owner)) {
+   ItemStack stack=forget.getItem(0);
+   if(!ItemStack.matches(stack,lastForget)) {
+    lastForget=stack.copy();
+    if(!stack.isEmpty() && PETransmutationState.forgetStack(server,stack))PETransmutationState.sync(server,tablet,position);
+   }
+  }
   super.broadcastChanges();
  }
  @Override public ItemStack quickMoveStack(Player player,int index){
   if(index<0||index>=slots.size())return ItemStack.EMPTY;
   Slot slot=slots.get(index);if(!slot.hasItem())return ItemStack.EMPTY;
   ItemStack stack=slot.getItem(),copy=stack.copy();
-  if(index==0){if(!moveItemStackTo(stack,1,slots.size(),true))return ItemStack.EMPTY;}
+  if(index<2){if(!moveItemStackTo(stack,2,slots.size(),true))return ItemStack.EMPTY;}
   else if(player instanceof ServerPlayer server){
    PETransmutationState.sellStack(server,stack,stack.getCount());
    if(stack.getCount()==copy.getCount())return ItemStack.EMPTY;
@@ -40,5 +50,5 @@ public final class TransmutationMenu extends AbstractContainerMenu {
   if(stack.isEmpty())slot.set(ItemStack.EMPTY);else slot.setChanged();
   return copy;
  }
- @Override public void removed(Player player){super.removed(player);if(player instanceof ServerPlayer)clearContainer(player,input);}
+ @Override public void removed(Player player){super.removed(player);if(player instanceof ServerPlayer){clearContainer(player,input);clearContainer(player,forget);}}
 }

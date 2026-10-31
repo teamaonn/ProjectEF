@@ -1,183 +1,152 @@
 package moze_intel.projecte.client;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import moze_intel.projecte.PEPackets;
-import moze_intel.projecte.PETransmutationState;
+import java.util.*;
+import moze_intel.projecte.*;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.*;
 
-public class TransmutationScreen extends net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<moze_intel.projecte.TransmutationMenu> {
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("projecte", "textures/gui/transmute.png");
-    // ProjectE's sixteen output positions from TransmutationContainer (1.21.1).
-    private static final int[][] ICONS = {{158,9},{176,13},{193,30},{199,50},
-            {193,70},{176,87},{158,91},{140,87},{123,70},{116,50},
-            {123,30},{140,13},{158,31},{177,50},{158,69},{139,50}};
-    private static String rememberedSearch = "";
-    private static int rememberedPage;
-    private boolean tablet;
-    private long position;
-    private long balance;
-    private List<String> learned = List.of();
-    private Map<String, Long> prices = Map.of();
-    private List<ItemStack> variants = List.of();
-    private List<String> favorites = List.of();
-    private boolean favoritesOnly;
-    private boolean sweeping;
-    private final java.util.Set<Integer> sweptSlots = new java.util.HashSet<>();
-    private List<String> filtered = List.of();
+public class TransmutationScreen extends AbstractContainerScreen<TransmutationMenu> {
+    private static final Identifier TEXTURE=PECore.id("textures/gui/transmute.png");
+    private static final int[][] LEARNED={{43,23},{34,41},{52,41},{16,50},{70,50},{34,59},{52,59},{43,77}};
+    private static final int[][] FAVORITES={{158,9},{176,13},{193,30},{199,50},{193,70},{176,87},{158,91},{140,87},{123,70},{116,50},{123,30},{140,13},{158,31},{177,50},{158,69},{139,50}};
+    private static String rememberedSearch="";
+    private static int rememberedPage,rememberedFavoritePage;
+    private boolean tablet,sweeping;
+    private long position,balance;
+    private int knowledgeRevision,page,favoritePage,left,top;
+    private List<String> learned=List.of(),favorites=List.of(),filtered=List.of();
+    private Map<String,Long> prices=Map.of();
+    private List<ItemStack> variants=List.of();
+    private final Set<Integer> sweptSlots=new HashSet<>();
     private EditBox search;
-    private int page, left, top;
+    private String dragKey,selectedKey;
+    private double dragStartX,dragStartY;
 
-    public TransmutationScreen(moze_intel.projecte.TransmutationMenu menu, net.minecraft.world.entity.player.Inventory inventory, Component title) {
-        super(menu, inventory, title, 228, 196);
-        page = rememberedPage;
+    public TransmutationScreen(TransmutationMenu menu,Inventory inventory,Component title){
+        super(menu,inventory,title,228,196);page=rememberedPage;favoritePage=rememberedFavoritePage;
     }
-    public void update(PEPackets.Snapshot snapshot) {
-        tablet = snapshot.tablet(); position = snapshot.position(); balance = snapshot.balance();
-        learned = snapshot.learned(); prices = snapshot.prices(); variants = snapshot.variants(); favorites = snapshot.favorites();
-        refreshList();
+    public void update(PEPackets.Snapshot snapshot){
+        if(knowledgeRevision!=snapshot.knowledgeRevision()){dragKey=null;selectedKey=null;}
+        tablet=snapshot.tablet();position=snapshot.position();balance=snapshot.balance();
+        knowledgeRevision=snapshot.knowledgeRevision();learned=snapshot.learned();prices=snapshot.prices();variants=snapshot.variants();
+        favorites=snapshot.favorites().stream().filter(this::known).toList();refreshList();
     }
-    private long value(String id) { return moze_intel.projecte.PEEmcBlacklist.contains(id) ? 0 : prices.getOrDefault(id, PETransmutationState.value(id)); }
-
-    private int inventoryY(int index) {
-        int row = index / 9;
-        return top + 117 + row * 18 + (row == 3 ? 4 : 0);
+    private boolean known(String key){
+        if(!key.startsWith("variant:"))return learned.contains(key);
+        try{int i=Integer.parseInt(key.substring(8));return i>=0&&i<variants.size();}catch(NumberFormatException invalid){return false;}
     }
-
-    private String label(ItemStack stack) {
-        StringBuilder text = new StringBuilder(stack.getHoverName().getString());
-        var enchantments = stack.getOrDefault(net.minecraft.core.component.DataComponents.ENCHANTMENTS,
-                net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
-        if (stack.is(net.minecraft.world.item.Items.ENCHANTED_BOOK))
-            enchantments = stack.getOrDefault(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS,
-                    net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
-        for (var entry : enchantments.entrySet())
-            text.append(" · ").append(entry.getKey().value().description().getString()).append(" ").append(entry.getIntValue());
+    private ItemStack exemplar(String key){return key.startsWith("variant:")?variants.get(Integer.parseInt(key.substring(8))):new ItemStack(BuiltInRegistries.ITEM.getValue(Identifier.parse(key)));}
+    private String label(ItemStack stack){
+        StringBuilder text=new StringBuilder(stack.getHoverName().getString());
+        var ench=stack.getOrDefault(net.minecraft.core.component.DataComponents.ENCHANTMENTS,net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        if(stack.is(Items.ENCHANTED_BOOK))ench=stack.getOrDefault(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS,net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        for(var e:ench.entrySet())text.append(" · ").append(e.getKey().value().description().getString()).append(" ").append(e.getIntValue());
         return text.toString();
     }
-    private ItemStack exemplar(String key) {
-        if (key.startsWith("variant:")) return variants.get(Integer.parseInt(key.substring(8)));
-        return new ItemStack(BuiltInRegistries.ITEM.getValue(Identifier.parse(key)));
+    private long price(ItemStack stack){String id=BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();return PETransmutationState.valueWithUpgrades(stack,PEEmcBlacklist.contains(id)?0:prices.getOrDefault(id,PETransmutationState.value(id)));}
+    @Override protected void init(){
+        super.init();left=leftPos;top=topPos;
+        search=addRenderableWidget(new EditBox(font,left+83,top+8,55,12,Component.literal("Search learned items")));
+        search.setValue(rememberedSearch);search.setResponder(value->{rememberedSearch=value;page=0;refreshList();});refreshList();
     }
-    private long price(ItemStack stack) {
-        return PETransmutationState.valueWithUpgrades(stack,
-                value(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()));
+    private void refreshList(){
+        String query=search==null?rememberedSearch:search.getValue();query=query.toLowerCase(Locale.ROOT);
+        List<String> matches=new ArrayList<>();
+        for(String id:learned)if(label(exemplar(id)).toLowerCase(Locale.ROOT).contains(query))matches.add(id);
+        for(int i=0;i<variants.size();i++)if(label(variants.get(i)).toLowerCase(Locale.ROOT).contains(query))matches.add("variant:"+i);
+        filtered=matches;page=Math.clamp(page,0,Math.max(0,(filtered.size()-1)/LEARNED.length));
+        favoritePage=Math.clamp(favoritePage,0,Math.max(0,(favorites.size()-1)/FAVORITES.length));
+        rememberedPage=page;rememberedFavoritePage=favoritePage;
     }
-
-    @Override protected void init() {
-        super.init();
-        left = leftPos;
-        top = topPos;
-        search = addRenderableWidget(new EditBox(font, left + 83, top + 8, 55, 12, Component.literal("Search")));
-        search.setValue(rememberedSearch);
-        search.setResponder(value -> { rememberedSearch = value; page = 0; refreshList(); });
-        refreshList();
+    @Override protected void extractLabels(GuiGraphicsExtractor g,int x,int y){}
+    @Override public void extractContents(GuiGraphicsExtractor g,int mouseX,int mouseY,float partial){
+        g.blit(RenderPipelines.GUI_TEXTURED,TEXTURE,left,top,0,0,228,196,256,256);
+        super.extractContents(g,mouseX,mouseY,partial);
+        g.text(font,"Learned",left+6,top+8,0xFF404040,false);
+        g.text(font,"EMC: "+balance,left+6,top+100,0xFF404040,false);
+        g.text(font,"Favorites "+(favoritePage+1)+"/"+Math.max(1,(favorites.size()+15)/16),left+139,top+108,0xFF404040,false);
+        if(favoritePage>0)g.text(font,"<",left+116,top+108,0xFF404040,false);
+        if((favoritePage+1)*16<favorites.size())g.text(font,">",left+215,top+108,0xFF404040,false);
+        draw(g,mouseX,mouseY,filtered,page,LEARNED,false);
+        draw(g,mouseX,mouseY,favorites,favoritePage,FAVORITES,true);
+        if(hit(mouseX,mouseY,107,97,16,16))tip(g,"Deposit items for EMC",mouseX,mouseY);
+        else if(hit(mouseX,mouseY,89,97,16,16))tip(g,"Forget: drag a learned icon here, or place an item to forget its exact variant. Physical items are returned.",mouseX,mouseY);
     }
-
-    private void refreshList() {
-        String query = search == null ? "" : search.getValue().toLowerCase(Locale.ROOT);
-        List<String> matches = new ArrayList<>();
-        for (String id : learned) {
-            Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id));
-            if (item.getName(new ItemStack(item)).getString().toLowerCase(Locale.ROOT).contains(query)) matches.add(id);
-        }
-        for (int i = 0; i < variants.size(); i++) {
-            ItemStack stack = variants.get(i);
-            if (label(stack).toLowerCase(Locale.ROOT).contains(query)) matches.add("variant:" + i);
-        }
-        if (favoritesOnly) matches.removeIf(key -> !favorites.contains(key));
-        matches.sort(java.util.Comparator.comparingInt(key -> favorites.contains(key) ? 0 : 1));
-        filtered = matches;
-        page = Math.max(0, Math.min(page, Math.max(0, (matches.size() - 1) / ICONS.length)));
-        rememberedPage = page;
-    }
-
-    @Override protected void extractLabels(GuiGraphicsExtractor graphics, int x, int y) {}
-    @Override public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, left, top, 0, 0, 228, 196, 256, 256);
-        graphics.text(font, tablet ? "Tablet" : "Transmutation", left + 6, top + 8, 0xFF404040, false);
-        graphics.text(font, "EMC: " + balance, left + 6, top + 100, 0xFF404040, false);
-        graphics.fill(left + 41, top + 43, left + 59, top + 61, 0xFF777777);
-        super.extractContents(graphics, mouseX, mouseY, partialTick);
-        // The real input item is extracted by AbstractContainerScreen after this background.
-        graphics.text(font, "Deposit", left + 8, top + 65, 0xFF404040, false);
-        graphics.text(font, favoritesOnly ? "[Favorites]" : "[All]", left + 6, top + 84, 0xFF404040, false);
-        if (page > 0) graphics.text(font, "<", left + 129, top + 102, 0xFF404040, false);
-        if ((page + 1) * ICONS.length < filtered.size()) graphics.text(font, ">", left + 197, top + 102, 0xFF404040, false);
-        for (int i = 0; i < ICONS.length && page * ICONS.length + i < filtered.size(); i++) {
-            String id = filtered.get(page * ICONS.length + i);
-            int x = left + ICONS[i][0], y = top + ICONS[i][1];
-            ItemStack stack = exemplar(id);
-            graphics.item(stack, x, y);
-            if (favorites.contains(id)) graphics.text(font, "*", x + 11, y - 3, 0xFFFFAA00, false);
-            if (inside(mouseX, mouseY, x, y, 17))
-                graphics.setTooltipForNextFrame(font,
-                        Component.literal(label(stack) + " · " + price(stack) + " EMC · Middle click: favorite"),
-                        mouseX, mouseY);
-        }
-    }
-
-    private static boolean inside(double mouseX, double mouseY, int x, int y, int size) {
-        return mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
-    }
-
-    @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        double mouseX = event.x(), mouseY = event.y();
-        int button = event.button();
-        if (page > 0 && inside(mouseX, mouseY, left + 125, top + 100, 14)) {
-            page--; refreshList(); return true;
-        }
-        if ((page + 1) * ICONS.length < filtered.size()
-                && inside(mouseX, mouseY, left + 193, top + 100, 14)) {
-            page++; refreshList(); return true;
-        }
-        if (mouseX >= left + 5 && mouseX < left + 75 && mouseY >= top + 81 && mouseY < top + 95) {
-            favoritesOnly = !favoritesOnly; page = 0; refreshList(); return true;
-        }
-        // Shift-drag sells each visited inventory stack once. Ordinary dragging stays vanilla.
-        if ((event.modifiers() & 1) != 0 && button == 0 && mouseY >= top + 117) {
-            sweeping = true; sweptSlots.clear(); sweep(mouseX, mouseY); return true;
-        }
-        for (int i = 0; i < ICONS.length && page * ICONS.length + i < filtered.size(); i++) {
-            int x = left + ICONS[i][0], y = top + ICONS[i][1];
-            if (inside(mouseX, mouseY, x, y, 17)) {
-                send(button == 2 ? "favorite" : "buy", 0, filtered.get(page * ICONS.length + i), button == 1 || (event.modifiers() & 1) != 0 ? 64 : 1);
-                return true;
+    private void draw(GuiGraphicsExtractor g,int mouseX,int mouseY,List<String> keys,int current,int[][] positions,boolean pinned){
+        for(int i=0;i<positions.length;i++){
+            int[] p=positions[i];int index=current*positions.length+i;
+            if(index>=keys.size()){
+                if(pinned&&hit(mouseX,mouseY,p[0],p[1],16,16))tip(g,"Favorites: drag a learned item here, or middle click it in the left circle",mouseX,mouseY);
+                continue;
             }
-        }
-        return super.mouseClicked(event, doubleClick);
-    }
-    private void sweep(double x, double y) {
-        for (int i = 0; i < 36; i++) {
-            int slot = i < 27 ? i + 9 : i - 27;
-            if (inside(x, y, left + 35 + i % 9 * 18, inventoryY(i), 18) && sweptSlots.add(slot)) send("sell", slot, "", 64);
+            String key=keys.get(index);ItemStack stack=exemplar(key);
+            g.item(stack,left+p[0],top+p[1]);
+            if(!pinned&&favorites.contains(key))g.text(font,"*",left+p[0]+11,top+p[1]-3,0xFFFFAA00,false);
+            if(hit(mouseX,mouseY,p[0],p[1],16,16))tip(g,label(stack)+" · "+price(stack)+" EMC · Left: one · Right/Shift: stack · Middle: "+(pinned?"unpin":"favorite")+" · Wheel: page "+(current+1),mouseX,mouseY);
         }
     }
-    @Override public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (sweeping) { sweep(event.x(), event.y()); return true; }
-        return super.mouseDragged(event, dx, dy);
+    @Override public void extractCarriedItem(GuiGraphicsExtractor g,int x,int y){
+        super.extractCarriedItem(g,x,y);
+        if(dragKey!=null&&known(dragKey)&&menu.getCarried().isEmpty())g.item(exemplar(dragKey),x-8,y-8);
     }
-    @Override public boolean mouseReleased(MouseButtonEvent event) {
-        if (sweeping) { sweeping = false; sweptSlots.clear(); return true; }
-        return super.mouseReleased(event);
+    private void tip(GuiGraphicsExtractor g,String text,int x,int y){g.setTooltipForNextFrame(font,Component.literal(text),x,y);}
+    private boolean hit(double x,double y,int px,int py,int w,int h){return x>=left+px&&x<left+px+w&&y>=top+py&&y<top+py+h;}
+    private boolean rightCircle(double x,double y){double dx=x-left-166,dy=y-top-58;return dx*dx+dy*dy<=58*58;}
+    private String entry(double x,double y,List<String> keys,int current,int[][] positions){
+        for(int i=0;i<positions.length;i++)if(current*positions.length+i<keys.size()&&hit(x,y,positions[i][0],positions[i][1],16,16))return keys.get(current*positions.length+i);
+        return null;
     }
-
-    private void send(String command, int slot, String id, int count) {
-        ClientPlayNetworking.send(new PEPackets.Action(tablet, position, command, slot, id, count));
+    private String entry(double x,double y){String key=entry(x,y,favorites,favoritePage,FAVORITES);return key==null?entry(x,y,filtered,page,LEARNED):key;}
+    @Override public boolean mouseClicked(MouseButtonEvent e,boolean twice){
+        double x=e.x(),y=e.y();int button=e.button();
+        if(search!=null&&!hit(x,y,83,8,55,12))search.setFocused(false);
+        if(hit(x,y,116,108,8,8)&&favoritePage>0){favoritePage--;refreshList();return true;}
+        if(hit(x,y,215,108,8,8)&&(favoritePage+1)*16<favorites.size()){favoritePage++;refreshList();return true;}
+        if(!menu.getCarried().isEmpty()&&rightCircle(x,y)){send("pin_carried",0,"",1);return true;}
+        if(menu.getCarried().isEmpty()&&button==0&&hit(x,y,89,97,16,16)&&menu.getSlot(1).getItem().isEmpty()&&selectedKey!=null){send("forget",0,selectedKey,knowledgeRevision);selectedKey=null;return true;}
+        String key=entry(x,y);
+        if(key!=null&&menu.getCarried().isEmpty()){
+            selectedKey=key;
+            if(button==2)send("favorite",0,key,1);
+            else if(button==1||(e.modifiers()&1)!=0)send("buy",0,key,64);
+            else if(button==0){dragKey=key;dragStartX=x;dragStartY=y;}
+            return true;
+        }
+        if((e.modifiers()&1)!=0&&button==0&&inventorySlot(x,y)>=0){sweeping=true;sweptSlots.clear();sweep(x,y);return true;}
+        return super.mouseClicked(e,twice);
     }
-
-    @Override public boolean isPauseScreen() { return false; }
+    private int inventorySlot(double x,double y){
+        for(int i=0;i<36;i++){int row=i/9;int py=117+row*18+(row==3?4:0);if(hit(x,y,35+(i%9)*18,py,18,18))return i<27?i+9:i-27;}
+        return -1;
+    }
+    private void sweep(double x,double y){int slot=inventorySlot(x,y);if(slot>=0&&sweptSlots.add(slot))send("sell",slot,"",64);}
+    @Override public boolean mouseDragged(MouseButtonEvent e,double dx,double dy){if(dragKey!=null)return true;if(sweeping){sweep(e.x(),e.y());return true;}return super.mouseDragged(e,dx,dy);}
+    @Override public boolean mouseReleased(MouseButtonEvent e){
+        if(dragKey!=null){
+            String key=dragKey;dragKey=null;
+            if(hit(e.x(),e.y(),89,97,16,16)){send("forget",0,key,knowledgeRevision);selectedKey=null;}
+            else if(rightCircle(e.x(),e.y())&&Math.hypot(e.x()-dragStartX,e.y()-dragStartY)>4)send("pin",0,key,1);
+            else if(key.equals(entry(e.x(),e.y())))send("buy",0,key,1);
+            return true;
+        }
+        if(sweeping){sweeping=false;sweptSlots.clear();return true;}
+        if(!menu.getCarried().isEmpty()&&rightCircle(e.x(),e.y())){send("pin_carried",0,"",1);return true;}
+        return super.mouseReleased(e);
+    }
+    @Override public boolean mouseScrolled(double x,double y,double dx,double dy){
+        if(rightCircle(x,y)){favoritePage+=dy<0?1:-1;refreshList();return true;}
+        if(hit(x,y,5,20,90,76)){page+=dy<0?1:-1;refreshList();return true;}
+        return super.mouseScrolled(x,y,dx,dy);
+    }
+    private void send(String command,int slot,String key,int count){ClientPlayNetworking.send(new PEPackets.Action(tablet,position,command,slot,key,count));}
+    @Override public boolean isPauseScreen(){return false;}
 }

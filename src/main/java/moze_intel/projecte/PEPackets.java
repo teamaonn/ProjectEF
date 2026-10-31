@@ -24,7 +24,7 @@ public final class PEPackets {
         @Override public Type<Action> type() { return TYPE; }
     }
 
-    public record Snapshot(boolean tablet, long position, long balance, List<String> learned, Map<String, Long> prices, List<net.minecraft.world.item.ItemStack> variants, List<String> favorites) implements CustomPacketPayload {
+    public record Snapshot(boolean tablet, long position, long balance, List<String> learned, Map<String, Long> prices, List<net.minecraft.world.item.ItemStack> variants, List<String> favorites, int knowledgeRevision) implements CustomPacketPayload {
         public static final Type<Snapshot> TYPE = new Type<>(PECore.id("snapshot"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Snapshot> CODEC = CustomPacketPayload.codec(
                 (packet, buf) -> {
@@ -36,6 +36,7 @@ public final class PEPackets {
                     buf.writeVarInt(packet.variants.size());
                     packet.variants.forEach(stack -> net.minecraft.world.item.ItemStack.STREAM_CODEC.encode(buf, stack));
                     buf.writeVarInt(packet.favorites.size()); packet.favorites.forEach(key -> buf.writeUtf(key, 256));
+                    buf.writeVarInt(packet.knowledgeRevision);
                 }, buf -> {
                     boolean tablet = buf.readBoolean(); long position = buf.readLong(); long balance = buf.readLong();
                     int learnedSize = buf.readVarInt();
@@ -54,7 +55,7 @@ public final class PEPackets {
                     if (favoriteSize < 0 || favoriteSize > 64) throw new IllegalArgumentException("Too many favorites");
                     List<String> favorites = new java.util.ArrayList<>();
                     for (int i = 0; i < favoriteSize; i++) favorites.add(buf.readUtf(256));
-                    return new Snapshot(tablet, position, balance, learned, prices, variants, favorites);
+                    return new Snapshot(tablet, position, balance, learned, prices, variants, favorites, buf.readVarInt());
                 });
         @Override public Type<Snapshot> type() { return TYPE; }
     }

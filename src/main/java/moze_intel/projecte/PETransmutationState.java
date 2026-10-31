@@ -65,6 +65,7 @@ public final class PETransmutationState extends SavedData {
     public static final SavedDataType<PETransmutationState> TYPE = new SavedDataType<>(
             PECore.id("transmutation_accounts"), PETransmutationState::new, CODEC, null);
     private final Map<String, Account> accounts;
+    private final Map<String, Integer> knowledgeRevisions = new java.util.HashMap<>();
     private PETransmutationState() { accounts = new LinkedHashMap<>(); }
     private PETransmutationState(Map<String, Account> accounts) { this.accounts = new LinkedHashMap<>(accounts); }
 
@@ -158,7 +159,11 @@ public final class PETransmutationState extends SavedData {
         return true;
     }
     private void update(ServerPlayer player, Account account) {
-        accounts.put(player.getUUID().toString(), account);
+        String owner = player.getUUID().toString();
+        Account previous = accounts.get(owner);
+        if (previous == null || !previous.learned().equals(account.learned()) || !sameVariants(previous.variants(), account.variants()))
+            knowledgeRevisions.merge(owner, 1, Integer::sum);
+        accounts.put(owner, account);
         setDirty();
     }
     public static boolean access(ServerPlayer player, boolean tablet, long position) {
@@ -180,13 +185,22 @@ public final class PETransmutationState extends SavedData {
         PETransmutationState state = state(player);
         Account current = state.account(player);
         if (!(player.containerMenu instanceof TransmutationMenu menu) || menu.tablet != request.tablet() || menu.position != request.position()) return;
-        if ("favorite".equals(request.command())) {
+        if ("forget".equals(request.command())) {
+            forgetKey(player, request.item(), request.count());
+        } else if ("pin_carried".equals(request.command())) {
+            String key = keyForStack(current, menu.getCarried());
+            if (key != null && !current.favorites().contains(key) && current.favorites().size() < 64) {
+                List<String> favorites = new java.util.ArrayList<>(current.favorites()); favorites.add(key);
+                state.update(player, new Account(current.balance(), current.learned(), current.variants(), List.copyOf(favorites)));
+            }
+        } else if ("favorite".equals(request.command()) || "pin".equals(request.command())) {
             String key = request.item();
             boolean known = current.learned().contains(key);
             if (key.startsWith("variant:")) try { int i = Integer.parseInt(key.substring(8)); known = i >= 0 && i < current.variants().size(); } catch (NumberFormatException ignored) {}
             if (!known) return;
             List<String> favorites = new java.util.ArrayList<>(current.favorites());
-            if (!favorites.remove(key) && favorites.size() < 64) favorites.add(key);
+            if ("pin".equals(request.command())) { if (!favorites.contains(key) && favorites.size() < 64) favorites.add(key); }
+            else if (!favorites.remove(key) && favorites.size() < 64) favorites.add(key);
             state.update(player, new Account(current.balance(), current.learned(), current.variants(), List.copyOf(favorites)));
         } else if ("sell".equals(request.command())) {
             int slot = request.slot();
@@ -222,6 +236,42 @@ public final class PETransmutationState extends SavedData {
             }
         }
         sync(player, request.tablet(), request.position());
+    }
+    private static boolean sameVariants(List<ItemStack> a, List<ItemStack> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) if (!ItemStack.matches(a.get(i), b.get(i))) return false;
+        return true;
+    }
+    private static String keyForStack(Account account, ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        ItemStack canonical = PEPreservationConfig.withoutDurability(stack);
+        if (ItemStack.isSameItemSameComponents(canonical, new ItemStack(canonical.getItem()))) {
+            String id = BuiltInRegistries.ITEM.getKey(canonical.getItem()).toString();
+            return account.learned().contains(id) ? id : null;
+        }
+        for (int i = 0; i < account.variants().size(); i++)
+            if (ItemStack.isSameItemSameComponents(PEPreservationConfig.withoutDurability(account.variants().get(i)), canonical)) return "variant:" + i;
+        return null;
+    }
+    public static int knowledgeRevision(ServerPlayer player) {
+        return state(player).knowledgeRevisions.getOrDefault(player.getUUID().toString(), 0);
+    }
+    public static boolean forgetStack(ServerPlayer player, ItemStack stack) {
+        String key = keyForStack(state(player).account(player), stack);
+        return key != null && forgetKey(player, key, knowledgeRevision(player));
+    }
+    public static boolean forgetKey(ServerPlayer player, String key, int revision) {
+        PETransmutationState state = state(player); Account current = state.account(player);
+        List<String> learned = new java.util.ArrayList<>(current.learned());
+        List<ItemStack> variants = new java.util.ArrayList<>(current.variants());
+        if (key.startsWith("variant:")) {
+            if (revision != knowledgeRevision(player)) return false;
+            int index; try { index = Integer.parseInt(key.substring(8)); } catch (NumberFormatException invalid) { return false; }
+            if (index < 0 || index >= variants.size()) return false;
+            variants.remove(index);
+        } else if (!learned.remove(key)) return false;
+        state.update(player, new Account(current.balance(), List.copyOf(learned), List.copyOf(variants), remapFavorites(current, learned, variants)));
+        return true;
     }
     public static void sellStack(ServerPlayer player, ItemStack stack, int count) {
         PETransmutationState state = state(player);
@@ -267,6 +317,6 @@ public final class PETransmutationState extends SavedData {
         if (ServerPlayNetworking.canSend(player, PEPackets.Snapshot.TYPE))
             ServerPlayNetworking.send(player, new PEPackets.Snapshot(tablet, position, account.balance(), account.learned(),
                     PEEmcOverrides.forPlayer(player).snapshot(),
-                    PEPreservationConfig.enabled() ? account.variants().stream().map(PEPreservationConfig::exemplar).toList() : List.of(), account.favorites()));
+                    PEPreservationConfig.enabled() ? account.variants().stream().map(PEPreservationConfig::exemplar).toList() : List.of(), account.favorites(), knowledgeRevision(player)));
     }
 }
