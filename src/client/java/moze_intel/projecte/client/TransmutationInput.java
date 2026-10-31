@@ -8,5 +8,9 @@ public final class TransmutationInput {
   if(button==InputConstants.MOUSE_BUTTON_LEFT)return (modifiers&InputConstants.MOD_SHIFT)!=0?64:1;
   return 0;
  }
+ public static void setSearchFocused(net.minecraft.client.gui.components.events.AbstractContainerEventHandler owner,net.minecraft.client.gui.components.events.GuiEventListener field,boolean focused){
+  if(focused){owner.setFocused(field);field.setFocused(true);}
+  else {if(owner.getFocused()==field)owner.setFocused(null);field.setFocused(false);}
+ }
  public static boolean searchOwnsKey(boolean focused,int key){return focused&&key!=InputConstants.KEY_ESCAPE;}
 }

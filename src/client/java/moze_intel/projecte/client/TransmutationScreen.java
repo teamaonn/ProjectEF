@@ -58,6 +58,7 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         super.init();left=leftPos;top=topPos;
         search=addRenderableWidget(new EditBox(font,left+83,top+8,55,12,Component.literal("Search learned items")));
         search.setValue(rememberedSearch);search.setResponder(value->{rememberedSearch=value;page=0;refreshList();});refreshList();
+        TransmutationInput.setSearchFocused(this,search,true);
     }
     @Override public boolean keyPressed(net.minecraft.client.input.KeyEvent event){
         if(TransmutationInput.searchOwnsKey(search!=null&&search.isFocused(),event.key())){search.keyPressed(event);return true;}
@@ -116,7 +117,14 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     private String entry(double x,double y){String key=entry(x,y,favorites,favoritePage,FAVORITES);return key==null?entry(x,y,filtered,page,LEARNED):key;}
     @Override public boolean mouseClicked(MouseButtonEvent e,boolean twice){
         double x=e.x(),y=e.y();int button=e.button();
-        if(search!=null&&!hit(x,y,83,8,55,12))search.setFocused(false);
+        if(search!=null){
+            if(hit(x,y,83,8,55,12)){
+                dragKey=null;sweeping=false;sweptSlots.clear();
+                TransmutationInput.setSearchFocused(this,search,true);
+                return super.mouseClicked(e,twice);
+            }
+            TransmutationInput.setSearchFocused(this,search,false);
+        }
         if(hit(x,y,116,108,8,8)&&page>0){page--;refreshList();return true;}
         if(hit(x,y,215,108,8,8)&&(page+1)*LEARNED.length<filtered.size()){page++;refreshList();return true;}
         if(hit(x,y,8,84,8,8)&&favoritePage>0){favoritePage--;refreshList();return true;}
