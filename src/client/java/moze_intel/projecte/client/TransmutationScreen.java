@@ -16,8 +16,8 @@ import net.minecraft.world.item.*;
 
 public class TransmutationScreen extends AbstractContainerScreen<TransmutationMenu> {
     private static final Identifier TEXTURE=PECore.id("textures/gui/transmute.png");
-    private static final int[][] LEARNED={{43,23},{34,41},{52,41},{16,50},{70,50},{34,59},{52,59},{43,77}};
-    private static final int[][] FAVORITES={{158,9},{176,13},{193,30},{199,50},{193,70},{176,87},{158,91},{140,87},{123,70},{116,50},{123,30},{140,13},{158,31},{177,50},{158,69},{139,50}};
+    private static final int[][] FAVORITES={{43,23},{34,41},{52,41},{16,50},{70,50},{34,59},{52,59},{43,77}};
+    private static final int[][] LEARNED={{158,9},{176,13},{193,30},{199,50},{193,70},{176,87},{158,91},{140,87},{123,70},{116,50},{123,30},{140,13},{158,31},{177,50},{158,69},{139,50}};
     private static String rememberedSearch="";
     private static int rememberedPage,rememberedFavoritePage;
     private boolean tablet,sweeping;
@@ -71,11 +71,13 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     @Override public void extractContents(GuiGraphicsExtractor g,int mouseX,int mouseY,float partial){
         g.blit(RenderPipelines.GUI_TEXTURED,TEXTURE,left,top,0,0,228,196,256,256);
         super.extractContents(g,mouseX,mouseY,partial);
-        g.text(font,"Learned",left+6,top+8,0xFF404040,false);
+        g.text(font,"Favorites",left+6,top+8,0xFF404040,false);
         g.text(font,"EMC: "+balance,left+6,top+100,0xFF404040,false);
-        g.text(font,"Favorites "+(favoritePage+1)+"/"+Math.max(1,(favorites.size()+15)/16),left+139,top+108,0xFF404040,false);
-        if(favoritePage>0)g.text(font,"<",left+116,top+108,0xFF404040,false);
-        if((favoritePage+1)*16<favorites.size())g.text(font,">",left+215,top+108,0xFF404040,false);
+        g.text(font,"Learned "+(page+1)+"/"+Math.max(1,(filtered.size()+LEARNED.length-1)/LEARNED.length),left+139,top+108,0xFF404040,false);
+        if(page>0)g.text(font,"<",left+116,top+108,0xFF404040,false);
+        if((page+1)*LEARNED.length<filtered.size())g.text(font,">",left+215,top+108,0xFF404040,false);
+        if(favoritePage>0)g.text(font,"<",left+8,top+84,0xFF404040,false);
+        if((favoritePage+1)*FAVORITES.length<favorites.size())g.text(font,">",left+84,top+84,0xFF404040,false);
         draw(g,mouseX,mouseY,filtered,page,LEARNED,false);
         draw(g,mouseX,mouseY,favorites,favoritePage,FAVORITES,true);
         if(hit(mouseX,mouseY,107,97,16,16))tip(g,"Deposit items for EMC",mouseX,mouseY);
@@ -85,7 +87,7 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         for(int i=0;i<positions.length;i++){
             int[] p=positions[i];int index=current*positions.length+i;
             if(index>=keys.size()){
-                if(pinned&&hit(mouseX,mouseY,p[0],p[1],16,16))tip(g,"Favorites: drag a learned item here, or middle click it in the left circle",mouseX,mouseY);
+                if(pinned&&hit(mouseX,mouseY,p[0],p[1],16,16))tip(g,"Favorites: drag a learned item here, or middle click it in the right circle",mouseX,mouseY);
                 continue;
             }
             String key=keys.get(index);ItemStack stack=exemplar(key);
@@ -100,7 +102,8 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     }
     private void tip(GuiGraphicsExtractor g,String text,int x,int y){g.setTooltipForNextFrame(font,Component.literal(text),x,y);}
     private boolean hit(double x,double y,int px,int py,int w,int h){return x>=left+px&&x<left+px+w&&y>=top+py&&y<top+py+h;}
-    private boolean rightCircle(double x,double y){double dx=x-left-166,dy=y-top-58;return dx*dx+dy*dy<=58*58;}
+    private boolean favoriteCircle(double x,double y){double dx=x-left-51,dy=y-top-58;return dx*dx+dy*dy<=45*45;}
+    private boolean learnedCircle(double x,double y){double dx=x-left-166,dy=y-top-58;return dx*dx+dy*dy<=58*58;}
     private String entry(double x,double y,List<String> keys,int current,int[][] positions){
         for(int i=0;i<positions.length;i++)if(current*positions.length+i<keys.size()&&hit(x,y,positions[i][0],positions[i][1],16,16))return keys.get(current*positions.length+i);
         return null;
@@ -109,9 +112,11 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
     @Override public boolean mouseClicked(MouseButtonEvent e,boolean twice){
         double x=e.x(),y=e.y();int button=e.button();
         if(search!=null&&!hit(x,y,83,8,55,12))search.setFocused(false);
-        if(hit(x,y,116,108,8,8)&&favoritePage>0){favoritePage--;refreshList();return true;}
-        if(hit(x,y,215,108,8,8)&&(favoritePage+1)*16<favorites.size()){favoritePage++;refreshList();return true;}
-        if(!menu.getCarried().isEmpty()&&rightCircle(x,y)){send("pin_carried",0,"",1);return true;}
+        if(hit(x,y,116,108,8,8)&&page>0){page--;refreshList();return true;}
+        if(hit(x,y,215,108,8,8)&&(page+1)*LEARNED.length<filtered.size()){page++;refreshList();return true;}
+        if(hit(x,y,8,84,8,8)&&favoritePage>0){favoritePage--;refreshList();return true;}
+        if(hit(x,y,84,84,8,8)&&(favoritePage+1)*FAVORITES.length<favorites.size()){favoritePage++;refreshList();return true;}
+        if(!menu.getCarried().isEmpty()&&favoriteCircle(x,y)){send("pin_carried",0,"",1);return true;}
         if(menu.getCarried().isEmpty()&&button==0&&hit(x,y,89,97,16,16)&&menu.getSlot(1).getItem().isEmpty()&&selectedKey!=null){send("forget",0,selectedKey,knowledgeRevision);selectedKey=null;return true;}
         String key=entry(x,y);
         if(key!=null&&menu.getCarried().isEmpty()){
@@ -134,17 +139,17 @@ public class TransmutationScreen extends AbstractContainerScreen<TransmutationMe
         if(dragKey!=null){
             String key=dragKey;dragKey=null;
             if(hit(e.x(),e.y(),89,97,16,16)){send("forget",0,key,knowledgeRevision);selectedKey=null;}
-            else if(rightCircle(e.x(),e.y())&&Math.hypot(e.x()-dragStartX,e.y()-dragStartY)>4)send("pin",0,key,1);
+            else if(favoriteCircle(e.x(),e.y())&&Math.hypot(e.x()-dragStartX,e.y()-dragStartY)>4)send("pin",0,key,1);
             else if(key.equals(entry(e.x(),e.y())))send("buy",0,key,1);
             return true;
         }
         if(sweeping){sweeping=false;sweptSlots.clear();return true;}
-        if(!menu.getCarried().isEmpty()&&rightCircle(e.x(),e.y())){send("pin_carried",0,"",1);return true;}
+        if(!menu.getCarried().isEmpty()&&favoriteCircle(e.x(),e.y())){send("pin_carried",0,"",1);return true;}
         return super.mouseReleased(e);
     }
     @Override public boolean mouseScrolled(double x,double y,double dx,double dy){
-        if(rightCircle(x,y)){favoritePage+=dy<0?1:-1;refreshList();return true;}
-        if(hit(x,y,5,20,90,76)){page+=dy<0?1:-1;refreshList();return true;}
+        if(favoriteCircle(x,y)){favoritePage+=dy<0?1:-1;refreshList();return true;}
+        if(learnedCircle(x,y)){page+=dy<0?1:-1;refreshList();return true;}
         return super.mouseScrolled(x,y,dx,dy);
     }
     private void send(String command,int slot,String key,int count){ClientPlayNetworking.send(new PEPackets.Action(tablet,position,command,slot,key,count));}
