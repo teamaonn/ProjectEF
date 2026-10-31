@@ -60,7 +60,16 @@ public final class PEPackets {
         @Override public Type<Snapshot> type() { return TYPE; }
     }
 
+    public record StoneAction(int command, boolean offhand) implements CustomPacketPayload {
+        public static final Type<StoneAction> TYPE = new Type<>(PECore.id("stone_action"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, StoneAction> CODEC = CustomPacketPayload.codec(
+            (packet, buf) -> {buf.writeVarInt(packet.command);buf.writeBoolean(packet.offhand);},
+            buf -> new StoneAction(buf.readVarInt(),buf.readBoolean()));
+        @Override public Type<StoneAction> type(){return TYPE;}
+    }
+
     public static void register() {
+        PayloadTypeRegistry.serverboundPlay().register(StoneAction.TYPE, StoneAction.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Action.TYPE, Action.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Snapshot.TYPE, Snapshot.CODEC);
     }

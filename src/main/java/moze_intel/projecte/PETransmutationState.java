@@ -89,9 +89,10 @@ public final class PETransmutationState extends SavedData {
             int levels = entry.getIntValue();
             modifier += (id.endsWith("binding_curse") || id.endsWith("vanishing_curse")) ? -levels : levels;
         }
-        if (modifier == 0) return base;
-        long adjusted = base + (base * 5L * modifier) / 100L;
-        return Math.max(1L, adjusted);
+        long adjusted = modifier == 0 ? base : Math.max(1L, base + (base * 5L * modifier) / 100L);
+        // Fuel credit is real EMC: preserving a charged Stone must never duplicate it for free.
+        long fuel = stack.getItem() instanceof PhilosophersStoneItem ? StoneMobTransmutation.fuelBuffer(stack) : 0;
+        return adjusted > Long.MAX_VALUE - fuel ? Long.MAX_VALUE : adjusted + fuel;
     }
     /** Whether an item is eligible for EMC processing. */
     public static boolean plain(ItemStack stack) {

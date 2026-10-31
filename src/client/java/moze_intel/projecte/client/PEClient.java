@@ -10,6 +10,7 @@ import net.minecraft.world.InteractionResult;
 
 public class PEClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        StoneControls.register();
         net.minecraft.client.gui.screens.MenuScreens.register(PERegistries.TRANSMUTATION_MENU, TransmutationScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(PEPackets.Snapshot.TYPE, (packet, context) ->
                 context.client().execute(() ->

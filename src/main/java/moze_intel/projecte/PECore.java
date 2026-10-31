@@ -30,6 +30,10 @@ public class PECore implements ModInitializer {
         PEPreservationConfig.load();
         PERegistries.register();
         PEPackets.register();
+        StoneMobTransmutation.register();
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(
+            PEPackets.StoneAction.TYPE, (packet, context) -> context.server().execute(() ->
+                PhilosophersStoneItem.action(context.player(),packet.command(),packet.offhand()?net.minecraft.world.InteractionHand.OFF_HAND:net.minecraft.world.InteractionHand.MAIN_HAND)));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (!hasBlackHoleBand(player)) continue;
