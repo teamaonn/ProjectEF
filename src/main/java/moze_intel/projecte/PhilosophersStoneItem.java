@@ -3,7 +3,8 @@ import net.minecraft.world.*;import net.minecraft.world.item.*;import net.minecr
 public final class PhilosophersStoneItem extends Item {
  public PhilosophersStoneItem(Properties p){super(p.stacksTo(1).fireResistant());}
  public static Block transform(Block block,boolean reverse){
-  if(block==Blocks.STONE)return Blocks.COBBLESTONE;if(block==Blocks.COBBLESTONE)return Blocks.STONE;
+  if(block==Blocks.STONE)return reverse?Blocks.GRASS_BLOCK:Blocks.COBBLESTONE;
+  if(block==Blocks.COBBLESTONE)return reverse?Blocks.SAND:Blocks.STONE;
   if(block==Blocks.GRASS_BLOCK||block==Blocks.DIRT)return Blocks.SAND;if(block==Blocks.SAND)return reverse?Blocks.COBBLESTONE:Blocks.GRASS_BLOCK;
   if(block==Blocks.GRAVEL)return Blocks.SANDSTONE;if(block==Blocks.SANDSTONE)return Blocks.GRAVEL;
   if(block==Blocks.NETHERRACK)return Blocks.COBBLESTONE;return null;
