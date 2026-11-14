@@ -150,7 +150,7 @@ public final class ClassicExpansionTests {
     }
 
     @GameTest
-    public void collectorsAndRelaysFaceThePlacingPlayer(GameTestHelper helper) {
+    public void projecteContainersFaceThePlacingPlayer(GameTestHelper helper) {
         var level = helper.getLevel();
         var player = player(helper);
         BlockPos support = helper.absolutePos(new BlockPos(1, 6, 2));
@@ -159,23 +159,21 @@ public final class ClassicExpansionTests {
         var hit = new BlockHitResult(Vec3.atCenterOf(support).add(0, 0.5, 0), Direction.UP, support, false);
         var facing = BlockStateProperties.HORIZONTAL_FACING;
 
-        for (String kind : List.of("collector", "relay")) {
-            for (int tier = 1; tier <= 3; tier++) {
-                String name = kind + "_mk" + tier;
-                var block = ((BlockItem) item(name).getItem()).getBlock();
-                helper.assertTrue(block.defaultBlockState().getValue(facing) == Direction.NORTH,
-                        "Existing " + name + " blocks retain the original north-facing model");
-                for (Direction looking : Direction.Plane.HORIZONTAL) {
-                    player.setYRot(looking.toYRot());
-                    ItemStack stack = item(name);
-                    player.setItemInHand(InteractionHand.MAIN_HAND, stack);
-                    var context = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, stack, hit);
-                    helper.assertTrue(((BlockItem) stack.getItem()).place(context).consumesAction()
-                                    && level.getBlockState(pos).is(block)
-                                    && level.getBlockState(pos).getValue(facing) == looking.getOpposite(),
-                            name + " faces the player when placed while looking " + looking);
-                    level.removeBlock(pos, false);
-                }
+        for (String name : List.of("collector_mk1", "collector_mk2", "collector_mk3",
+                "relay_mk1", "relay_mk2", "relay_mk3", "energy_condenser", "alchemical_chest")) {
+            var block = ((BlockItem) item(name).getItem()).getBlock();
+            helper.assertTrue(block.defaultBlockState().getValue(facing) == Direction.NORTH,
+                    "Existing " + name + " blocks retain the original north-facing model");
+            for (Direction looking : Direction.Plane.HORIZONTAL) {
+                player.setYRot(looking.toYRot());
+                ItemStack stack = item(name);
+                player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+                var context = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, stack, hit);
+                helper.assertTrue(((BlockItem) stack.getItem()).place(context).consumesAction()
+                                && level.getBlockState(pos).is(block)
+                                && level.getBlockState(pos).getValue(facing) == looking.getOpposite(),
+                        name + " faces the player when placed while looking " + looking);
+                level.removeBlock(pos, false);
             }
         }
         helper.succeed();

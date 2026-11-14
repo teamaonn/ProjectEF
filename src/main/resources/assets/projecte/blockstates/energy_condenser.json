@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "projecte:block/energy_condenser" }
+    "facing=north": { "model": "projecte:block/energy_condenser" },
+    "facing=east": { "model": "projecte:block/energy_condenser", "y": 90 },
+    "facing=south": { "model": "projecte:block/energy_condenser", "y": 180 },
+    "facing=west": { "model": "projecte:block/energy_condenser", "y": 270 }
   }
 }
