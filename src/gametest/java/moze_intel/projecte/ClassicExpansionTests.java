@@ -28,6 +28,7 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -147,6 +148,21 @@ public final class ClassicExpansionTests {
                         "Collector light propagates into the air above it");
             }
         });
+    }
+
+    @GameTest
+    public void insetContainersKeepNeighborFacesVisible(GameTestHelper helper) {
+        var floor = Blocks.OAK_PLANKS.defaultBlockState();
+        for (String name : List.of("energy_condenser", "alchemical_chest")) {
+            var container = BuiltInRegistries.BLOCK.getValue(PECore.id(name));
+            for (var state : container.getStateDefinition().getPossibleStates()) {
+                for (Direction face : Direction.values()) {
+                    helper.assertTrue(Block.shouldRenderFace(floor, state, face),
+                            name + " keeps the neighboring block face visible on " + face);
+                }
+            }
+        }
+        helper.succeed();
     }
 
     @GameTest

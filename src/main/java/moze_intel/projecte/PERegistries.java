@@ -92,7 +92,7 @@ public final class PERegistries {
 
     private static void registerBlocks() {
         var chestKey=ResourceKey.create(Registries.BLOCK,PECore.id("alchemical_chest"));
-        Block chest=new AlchemicalChestBlock(BlockBehaviour.Properties.of().setId(chestKey).strength(2.5f).sound(net.minecraft.world.level.block.SoundType.WOOD));
+        Block chest=new AlchemicalChestBlock(BlockBehaviour.Properties.of().setId(chestKey).strength(2.5f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.WOOD));
         Registry.register(BuiltInRegistries.BLOCK,chestKey,chest);BLOCKS.put("alchemical_chest",chest);
         var chestItemKey=ResourceKey.create(Registries.ITEM,PECore.id("alchemical_chest"));
         Registry.register(BuiltInRegistries.ITEM,chestItemKey,new BlockItem(chest,new Item.Properties().setId(chestItemKey).useBlockDescriptionPrefix()));
@@ -162,7 +162,9 @@ public final class PERegistries {
     private static Block emcMachine(String name, EmcMachineBlock.Kind kind, int tier) {
         ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, PECore.id(name));
         var properties = BlockBehaviour.Properties.of().setId(key).strength(3, 6);
-        if (kind == EmcMachineBlock.Kind.COLLECTOR) {
+        if (kind == EmcMachineBlock.Kind.CONDENSER) {
+            properties.noOcclusion();
+        } else if (kind == EmcMachineBlock.Kind.COLLECTOR) {
             properties.lightLevel(state -> Blocks.GLOWSTONE.defaultBlockState().getLightEmission());
         }
         Block block = new EmcMachineBlock(properties, kind, tier);
