@@ -29,10 +29,12 @@ public interface StoneCraftingRemainderMixin {
   ItemStack output = ((CraftingRecipe) this).assemble(input);
   var outputId = BuiltInRegistries.ITEM.getKey(output.getItem());
   boolean arcana = outputId.equals(PECore.id("arcana_ring"));
-  boolean usesLava = output.is(Items.LAVA_BUCKET) || outputId.equals(PECore.id("iron_band"));
+  boolean returnsVolcanite = output.is(Items.LAVA_BUCKET)
+          || outputId.equals(PECore.id("iron_band"))
+          || outputId.equals(PECore.id("gem_chestplate"));
   for (int i = 0; i < input.size(); i++) {
    ItemStack stack = input.getItem(i);
-   if (stack.getItem() instanceof VolcaniteAmuletItem && usesLava) {
+   if (stack.getItem() instanceof VolcaniteAmuletItem && returnsVolcanite) {
     ci.getReturnValue().set(i, stack.copyWithCount(1));
    }
    if (!(stack.getItem() instanceof ClassicRingItem)) continue;

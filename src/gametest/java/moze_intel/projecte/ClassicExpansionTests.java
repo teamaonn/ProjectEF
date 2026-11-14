@@ -411,13 +411,29 @@ public final class ClassicExpansionTests {
         helper.assertTrue(recipe.matches(input, helper.getLevel()) && recipe.assemble(input).is(Items.LAVA_BUCKET)
                         && ItemStack.matches(remainder.getFirst(), amulet) && remainder.get(1).isEmpty(),
                 "Crafting a lava bucket consumes the bucket and preserves the named amulet");
-        ItemStack omega = item("klein_star_omega");
-        ((KleinStarItem) omega.getItem()).charge(omega, Long.MAX_VALUE);
-        var armorInput = CraftingInput.of(2, 2, List.of(item("rm_chestplate"), amulet, item("body_stone"), omega));
-        var armorRecipe = recipe(helper, "gem_chestplate");
-        helper.assertTrue(armorRecipe.matches(armorInput, helper.getLevel())
-                        && armorRecipe.getRemainingItems(armorInput).get(1).isEmpty(),
-                "The Gem Chestplate still consumes its amulet ingredient");
+        helper.succeed();
+    }
+
+    @GameTest
+    public void gemArmorCraftsReturnTheirAmulets(GameTestHelper helper) {
+        for (String piece : List.of("helmet", "chestplate")) {
+            boolean helmet = piece.equals("helmet");
+            ItemStack amulet = item(helmet ? "evertide_amulet" : "volcanite_amulet");
+            amulet.set(DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("My Amulet"));
+            net.minecraft.world.item.component.CustomData.update(DataComponents.CUSTOM_DATA, amulet,
+                    tag -> tag.putInt("Charge", 2));
+            ItemStack omega = item("klein_star_omega");
+            ((KleinStarItem) omega.getItem()).charge(omega, Long.MAX_VALUE);
+            var input = CraftingInput.of(2, 2, List.of(item("rm_" + piece), amulet,
+                    item(helmet ? "soul_stone" : "body_stone"), omega));
+            var recipe = recipe(helper, "gem_" + piece);
+            helper.assertTrue(recipe.matches(input, helper.getLevel()), "The Gem " + piece + " recipe accepts a full Omega");
+            var remainder = recipe.getRemainingItems(input);
+            helper.assertTrue(ItemStack.matches(remainder.get(1), amulet),
+                    "The Gem " + piece + " returns its amulet with the original components");
+            helper.assertTrue(remainder.get(0).isEmpty() && remainder.get(2).isEmpty() && remainder.get(3).isEmpty(),
+                    "The Red Matter piece, stone, and full Klein Star Omega are consumed");
+        }
         helper.succeed();
     }
 
