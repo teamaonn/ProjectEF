@@ -13,10 +13,10 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.PrimedTnt;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.ClipContext;
@@ -27,6 +27,7 @@ import net.minecraft.world.phys.Vec3;
 public final class GemArmorEffects {
     private static final String OFFENSE = "GemOffense";
     private static final String BOOT_MOVEMENT = "GemBootMovement";
+    private static final double REPEL_RADIUS = 5;
 
     private GemArmorEffects() { }
 
@@ -70,30 +71,53 @@ public final class GemArmorEffects {
             if (hasFlight(player)) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 40, 0, true, false));
             if (wears(player, EquipmentSlot.CHEST, "gem_chestplate")) player.clearFire();
         }
-        if (player.tickCount % 5 == 0 && player.isShiftKeyDown() && hasGreaves(player)
-                && enabled(player.getItemBySlot(EquipmentSlot.LEGS), OFFENSE)) {
-            var level = (ServerLevel) player.level();
-            for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(5),
-                    entity -> entity instanceof Enemy && entity.isAlive() && entity.distanceToSqr(player) <= 25)) {
-                Vec3 away = enemy.position().subtract(player.position());
-                Vec3 push = new Vec3(away.x, 0, away.z).normalize().scale(0.4);
-                enemy.push(push.x, 0, push.z);
-                enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 15, 1, true, false));
+        if (player.getLastClientInput().shift() && greavesArmed(player)) {
+            repel(player, player.tickCount % 5 == 0);
+        }
+    }
+
+    private static boolean greavesArmed(Player player) {
+        return hasGreaves(player) && enabled(player.getItemBySlot(EquipmentSlot.LEGS), OFFENSE);
+    }
+
+    private static void repel(ServerPlayer player, boolean pushMobs) {
+        for (var entity : player.level().getEntities(player, player.getBoundingBox().inflate(REPEL_RADIUS),
+                target -> target.isAlive() && (pushMobs && target instanceof Mob
+                        || target instanceof Projectile shot && shot.getOwner() != player))) {
+            Vec3 away = entity.position().subtract(player.position());
+            if (away.lengthSqr() > REPEL_RADIUS * REPEL_RADIUS || away.lengthSqr() < 1.0E-6) continue;
+
+            if (entity instanceof Mob mob) {
+                Vec3 outward = new Vec3(away.x, 0, away.z).normalize();
+                double impulse = Math.max(0, .55 - mob.getDeltaMovement().dot(outward));
+                mob.push(outward.x * impulse, .12, outward.z * impulse);
+                mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 15, 1, true, false));
+            } else {
+                Vec3 outward = away.normalize();
+                double outwardSpeed = entity.getDeltaMovement().dot(outward);
+                if (outwardSpeed < 0) {
+                    Vec3 deflection = outward.scale(.45 - outwardSpeed);
+                    entity.push(deflection.x, deflection.y, deflection.z);
+                }
             }
         }
     }
 
     public static void move(Player player, boolean jump, boolean forward) {
-        if (!player.isAlive() || player.isSpectator() || player.getAbilities().flying
-                || player.isFallFlying() || player.isPassenger() || player.isInWater() || player.isInLava()) return;
+        if (!player.isAlive() || player.isSpectator() || player.isFallFlying() || player.isPassenger()
+                || player.isInWater() || player.isInLava()) return;
+
+        boolean flying = player.getAbilities().flying;
+        boolean sneaking = player.isShiftKeyDown();
         var velocity = player.getDeltaMovement();
-        if (!player.onGround() && velocity.y < 0 && player.isShiftKeyDown() && hasGreaves(player)
-                && enabled(player.getItemBySlot(EquipmentSlot.LEGS), OFFENSE)) {
-            player.setDeltaMovement(velocity.x, Math.max(-1.5, velocity.y - .22), velocity.z);
+        if (!player.onGround() && sneaking && (flying ? !jump : velocity.y < 0) && greavesArmed(player)) {
+            if (velocity.y > -1.5) {
+                player.setDeltaMovement(velocity.x, Math.max(-1.5, velocity.y - .22), velocity.z);
+            }
             return;
         }
-        if (!hasFlight(player) || !enabled(player.getItemBySlot(EquipmentSlot.FEET), BOOT_MOVEMENT)
-                || player.isShiftKeyDown()) return;
+        if (flying || sneaking || !hasFlight(player)
+                || !enabled(player.getItemBySlot(EquipmentSlot.FEET), BOOT_MOVEMENT)) return;
         if (forward && player.getFoodData().getFoodLevel() > 6 && !player.horizontalCollision) {
             player.setSprinting(true);
         }

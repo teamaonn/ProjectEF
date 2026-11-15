@@ -6,9 +6,9 @@ It is designed for **Minecraft 26.3** with **Fabric**. The goal is to make EMC u
 
 ## Current version
 
-**1.2.27-fabric.26.3**
+**1.2.28-fabric.26.3**
 
-[Download the current Minecraft 26.3 JAR](downloads/projecte-fabric-26.3-1.2.27-fabric.26.3.jar?raw=true)
+[Download the current Minecraft 26.3 JAR](downloads/projecte-fabric-26.3-1.2.28-fabric.26.3.jar?raw=true)
 
 Install Fabric Loader and Fabric API for Minecraft 26.3. Close Minecraft, remove
 any previous ProjectEF JAR, and place the downloaded JAR in `mods/`. Install the
@@ -100,8 +100,9 @@ for your player.
 
 With ProjectE items out of your hands, press **V** to arm Gem Armor powers.
 **R** fires the Abyss Helmet's lightning. **C** triggers a Nova Catalyst blast
-at your feet that can break nearby blocks. Hold **Shift** with armed Gravity
-Greaves to descend faster and repel nearby hostile mobs. **G** toggles the
+at your feet that can break nearby blocks. Hold **Sneak** with armed Gravity
+Greaves to descend faster during free fall or Gem Boots flight and repel mobs
+and incoming projectiles within five blocks. **G** toggles the
 Hurricane Boots' movement mode when your held items do not use the mode key.
 In that mode, hold **Jump** to climb and release it to descend slowly.
 The boots also support creative-style flight. The full set prevents starvation

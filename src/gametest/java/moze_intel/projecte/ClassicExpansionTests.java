@@ -10,6 +10,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
@@ -19,6 +20,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -162,6 +165,55 @@ public final class ClassicExpansionTests {
         GemArmorEffects.action(player, 3);
         helper.assertTrue(level.isEmptyBlock(target) && PETransmutationState.balance(player) == 0,
                 "Armed Infernal Armor breaks blocks and pays for the Nova blast");
+        helper.succeed();
+    }
+
+    @GameTest
+    public void gravityGreavesBoostFlightDescentAndRepelWithSneakInput(GameTestHelper helper) {
+        var player = player(helper);
+        player.setItemSlot(EquipmentSlot.LEGS, item("gem_leggings"));
+        player.setItemSlot(EquipmentSlot.FEET, item("gem_boots"));
+        player.getAbilities().mayfly = true;
+        player.getAbilities().flying = true;
+        player.setOnGround(false);
+        player.setShiftKeyDown(true);
+        player.setDeltaMovement(Vec3.ZERO);
+        GemArmorEffects.move(player, false, false);
+        helper.assertTrue(player.getDeltaMovement().y == 0, "Disarmed Greaves leave flight speed alone");
+
+        GemArmorEffects.action(player, 0);
+        GemArmorEffects.move(player, false, false);
+        helper.assertTrue(player.getDeltaMovement().y < 0, "Armed Greaves accelerate descent from a hover");
+        player.setDeltaMovement(0, .25, 0);
+        GemArmorEffects.move(player, true, false);
+        helper.assertTrue(player.getDeltaMovement().y == .25, "Jump still controls upward flight");
+
+        var zombie = helper.spawn(EntityTypes.ZOMBIE, new BlockPos(1, 2, 1));
+        var cow = helper.spawn(EntityTypes.COW, new BlockPos(1, 2, 2));
+        Vec3 out = zombie.position().subtract(player.position()).normalize();
+        zombie.setDeltaMovement(out.scale(-.3));
+        var level = helper.getLevel();
+        Vec3 shotPos = player.position().add(out.scale(3)).add(0, 1, 0);
+        var arrow = new Arrow(level, shotPos.x, shotPos.y, shotPos.z, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
+        Vec3 shotOut = arrow.position().subtract(player.position()).normalize();
+        arrow.setDeltaMovement(shotOut.scale(-2));
+        level.addFreshEntity(arrow);
+        player.connection.handlePlayerInput(new ServerboundPlayerInputPacket(Input.EMPTY));
+        player.tickCount = 5;
+        GemArmorEffects.tick(player);
+        helper.assertTrue(zombie.getDeltaMovement().dot(out) < 0 && arrow.getDeltaMovement().dot(shotOut) < 0,
+                "Greaves do not repel after the player releases Sneak");
+
+        player.connection.handlePlayerInput(new ServerboundPlayerInputPacket(
+                new Input(false, false, false, false, false, true, false)));
+        GemArmorEffects.tick(player);
+        helper.assertTrue(zombie.getDeltaMovement().dot(out) > .5
+                        && cow.getDeltaMovement().dot(cow.position().subtract(player.position())) > 0,
+                "The server pushes nearby hostile and passive mobs when it receives Sneak input");
+        player.tickCount = 6;
+        arrow.setDeltaMovement(shotOut.scale(-2));
+        GemArmorEffects.tick(player);
+        helper.assertTrue(arrow.getDeltaMovement().dot(shotOut) > 0, "Incoming arrows are redirected between mob pushes");
         helper.succeed();
     }
 
