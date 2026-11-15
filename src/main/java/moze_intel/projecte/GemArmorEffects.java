@@ -1,33 +1,41 @@
 package moze_intel.projecte;
 
+import java.util.ArrayList;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 public final class GemArmorEffects {
+    private static final String OFFENSE = "GemOffense";
+    private static final String BOOT_MOVEMENT = "GemBootMovement";
+
     private GemArmorEffects() { }
 
     static void register() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
                 !(entity instanceof Player player
                         && (source.is(DamageTypeTags.IS_FIRE) && wears(player, EquipmentSlot.CHEST, "gem_chestplate")
-                        || source.is(DamageTypeTags.IS_FALL) && hasFlight(player))));
+                        || source.is(DamageTypeTags.IS_FALL) && hasFlight(player)
+                        || source.is(DamageTypes.STARVE) && hasFullSet(player))));
     }
 
     public static boolean hasFlight(Player player) {
@@ -42,40 +50,97 @@ public final class GemArmorEffects {
         return player.getItemBySlot(slot).is(BuiltInRegistries.ITEM.getValue(PECore.id(id)));
     }
 
+    private static boolean hasGreaves(Player player) {
+        return wears(player, EquipmentSlot.LEGS, "gem_leggings");
+    }
+
+    private static boolean hasFullSet(Player player) {
+        return hasHelmet(player) && wears(player, EquipmentSlot.CHEST, "gem_chestplate")
+                && hasGreaves(player) && hasFlight(player);
+    }
+
+    private static boolean enabled(ItemStack stack, String key) {
+        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBooleanOr(key, false);
+    }
+
     static void tick(ServerPlayer player) {
-        if (player.tickCount % 20 != 0 || !player.isAlive() || player.isSpectator()) return;
-        if (hasHelmet(player)) player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
-        if (hasFlight(player)) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 40, 0, true, false));
-        if (wears(player, EquipmentSlot.CHEST, "gem_chestplate")) player.clearFire();
-        if (wears(player, EquipmentSlot.LEGS, "gem_leggings")) {
-            player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, 40, 0, true, false));
+        if (!player.isAlive() || player.isSpectator()) return;
+        if (player.tickCount % 20 == 0) {
+            if (hasHelmet(player)) player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
+            if (hasFlight(player)) player.addEffect(new MobEffectInstance(MobEffects.SPEED, 40, 0, true, false));
+            if (wears(player, EquipmentSlot.CHEST, "gem_chestplate")) player.clearFire();
+        }
+        if (player.tickCount % 5 == 0 && player.isShiftKeyDown() && hasGreaves(player)
+                && enabled(player.getItemBySlot(EquipmentSlot.LEGS), OFFENSE)) {
+            var level = (ServerLevel) player.level();
+            for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(5),
+                    entity -> entity instanceof Enemy && entity.isAlive() && entity.distanceToSqr(player) <= 25)) {
+                Vec3 away = enemy.position().subtract(player.position());
+                Vec3 push = new Vec3(away.x, 0, away.z).normalize().scale(0.4);
+                enemy.push(push.x, 0, push.z);
+                enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 15, 1, true, false));
+            }
+        }
+    }
+
+    public static void move(Player player, boolean jump, boolean forward) {
+        if (!player.isAlive() || player.isSpectator() || player.getAbilities().flying
+                || player.isFallFlying() || player.isPassenger() || player.isInWater() || player.isInLava()) return;
+        var velocity = player.getDeltaMovement();
+        if (!player.onGround() && velocity.y < 0 && player.isShiftKeyDown() && hasGreaves(player)
+                && enabled(player.getItemBySlot(EquipmentSlot.LEGS), OFFENSE)) {
+            player.setDeltaMovement(velocity.x, Math.max(-1.5, velocity.y - .22), velocity.z);
+            return;
+        }
+        if (!hasFlight(player) || !enabled(player.getItemBySlot(EquipmentSlot.FEET), BOOT_MOVEMENT)
+                || player.isShiftKeyDown()) return;
+        if (forward && player.getFoodData().getFoodLevel() > 6 && !player.horizontalCollision) {
+            player.setSprinting(true);
+        }
+        if (!player.onGround()) {
+            double lift = jump ? Math.min(.55, Math.max(.12, velocity.y + .16)) : Math.max(-.12, velocity.y);
+            double acceleration = forward && velocity.horizontalDistanceSqr() < .36 ? 1.035 : 1;
+            player.setDeltaMovement(velocity.x * acceleration, lift, velocity.z * acceleration);
         }
     }
 
     public static boolean supportsControl(Player player, int command) {
-        if (!player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty()) return false;
+        if (command == 4) return hasFlight(player);
+        if (isProjectEItem(player.getMainHandItem()) || isProjectEItem(player.getOffhandItem())) return false;
         boolean helmet = hasHelmet(player);
         boolean chest = wears(player, EquipmentSlot.CHEST, "gem_chestplate");
-        return command == 0 && (helmet || chest) || command == 2 && helmet || command == 3 && chest;
+        return command == 0 && (helmet || chest || hasGreaves(player))
+                || command == 2 && helmet || command == 3 && chest;
+    }
+
+    private static boolean isProjectEItem(ItemStack stack) {
+        return BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace().equals(PECore.MODID);
     }
 
     static void action(ServerPlayer player, int command) {
         if (!supportsControl(player, command) || !ClassicRingItem.canUse(player)
                 || player.containerMenu != player.inventoryMenu) return;
-        ItemStack armor = player.getItemBySlot(command == 3 || command == 0 && !hasHelmet(player)
-                ? EquipmentSlot.CHEST : EquipmentSlot.HEAD);
-        boolean armed = armor.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
-                .copyTag().getBooleanOr("GemOffense", false);
-        if (command == 0) {
-            CustomData.update(DataComponents.CUSTOM_DATA, armor, tag -> tag.putBoolean("GemOffense", !armed));
-            if (hasHelmet(player) && wears(player, EquipmentSlot.CHEST, "gem_chestplate")) {
-                CustomData.update(DataComponents.CUSTOM_DATA, player.getItemBySlot(EquipmentSlot.CHEST),
-                        tag -> tag.putBoolean("GemOffense", !armed));
-            }
-            PowerFuel.notice(player, armed ? "Gem powers disarmed" : "Gem powers armed");
+        if (command == 4) {
+            ItemStack boots = player.getItemBySlot(EquipmentSlot.FEET);
+            boolean active = !enabled(boots, BOOT_MOVEMENT);
+            CustomData.update(DataComponents.CUSTOM_DATA, boots, tag -> tag.putBoolean(BOOT_MOVEMENT, active));
+            PowerFuel.notice(player, active ? "Hurricane Boots movement on" : "Hurricane Boots movement off");
             return;
         }
-        if (!armed || player.getCooldowns().isOnCooldown(armor)) return;
+        if (command == 0) {
+            var pieces = new ArrayList<ItemStack>(3);
+            if (hasHelmet(player)) pieces.add(player.getItemBySlot(EquipmentSlot.HEAD));
+            if (wears(player, EquipmentSlot.CHEST, "gem_chestplate")) pieces.add(player.getItemBySlot(EquipmentSlot.CHEST));
+            if (hasGreaves(player)) pieces.add(player.getItemBySlot(EquipmentSlot.LEGS));
+            boolean armed = pieces.stream().anyMatch(stack -> !enabled(stack, OFFENSE));
+            for (ItemStack piece : pieces) {
+                CustomData.update(DataComponents.CUSTOM_DATA, piece, tag -> tag.putBoolean(OFFENSE, armed));
+            }
+            PowerFuel.notice(player, armed ? "Gem powers armed" : "Gem powers disarmed");
+            return;
+        }
+        ItemStack armor = player.getItemBySlot(command == 3 ? EquipmentSlot.CHEST : EquipmentSlot.HEAD);
+        if (!enabled(armor, OFFENSE) || player.getCooldowns().isOnCooldown(armor)) return;
         var level = (ServerLevel) player.level();
         if (command == 2) {
             Vec3 eye = player.getEyePosition();
@@ -91,13 +156,12 @@ public final class GemArmorEffects {
                 level.addFreshEntity(bolt);
             }
         } else {
-            if (!PowerFuel.spend(player, 128)) return;
-            for (LivingEntity enemy : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(5),
-                    entity -> entity instanceof Enemy && entity.isAlive())) {
-                enemy.hurtServer(level, level.damageSources().playerAttack(player), 16);
-                Vec3 push = enemy.position().subtract(player.position()).normalize();
-                enemy.push(push.x, .3, push.z);
-            }
+            if (!level.getGameRules().get(GameRules.TNT_EXPLODES)
+                    || !ClassicRingItem.canChange(level, player, armor, player.blockPosition())
+                    || !PowerFuel.spend(player, 128)) return;
+            var nova = new PrimedTnt(level, player.getX(), player.getY(), player.getZ(), player);
+            nova.setBlockState(BuiltInRegistries.BLOCK.getValue(PECore.id("nova_catalyst")).defaultBlockState());
+            NovaChargeBlock.detonate(nova);
         }
         player.getCooldowns().addCooldown(armor, 40);
     }

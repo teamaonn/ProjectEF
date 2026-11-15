@@ -39,6 +39,9 @@ public final class StoneControls {
    while(fire.consumeClick())send(client,2);
    while(craft.consumeClick())send(client,3);
    while(mode.consumeClick())send(client,4);
+   if(client.player!=null && client.gui.screen()==null && ClientPlayNetworking.canSend(PEPackets.StoneAction.TYPE)){
+    GemArmorEffects.move(client.player,client.options.keyJump.isDown(),client.options.keyUp.isDown());
+   }
   });
  }
  private static void send(Minecraft client,int command){

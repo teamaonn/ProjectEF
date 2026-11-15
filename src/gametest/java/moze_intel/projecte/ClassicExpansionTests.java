@@ -131,6 +131,41 @@ public final class ClassicExpansionTests {
     }
 
     @GameTest
+    public void equippedGemPowersCanBeArmedAndUsed(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = player(helper);
+        player.setItemSlot(EquipmentSlot.CHEST, item("gem_chestplate"));
+        player.setItemSlot(EquipmentSlot.LEGS, item("gem_leggings"));
+        player.setItemSlot(EquipmentSlot.FEET, item("gem_boots"));
+        BlockPos target = player.blockPosition().south();
+        level.setBlockAndUpdate(target, Blocks.STONE.defaultBlockState());
+        PETransmutationState.deposit(level.getServer(), player.getUUID(), 128, 1);
+
+        GemArmorEffects.action(player, 3);
+        helper.assertTrue(level.getBlockState(target).is(Blocks.STONE), "Disarmed Infernal Armor cannot blast blocks");
+
+        GemArmorEffects.action(player, 0);
+        player.setOnGround(false);
+        player.setDeltaMovement(0, -.25, 0);
+        player.setShiftKeyDown(true);
+        GemArmorEffects.move(player, false, false);
+        helper.assertTrue(player.getDeltaMovement().y < -.25, "Armed Gravity Greaves accelerate a sneaking fall");
+        player.setShiftKeyDown(false);
+
+        GemArmorEffects.action(player, 4);
+        GemArmorEffects.move(player, true, false);
+        helper.assertTrue(player.getDeltaMovement().y > 0, "The Hurricane Boots lift the wearer in movement mode");
+        player.setDeltaMovement(0, -.5, 0);
+        GemArmorEffects.move(player, false, false);
+        helper.assertTrue(player.getDeltaMovement().y >= -.12, "The Hurricane Boots slow descent in movement mode");
+
+        GemArmorEffects.action(player, 3);
+        helper.assertTrue(level.isEmptyBlock(target) && PETransmutationState.balance(player) == 0,
+                "Armed Infernal Armor breaks blocks and pays for the Nova blast");
+        helper.succeed();
+    }
+
+    @GameTest
     public void collectorsEmitGlowstoneLight(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos origin = helper.absolutePos(new BlockPos(1, 7, 1));
