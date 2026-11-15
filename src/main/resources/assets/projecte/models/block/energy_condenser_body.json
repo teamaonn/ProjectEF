@@ -1,0 +1,110 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "chest": "projecte:block/energy_condenser",
+    "base": "minecraft:block/black_concrete",
+    "particle": "projecte:block/energy_condenser"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        1,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#base"
+        },
+        "up": {
+          "texture": "#base"
+        },
+        "north": {
+          "texture": "#base"
+        },
+        "south": {
+          "texture": "#base"
+        },
+        "west": {
+          "texture": "#base"
+        },
+        "east": {
+          "texture": "#base"
+        }
+      }
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            8.3,
+            7.0,
+            4.7
+          ]
+        },
+        "east": {
+          "texture": "#chest",
+          "uv": [
+            7.0,
+            10.65,
+            10.5,
+            8.25
+          ]
+        },
+        "north": {
+          "texture": "#chest",
+          "uv": [
+            10.5,
+            10.65,
+            14.0,
+            8.25
+          ]
+        },
+        "south": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            10.65,
+            7.0,
+            8.25
+          ]
+        },
+        "up": {
+          "texture": "#chest",
+          "uv": [
+            7.0,
+            8.2,
+            10.5,
+            4.8
+          ]
+        },
+        "west": {
+          "texture": "#chest",
+          "uv": [
+            0.0,
+            10.7,
+            3.5,
+            8.3
+          ]
+        }
+      },
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        10,
+        15
+      ]
+    }
+  ]
+}

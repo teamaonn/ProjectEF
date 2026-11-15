@@ -394,6 +394,43 @@ public final class ClassicExpansionTests {
     }
 
     @GameTest
+    public void chestLidsFollowMenuViewers(GameTestHelper helper) {
+        BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
+        var level = helper.getLevel();
+        level.setBlockAndUpdate(pos, BuiltInRegistries.BLOCK.getValue(PECore.id("alchemical_chest")).defaultBlockState());
+        var chest = (AlchemicalChestBlockEntity) level.getBlockEntity(pos);
+        var condenser = placeMachine(helper, pos.east(), "energy_condenser");
+        var first = player(helper);
+        var second = player(helper);
+
+        first.openMenu(chest);
+        second.openMenu(chest);
+        helper.runAfterDelay(2, () -> {
+            chest.animation.tickLid();
+            helper.assertTrue(chest.getOpenNess(1) > 0, "Opening the Alchemical Chest starts its lid");
+            first.closeContainer();
+            first.openMenu(condenser);
+        });
+        helper.runAfterDelay(4, () -> {
+            chest.animation.tickLid();
+            condenser.animation.tickLid();
+            helper.assertTrue(chest.getOpenNess(1) > chest.getOpenNess(0),
+                    "The Alchemical Chest stays open for its remaining viewer");
+            helper.assertTrue(condenser.getOpenNess(1) > 0, "Opening the Energy Condenser starts its lid");
+            first.closeContainer();
+            second.closeContainer();
+        });
+        helper.runAfterDelay(7, () -> {
+            chest.animation.tickLid();
+            condenser.animation.tickLid();
+            helper.assertTrue(chest.getOpenNess(1) < chest.getOpenNess(0)
+                            && condenser.getOpenNess(1) < condenser.getOpenNess(0),
+                    "Each lid closes after its last viewer leaves");
+            helper.succeed();
+        });
+    }
+
+    @GameTest
     public void collectorsAndRelaysOpenMachineMenus(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         var player = player(helper);

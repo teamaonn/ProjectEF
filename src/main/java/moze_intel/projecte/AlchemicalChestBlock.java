@@ -1,5 +1,7 @@
 package moze_intel.projecte;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
@@ -13,9 +15,18 @@ public final class AlchemicalChestBlock extends FrontFacingContainerBlock {
   if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof MenuProvider menu)player.openMenu(menu);
   return InteractionResult.SUCCESS;
  }
+ @Override protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+  if (level.getBlockEntity(pos) instanceof AlchemicalChestBlockEntity chest) {
+   chest.animation.recheckOpeners(level, pos, state);
+  }
+ }
  @Override public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
         Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
-  return level.isClientSide() ? null : (world, pos, blockState, entity) -> {
+  if (level.isClientSide()) {
+   return createTickerHelper(type, PERegistries.ALCHEMICAL_CHEST_ENTITY,
+           (world, pos, blockState, chest) -> chest.animation.tickLid());
+  }
+  return (world, pos, blockState, entity) -> {
    if (world.getGameTime() % 20 == Math.floorMod(pos.hashCode(), 20)
            && entity instanceof AlchemicalChestBlockEntity chest && UtilityPowerItem.hasTalisman(chest)) {
     UtilityPowerItem.repair(chest);

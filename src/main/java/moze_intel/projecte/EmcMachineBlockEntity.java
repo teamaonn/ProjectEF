@@ -23,7 +23,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
-final class EmcMachineBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+final class EmcMachineBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider,
+        net.minecraft.world.level.block.entity.LidBlockEntity {
     static final int INPUT = 0, STAR = 1, TARGET = 2, OUTPUT = 3;
     private static final int[] INSERT = {INPUT};
     private static final int[] EXTRACT = {OUTPUT};
@@ -37,6 +38,7 @@ final class EmcMachineBlockEntity extends BlockEntity implements WorldlyContaine
     private final ItemStack[] items;
     private final EmcMachineBlock.Kind kind;
     private final int tier;
+    final ChestAnimation animation;
     private final long capacity;
     private UUID owner;
     private long emc;
@@ -48,6 +50,8 @@ final class EmcMachineBlockEntity extends BlockEntity implements WorldlyContaine
                 ? PERegistries.ENERGY_CONDENSER_ENTITY : PERegistries.EMC_MACHINE_ENTITY, pos, state);
         var block = (EmcMachineBlock) state.getBlock();
         kind = block.kind;
+        animation = kind == EmcMachineBlock.Kind.CONDENSER ? new ChestAnimation(this,
+                player -> player.containerMenu instanceof CondenserMenu menu && menu.uses(this)) : null;
         items = new ItemStack[kind == EmcMachineBlock.Kind.CONDENSER ? OUTPUT + CondenserMenu.GRID_SIZE : 5];
         java.util.Arrays.fill(items, ItemStack.EMPTY);
         tier = block.tier - 1;
@@ -56,6 +60,26 @@ final class EmcMachineBlockEntity extends BlockEntity implements WorldlyContaine
             case RELAY -> RELAY_CAPACITIES[tier];
             case CONDENSER -> Long.MAX_VALUE;
         };
+    }
+
+    @Override
+    public void startOpen(net.minecraft.world.entity.ContainerUser user) {
+        if (animation != null) animation.startOpen(user);
+    }
+
+    @Override
+    public void stopOpen(net.minecraft.world.entity.ContainerUser user) {
+        if (animation != null) animation.stopOpen(user);
+    }
+
+    @Override
+    public boolean triggerEvent(int id, int value) {
+        return (animation != null && animation.handleEvent(id, value)) || super.triggerEvent(id, value);
+    }
+
+    @Override
+    public float getOpenNess(float partialTick) {
+        return animation == null ? 0 : animation.openness(partialTick);
     }
 
     long storedEmc() { return emc; }

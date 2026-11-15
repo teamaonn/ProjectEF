@@ -1,0 +1,77 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "chest": "projecte:block/alchemical_chest",
+    "particle": "projecte:block/alchemical_chest"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        10,
+        15
+      ],
+      "faces": {
+        "up": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            4.75,
+            7.0,
+            8.25
+          ]
+        },
+        "down": {
+          "texture": "#chest",
+          "uv": [
+            7.0,
+            4.75,
+            10.5,
+            8.25
+          ]
+        },
+        "north": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            8.25,
+            7.0,
+            10.75
+          ]
+        },
+        "south": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            8.25,
+            7.0,
+            10.75
+          ]
+        },
+        "east": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            8.25,
+            7.0,
+            10.75
+          ]
+        },
+        "west": {
+          "texture": "#chest",
+          "uv": [
+            3.5,
+            8.25,
+            7.0,
+            10.75
+          ]
+        }
+      }
+    }
+  ]
+}

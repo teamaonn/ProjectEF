@@ -44,6 +44,17 @@ public final class CondenserMenu extends AbstractContainerMenu {
                     12 + i % GRID_COLUMNS * 18, 26 + i / GRID_COLUMNS * 18));
         }
         addStandardInventorySlots(inventory, 48, 156);
+        container.startOpen(inventory.player);
+    }
+
+    boolean uses(Container expected) {
+        return container == expected;
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        container.stopOpen(player);
     }
 
     public long storedEmc() { return values.value(0); }

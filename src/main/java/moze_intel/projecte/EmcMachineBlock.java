@@ -1,6 +1,8 @@
 package moze_intel.projecte;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -47,8 +49,19 @@ final class EmcMachineBlock extends FrontFacingContainerBlock {
     }
 
     @Override
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (kind == Kind.CONDENSER && level.getBlockEntity(pos) instanceof EmcMachineBlockEntity machine) {
+            machine.animation.recheckOpeners(level, pos, state);
+        }
+    }
+
+    @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide() ? null : createTickerHelper(type,
+        if (level.isClientSide()) {
+            return kind == Kind.CONDENSER ? createTickerHelper(type, PERegistries.ENERGY_CONDENSER_ENTITY,
+                    (world, pos, blockState, machine) -> machine.animation.tickLid()) : null;
+        }
+        return createTickerHelper(type,
                 kind == Kind.CONDENSER ? PERegistries.ENERGY_CONDENSER_ENTITY : PERegistries.EMC_MACHINE_ENTITY,
                 EmcMachineBlockEntity::tick);
     }

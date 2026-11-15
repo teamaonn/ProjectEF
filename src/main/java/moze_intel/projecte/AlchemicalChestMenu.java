@@ -12,6 +12,7 @@ public final class AlchemicalChestMenu extends AbstractContainerMenu {
   for(int row=0;row<3;row++)for(int col=0;col<9;col++)addSlot(new Slot(inv,9+row*9+col,48+col*18,152+row*18));
   for(int col=0;col<9;col++)addSlot(new Slot(inv,col,48+col*18,210));
  }
+ boolean uses(Container container) { return chest == container; }
  public boolean stillValid(Player p){return chest.stillValid(p);}
  public ItemStack quickMoveStack(Player p,int index){
   if(index<0||index>=slots.size()||!slots.get(index).hasItem())return ItemStack.EMPTY;
